@@ -8,7 +8,6 @@
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1.250-orange.svg)](https://neoforged.net/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img src="logo.png" alt="Currents of Trade Logo" width="160" />
 
 <p align="center">
   <em>Transform Minecraft's vast oceans into thriving commerce routes. Connect coastal villages, sail custom sloops with realistic wave physics, and automate transoceanic cargo fleets.</em>
