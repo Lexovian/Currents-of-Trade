@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:anchor_point"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "currents_of_trade:blocks/anchor_point"
+}
