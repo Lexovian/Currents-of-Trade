@@ -27,6 +27,8 @@ import net.minecraft.world.entity.HasCustomInventoryScreen;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.core.Direction;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
@@ -40,12 +42,18 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -838,21 +846,46 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         this.setDeltaMovement(0.0, 0.0, 0.0);
         this.releaseAllForcedChunks();
 
+        boolean anyDeposited = false;
+        boolean allDeposited = false;
+
         if (this.targetPos != null) {
             this.level().playSound(null, this.targetPos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (this.level().getBlockEntity(this.targetPos) instanceof AnchorPointBlockEntity targetAnchor) {
                 targetAnchor.triggerTravelCooldown();
+            }
+
+            anyDeposited = this.tryUnloadCargoToHarborStorage(this.targetPos);
+            allDeposited = this.isEmpty();
+
+            if (anyDeposited) {
+                this.level().playSound(null, this.targetPos, SoundEvents.CHEST_CLOSE, SoundSource.BLOCKS, 0.9F, 1.0F);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                            this.targetPos.getX() + 0.5, this.targetPos.getY() + 1.2, this.targetPos.getZ() + 0.5,
+                            12, 0.4, 0.3, 0.4, 0.05);
+                }
             }
         }
 
         Component senderMsg;
         Component receiverMsg;
         if (this.isTradeMission && this.missionPhase == TradeMissionPhase.RETURNING) {
-            senderMsg   = Component.translatable("message.currents_of_trade.trade_arrived_home",     this.homeHarborName);
-            receiverMsg = Component.translatable("message.currents_of_trade.trade_docked_at_harbor", this.homeHarborName);
+            if (allDeposited) {
+                senderMsg   = Component.translatable("message.currents_of_trade.trade_arrived_home_depot",     this.homeHarborName);
+                receiverMsg = Component.translatable("message.currents_of_trade.trade_docked_at_harbor_depot", this.homeHarborName);
+            } else {
+                senderMsg   = Component.translatable("message.currents_of_trade.trade_arrived_home",     this.homeHarborName);
+                receiverMsg = Component.translatable("message.currents_of_trade.trade_docked_at_harbor", this.homeHarborName);
+            }
         } else {
-            senderMsg   = Component.translatable("message.currents_of_trade.cargo_arrived_sender",   this.getHarborName());
-            receiverMsg = Component.translatable("message.currents_of_trade.cargo_arrived",          this.getHarborName());
+            if (allDeposited) {
+                senderMsg   = Component.translatable("message.currents_of_trade.cargo_arrived_sender_depot",   this.getHarborName());
+                receiverMsg = Component.translatable("message.currents_of_trade.cargo_arrived_depot",          this.getHarborName());
+            } else {
+                senderMsg   = Component.translatable("message.currents_of_trade.cargo_arrived_sender",   this.getHarborName());
+                receiverMsg = Component.translatable("message.currents_of_trade.cargo_arrived",          this.getHarborName());
+            }
         }
 
         if (this.level().getServer() != null) {
@@ -868,6 +901,123 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 }
             }
         }
+    }
+
+    /**
+     * Attempts to automatically unload cargo into adjacent depot storage blocks (chests, barrels,
+     * hoppers, trapped chests, modded containers) located beside, above, or below the Anchor Point.
+     * Explicitly ignores Ender Chests as requested.
+     *
+     * @param anchorPos The position of the destination/origin Anchor Point block entity.
+     * @return true if at least one item was transferred into harbor storage.
+     */
+    protected boolean tryUnloadCargoToHarborStorage(BlockPos anchorPos) {
+        if (this.level().isClientSide || anchorPos == null) return false;
+
+        boolean anyDeposited = false;
+        Level level = this.level();
+
+        List<IItemHandler> targetHandlers = new ArrayList<>();
+        List<Container> fallbackContainers = new ArrayList<>();
+        Set<BlockPos> checkedPositions = new HashSet<>();
+
+        for (Direction dir : Direction.values()) {
+            BlockPos neighborPos = anchorPos.relative(dir);
+            if (!checkedPositions.add(neighborPos)) continue;
+
+            BlockState state = level.getBlockState(neighborPos);
+            // Explicitly ignore Ender Chest
+            if (state.is(Blocks.ENDER_CHEST)) {
+                continue;
+            }
+
+            // A. NeoForge IItemHandler capability (handles double chests, barrels, hoppers, modded containers)
+            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, dir.getOpposite());
+            if (handler == null) {
+                handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, null);
+            }
+
+            if (handler != null) {
+                targetHandlers.add(handler);
+            } else {
+                // B. Fallback: Vanilla Container block entity or double chest
+                Container container = null;
+                if (state.getBlock() instanceof ChestBlock chestBlock) {
+                    container = ChestBlock.getContainer(chestBlock, state, level, neighborPos, true);
+                } else {
+                    BlockEntity be = level.getBlockEntity(neighborPos);
+                    if (be instanceof Container c) {
+                        container = c;
+                    }
+                }
+                if (container != null) {
+                    fallbackContainers.add(container);
+                }
+            }
+        }
+
+        if (targetHandlers.isEmpty() && fallbackContainers.isEmpty()) {
+            return false;
+        }
+
+        for (int i = 0; i < this.getContainerSize(); i++) {
+            ItemStack shipStack = this.getItem(i);
+            if (shipStack.isEmpty()) continue;
+
+            int originalCount = shipStack.getCount();
+
+            for (IItemHandler handler : targetHandlers) {
+                if (shipStack.isEmpty()) break;
+                shipStack = ItemHandlerHelper.insertItemStacked(handler, shipStack, false);
+            }
+
+            if (!shipStack.isEmpty()) {
+                for (Container container : fallbackContainers) {
+                    if (shipStack.isEmpty()) break;
+                    shipStack = insertIntoVanillaContainer(container, shipStack);
+                }
+            }
+
+            if (shipStack.getCount() != originalCount) {
+                anyDeposited = true;
+                this.setItem(i, shipStack);
+                this.setChanged();
+            }
+        }
+
+        return anyDeposited;
+    }
+
+    private static ItemStack insertIntoVanillaContainer(Container container, ItemStack stack) {
+        if (stack.isEmpty()) return stack;
+
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (stack.isEmpty()) break;
+            ItemStack existing = container.getItem(slot);
+            if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, stack) && container.canPlaceItem(slot, stack)) {
+                int max = Math.min(container.getMaxStackSize(), existing.getMaxStackSize());
+                int fit = Math.min(stack.getCount(), max - existing.getCount());
+                if (fit > 0) {
+                    existing.grow(fit);
+                    stack.shrink(fit);
+                    container.setChanged();
+                }
+            }
+        }
+
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (stack.isEmpty()) break;
+            ItemStack existing = container.getItem(slot);
+            if (existing.isEmpty() && container.canPlaceItem(slot, stack)) {
+                int max = Math.min(container.getMaxStackSize(), stack.getMaxStackSize());
+                int put = Math.min(stack.getCount(), max);
+                ItemStack newStack = stack.split(put);
+                container.setItem(slot, newStack);
+                container.setChanged();
+            }
+        }
+
+        return stack;
     }
 
     // --- Pathfinding & Navigable Water Checks ---

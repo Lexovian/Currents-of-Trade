@@ -148,6 +148,8 @@
   "message.currents_of_trade.cargo_departed": "§6⚓ [Lojistik]§r Kargo gemisi §e%s§r limanına doğru yola çıktı! (§f%s§r eşya taşınıyor)",
   "message.currents_of_trade.cargo_arrived": "§a⚓ [Lojistik]§r §e%s§r limanına kargo gemisi yanaştı! Teslim almak için sandığa sağ tıklayın.",
   "message.currents_of_trade.cargo_arrived_sender": "§a⚓ [Lojistik]§r Gönderdiğiniz kargo gemisi §e%s§r limanına başarıyla ulaştı!",
+  "message.currents_of_trade.cargo_arrived_depot": "§a⚓ [Lojistik]§r §e%s§r limanına kargo gemisi yanaştı ve tüm yükünü liman deposuna aktardı!",
+  "message.currents_of_trade.cargo_arrived_sender_depot": "§a⚓ [Lojistik]§r Gönderdiğiniz kargo gemisi §e%s§r limanına ulaştı ve yükünü liman deposuna aktardı!",
   "message.currents_of_trade.cargo_failed": "§c[Lojistik]§r Kargo gönderilemiyor! Hedef haritayı, Dublon navlun ücretini ve kargo eşyalarını kontrol edin.",
   "message.currents_of_trade.cargo_route_blocked": "§c⚓ [Lojistik]§r %s limanına giden deniz rotası kapalı! Sefer iptal edildi ve kargo %s limanına geri döndü.",
 
@@ -185,6 +187,8 @@
   "message.currents_of_trade.trade_reached_target": "§6⚓ [Ticaret] Ticaret gemisi §e%s§6 limanına ulaştı, takası tamamladı ve dönüş rotasına girdi!",
   "message.currents_of_trade.trade_arrived_home": "§a⚓ [Ticaret] Sipariş ettiğiniz ticaret gemisi ambarındaki eşyalarla §e%s§a iskelenize yanaştı!",
   "message.currents_of_trade.trade_docked_at_harbor": "§a⚓ [Ticaret] §e%s§a limanına ticaret gemisi yanaştı! Eşyaları almak için sandığa sağ tıklayın.",
+  "message.currents_of_trade.trade_arrived_home_depot": "§a⚓ [Ticaret] Sipariş ettiğiniz ticaret gemisi §e%s§a limanına döndü ve mallarınızı liman deposuna aktardı!",
+  "message.currents_of_trade.trade_docked_at_harbor_depot": "§a⚓ [Ticaret] §e%s§a limanına dönen ticaret gemisi malları liman deposuna aktardı!",
   "message.currents_of_trade.boat_hold_full": "§c[Liman] Gemi ambarı dolu! (En fazla 18 slot)",
   "message.currents_of_trade.sloop_needs_water": "§c[Sloop] Sadece su üzerine yerleştirilebilir!",
   "item.currents_of_trade.anchor_point": "Anchor Point (Çıpa Noktası)",
