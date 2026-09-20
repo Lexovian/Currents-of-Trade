@@ -49,6 +49,8 @@ public class SloopModel extends EntityModel<Boat> {
     private final ModelPart tradeFigurehead;
     private final ModelPart crowsNest;
     private final ModelPart tradePennant;
+    private final ModelPart waistSeat;
+    private final ModelPart bowSeat;
     private final ModelPart root;
 
     public SloopModel(ModelPart root) {
@@ -65,6 +67,8 @@ public class SloopModel extends EntityModel<Boat> {
         this.tradeFigurehead = root.getChild("trade_figurehead");
         this.crowsNest       = root.getChild("crows_nest");
         this.tradePennant    = root.getChild("trade_pennant");
+        this.waistSeat       = root.getChild("waist_seat");
+        this.bowSeat         = root.getChild("bow_seat");
     }
 
     // --- Model Definition ---
@@ -101,29 +105,29 @@ public class SloopModel extends EntityModel<Boat> {
         // --- Prow Bulwarks & Foredeck ---
         root.addOrReplaceChild("prow_port",
                 CubeListBuilder.create()
-                        .texOffs(0, 218).addBox(-9.0F, -8.0F, -20.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(0, 219).addBox(-7.5F, -8.0F, -23.0F, 2.0F, 9.0F, 3.0F)
-                        .texOffs(0, 218).addBox(-7.5F, -8.0F, -23.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(0, 220).addBox(-6.0F, -8.0F, -25.0F, 2.0F, 9.0F, 2.0F)
-                        .texOffs(0, 218).addBox(-6.0F, -8.0F, -25.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(0, 220).addBox(-4.5F, -8.0F, -27.0F, 2.0F, 9.0F, 2.0F),
+                        .texOffs(0, 218).addBox(-9.0F, -8.0F, -20.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(0, 217).addBox(-7.5F, -8.0F, -23.0F, 2.0F, 9.0F, 3.0F)
+                        .texOffs(0, 218).addBox(-7.5F, -8.0F, -23.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(0, 218).addBox(-6.0F, -8.0F, -25.0F, 2.0F, 9.0F, 2.0F)
+                        .texOffs(0, 218).addBox(-6.0F, -8.0F, -25.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(0, 218).addBox(-4.5F, -8.0F, -27.0F, 2.0F, 9.0F, 2.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("prow_starboard",
                 CubeListBuilder.create()
-                        .texOffs(46, 218).addBox(7.3F, -8.0F, -20.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(46, 219).addBox(5.5F, -8.0F, -23.0F, 2.0F, 9.0F, 3.0F)
-                        .texOffs(46, 218).addBox(5.8F, -8.0F, -23.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(46, 220).addBox(4.0F, -8.0F, -25.0F, 2.0F, 9.0F, 2.0F)
-                        .texOffs(46, 218).addBox(4.3F, -8.0F, -25.2F, 1.7F, 9.0F, 0.4F)
-                        .texOffs(46, 220).addBox(2.5F, -8.0F, -27.0F, 2.0F, 9.0F, 2.0F),
+                        .texOffs(46, 218).addBox(7.5F, -8.0F, -20.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(46, 217).addBox(5.5F, -8.0F, -23.0F, 2.0F, 9.0F, 3.0F)
+                        .texOffs(46, 218).addBox(6.0F, -8.0F, -23.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(46, 218).addBox(4.0F, -8.0F, -25.0F, 2.0F, 9.0F, 2.0F)
+                        .texOffs(46, 218).addBox(4.5F, -8.0F, -25.8F, 1.5F, 9.0F, 0.8F)
+                        .texOffs(46, 218).addBox(2.5F, -8.0F, -27.0F, 2.0F, 9.0F, 2.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("deck_prow",
                 CubeListBuilder.create().texOffs(142, 192)
-                        .addBox(-5.8F, -4.0F, -23.0F, 11.6F, 2.0F, 3.2F)
-                        .addBox(-4.3F, -4.0F, -25.0F, 8.6F, 2.0F, 2.2F)
-                        .addBox(-2.7F, -4.0F, -27.2F, 5.4F, 2.0F, 2.4F),
+                        .addBox(-5.8F, -4.0F, -23.0F, 11.6F, 2.0F, 3.0F)
+                        .addBox(-4.3F, -4.0F, -25.0F, 8.6F, 2.0F, 2.0F)
+                        .addBox(-2.7F, -4.0F, -27.2F, 5.4F, 2.0F, 2.2F),
                 PartPose.ZERO);
 
         // --- Main Deck, Waist Walls & Keel ---
@@ -133,28 +137,28 @@ public class SloopModel extends EntityModel<Boat> {
                 PartPose.ZERO);
 
         root.addOrReplaceChild("side_port_mid",
-                CubeListBuilder.create().texOffs(0, 218)
+                CubeListBuilder.create().texOffs(0, 220)
                         .addBox(-9.0F, -8.0F, -20.0F, 2.0F, 9.0F, 20.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("side_starboard_mid",
-                CubeListBuilder.create().texOffs(46, 218)
+                CubeListBuilder.create().texOffs(46, 220)
                         .addBox(7.0F, -8.0F, -20.0F, 2.0F, 9.0F, 20.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("keel_bottom",
                 CubeListBuilder.create().texOffs(0, 0)
-                        .addBox(-7.0F, 0.0F, -20.0F, 14.0F, 1.5F, 41.0F)
-                        .addBox(-6.0F, 0.0F, -22.7F, 12.0F, 1.5F, 2.9F)
-                        .addBox(-4.5F, 0.0F, -25.2F, 9.0F, 1.5F, 2.7F)
-                        .addBox(-3.0F, 0.0F, -27.3F, 6.0F, 1.5F, 2.3F),
+                        .addBox(-7.0F, 0.0F, -20.0F, 14.0F, 1.5F, 40.8F)
+                        .addBox(-6.0F, 0.0F, -22.7F, 12.0F, 1.5F, 2.7F)
+                        .addBox(-4.5F, 0.0F, -25.2F, 9.0F, 1.5F, 2.5F)
+                        .addBox(-3.0F, 0.0F, -27.3F, 6.0F, 1.5F, 2.1F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("keel_mid",
                 CubeListBuilder.create().texOffs(0, 50)
                         .addBox(-4.5F, 1.5F, -20.0F, 9.0F, 1.5F, 40.0F)
-                        .addBox(-3.5F, 1.5F, -24.0F, 7.0F, 1.5F, 4.2F)
-                        .addBox(-2.0F, 1.5F, -27.3F, 4.0F, 1.5F, 3.5F),
+                        .addBox(-3.5F, 1.5F, -24.0F, 7.0F, 1.5F, 4.0F)
+                        .addBox(-2.0F, 1.5F, -27.3F, 4.0F, 1.5F, 3.3F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("keel_spine",
@@ -267,10 +271,10 @@ public class SloopModel extends EntityModel<Boat> {
 
         root.addOrReplaceChild("merchant_awning",
                 CubeListBuilder.create()
-                        .texOffs(0, 150).addBox(-7.5F, -19.5F, 2.0F, 15.0F, 1.0F, 18.5F)
-                        .texOffs(0, 150).addBox(-7.6F, -19.0F, 2.0F, 0.8F, 3.5F, 18.5F)
-                        .texOffs(0, 150).addBox(6.8F, -19.0F, 2.0F, 0.8F, 3.5F, 18.5F)
-                        .texOffs(0, 150).addBox(-7.0F, -19.0F, 19.8F, 14.0F, 3.5F, 0.8F),
+                        .texOffs(110, 16).addBox(-7.5F, -19.5F, 1.8F, 15.0F, 1.0F, 19.0F)
+                        .texOffs(180, 110).addBox(-7.6F, -18.5F, 1.8F, 0.8F, 3.5F, 19.0F)
+                        .texOffs(180, 110).addBox(6.8F,  -18.5F, 1.8F, 0.8F, 3.5F, 19.0F)
+                        .texOffs(180, 134).addBox(-7.5F, -18.5F, 20.8F, 15.0F, 4.0F, 1.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("cargo_crane",
@@ -282,12 +286,12 @@ public class SloopModel extends EntityModel<Boat> {
 
         root.addOrReplaceChild("cargo_anchors",
                 CubeListBuilder.create().texOffs(124, 104)
-                        .addBox(-9.2F, -7.0F, -22.0F, 1.2F, 6.5F, 1.2F)
+                        .addBox(-9.2F, -7.2F, -22.0F, 1.2F, 6.7F, 1.2F)
                         .addBox(-9.2F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F)
-                        .addBox(-9.5F, -7.0F, -23.0F, 1.6F, 1.2F, 3.2F)
-                        .addBox(8.0F, -7.0F, -22.0F, 1.2F, 6.5F, 1.2F)
+                        .addBox(-9.5F, -6.8F, -23.0F, 1.6F, 1.2F, 3.2F)
+                        .addBox(8.0F, -7.2F, -22.0F, 1.2F, 6.7F, 1.2F)
                         .addBox(8.0F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F)
-                        .addBox(7.9F, -7.0F, -23.0F, 1.6F, 1.2F, 3.2F),
+                        .addBox(7.9F, -6.8F, -23.0F, 1.6F, 1.2F, 3.2F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("cargo_fenders",
@@ -321,23 +325,23 @@ public class SloopModel extends EntityModel<Boat> {
 
         root.addOrReplaceChild("deck_quarter",
                 CubeListBuilder.create().texOffs(70, 192)
-                        .addBox(-7.0F, -6.5F, 0.0F, 14.0F, 2.0F, 21.0F),
+                        .addBox(-7.0F, -6.5F, 0.0F, 14.0F, 2.0F, 20.8F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("side_port_aft",
                 CubeListBuilder.create().texOffs(92, 220)
-                        .addBox(-9.0F, -10.0F, 0.0F, 2.0F, 11.0F, 20.0F),
+                        .addBox(-9.0F, -10.0F, 0.0F, 2.0F, 11.0F, 18.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("side_starboard_aft",
                 CubeListBuilder.create().texOffs(140, 220)
-                        .addBox(7.0F, -10.0F, 0.0F, 2.0F, 11.0F, 20.0F),
+                        .addBox(7.0F, -10.0F, 0.0F, 2.0F, 11.0F, 18.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("quarterdeck_stairs",
                 CubeListBuilder.create().texOffs(0, 192)
                         .addBox(-6.5F, -5.2F, -2.0F, 2.8F, 1.2F, 1.6F)
-                        .addBox(-6.5F, -6.5F, -0.4F, 2.8F, 1.3F, 1.4F)
+                        .addBox(-6.5F, -6.5F, -0.4F, 2.8F, 2.5F, 0.4F)
                         .texOffs(220, 58).addBox(-3.7F, -8.0F, -2.0F, 0.6F, 3.0F, 3.0F),
                 PartPose.ZERO);
 
@@ -358,7 +362,7 @@ public class SloopModel extends EntityModel<Boat> {
                         .addBox(-7.5F, -17.5F, 19.5F, 3.5F, 1.5F, 1.2F)
                         .addBox( 4.0F, -17.5F, 19.5F, 3.5F, 1.5F, 1.2F)
                         .addBox(-4.5F, -18.8F, 19.5F, 9.0F, 1.3F, 1.2F)
-                        .addBox(-0.6F, -19.6F, 2.0F, 1.2F, 0.8F, 18.5F)
+                        .addBox(-0.6F, -19.6F, 2.0F, 1.2F, 0.8F, 18.6F)
                         .addBox(-6.5F, -18.2F, 2.0F, 0.8F, 0.8F, 18.5F)
                         .addBox( 5.7F, -18.2F, 2.0F, 0.8F, 0.8F, 18.5F),
                 PartPose.ZERO);
@@ -372,52 +376,52 @@ public class SloopModel extends EntityModel<Boat> {
         root.addOrReplaceChild("helm_wheel",
                 CubeListBuilder.create()
                         .texOffs(140, 104).addBox(-1.0F, -1.0F, -0.5F, 2.0F, 2.0F, 1.0F)
-                        .texOffs(140, 104).addBox(-0.6F, -4.5F, -0.4F, 1.2F, 9.0F, 0.8F)
-                        .texOffs(140, 104).addBox(-4.5F, -0.6F, -0.4F, 9.0F, 1.2F, 0.8F)
-                        .texOffs(150, 104).addBox(-2.5F, -3.5F, -0.4F, 5.0F, 1.0F, 0.8F)
-                        .texOffs(150, 104).addBox(-2.5F,  2.5F, -0.4F, 5.0F, 1.0F, 0.8F)
-                        .texOffs(150, 104).addBox(-3.5F, -2.5F, -0.4F, 1.0F, 5.0F, 0.8F)
-                        .texOffs(150, 104).addBox( 2.5F, -2.5F, -0.4F, 1.0F, 5.0F, 0.8F)
-                        .texOffs(150, 104).addBox(-3.0F, -3.0F, -0.4F, 1.2F, 1.2F, 0.8F)
-                        .texOffs(150, 104).addBox( 1.8F, -3.0F, -0.4F, 1.2F, 1.2F, 0.8F)
-                        .texOffs(150, 104).addBox(-3.0F,  1.8F, -0.4F, 1.2F, 1.2F, 0.8F)
-                        .texOffs(150, 104).addBox( 1.8F,  1.8F, -0.4F, 1.2F, 1.2F, 0.8F),
-                PartPose.offset(0.0F, -11.5F, 9.8F));
+                        .texOffs(140, 104).addBox(-0.6F, -4.5F, -0.42F, 1.2F, 9.0F, 0.84F)
+                        .texOffs(140, 104).addBox(-4.5F, -0.6F, -0.41F, 9.0F, 1.2F, 0.82F)
+                        .texOffs(150, 104).addBox(-2.5F, -3.5F, -0.38F, 5.0F, 1.0F, 0.76F)
+                        .texOffs(150, 104).addBox(-2.5F,  2.5F, -0.38F, 5.0F, 1.0F, 0.76F)
+                        .texOffs(150, 104).addBox(-3.5F, -2.5F, -0.38F, 1.0F, 5.0F, 0.76F)
+                        .texOffs(150, 104).addBox( 2.5F, -2.5F, -0.38F, 1.0F, 5.0F, 0.76F)
+                        .texOffs(150, 104).addBox(-3.0F, -3.0F, -0.37F, 1.2F, 1.2F, 0.74F)
+                        .texOffs(150, 104).addBox( 1.8F, -3.0F, -0.37F, 1.2F, 1.2F, 0.74F)
+                        .texOffs(150, 104).addBox(-3.0F,  1.8F, -0.37F, 1.2F, 1.2F, 0.74F)
+                        .texOffs(150, 104).addBox( 1.8F,  1.8F, -0.37F, 1.2F, 1.2F, 0.74F),
+                PartPose.offset(0.0F, -11.5F, 10.0F));
 
         // --- Transom, Rudder & Stern Lantern ---
         root.addOrReplaceChild("transom_lower",
                 CubeListBuilder.create().texOffs(0, 104)
-                        .addBox(-5.0F, -6.5F, 19.5F, 10.0F, 7.5F, 1.5F),
+                        .addBox(-5.0F, -4.5F, 19.5F, 10.0F, 5.5F, 1.5F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("transom_upper",
                 CubeListBuilder.create().texOffs(0, 104)
-                        .addBox(-5.5F, -11.0F, 21.0F, 11.0F, 5.0F, 1.2F),
+                        .addBox(-5.0F, -11.0F, 21.0F, 10.0F, 5.0F, 1.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_windows",
                 CubeListBuilder.create().texOffs(110, 130)
-                        .addBox(-4.5F, -10.5F, 22.0F, 9.0F, 4.0F, 0.5F),
+                        .addBox(-4.5F, -10.5F, 22.02F, 9.0F, 4.0F, 0.5F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("transom_quarter_port",
-                CubeListBuilder.create().texOffs(26, 105)
-                        .addBox(-8.5F, -10.0F, 18.5F, 3.5F, 11.0F, 3.0F),
+                CubeListBuilder.create().texOffs(26, 104)
+                        .addBox(-8.5F, -10.0F, 18.0F, 3.5F, 11.0F, 3.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("transom_quarter_stbd",
-                CubeListBuilder.create().texOffs(42, 105)
-                        .addBox(5.0F, -10.0F, 18.5F, 3.5F, 11.0F, 3.0F),
+                CubeListBuilder.create().texOffs(42, 104)
+                        .addBox(5.0F, -10.0F, 18.0F, 3.5F, 11.0F, 3.0F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_crest",
                 CubeListBuilder.create().texOffs(58, 104)
-                        .addBox(-3.5F, -13.0F, 21.8F, 7.0F, 2.2F, 1.0F),
+                        .addBox(-3.5F, -14.42F, 21.8F, 7.0F, 2.2F, 0.8F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_taffrail",
                 CubeListBuilder.create().texOffs(58, 104)
-                        .addBox(-5.5F, -12.0F, 21.2F, 11.0F, 1.2F, 1.4F),
+                        .addBox(-5.5F, -12.21F, 21.2F, 11.0F, 1.2F, 1.4F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("rudder_post",
@@ -427,7 +431,7 @@ public class SloopModel extends EntityModel<Boat> {
 
         root.addOrReplaceChild("lantern_bracket",
                 CubeListBuilder.create().texOffs(140, 104)
-                        .addBox(-0.5F, -13.8F, 22.4F, 1.0F, 3.0F, 2.5F),
+                        .addBox(-0.5F, -13.8F, 22.62F, 1.0F, 2.6F, 2.3F),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_lantern",
@@ -473,6 +477,8 @@ public class SloopModel extends EntityModel<Boat> {
         this.cargoCrane.visible   = isCargo;
         this.cargoAnchors.visible = isCargo;
         this.cargoFenders.visible = isCargo;
+        this.waistSeat.visible    = !isCargo;
+        this.bowSeat.visible      = !isCargo;
 
         // Trade Ship equipment:
         this.merchantAwning.visible  = isTrade;
