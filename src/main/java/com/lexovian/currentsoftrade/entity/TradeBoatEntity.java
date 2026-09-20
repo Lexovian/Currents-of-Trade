@@ -70,21 +70,21 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     protected double cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
     protected boolean arrived = false;
 
-    // --- Navigation & Obstacle Avoidance State ---
+    // Navigation & obstacle avoidance state
     private int avoidanceSide = 0;
     private int stuckTicks = 0;
     @Nullable private Vec3 detourWaypoint = null;
     private int detourTicks = 0;
     private boolean lastDirectClear = true;
 
-    // --- Cargo & Trade Hold ---
+    // Cargo hold
     private NonNullList<ItemStack> itemStacks = NonNullList.withSize(CARGO_SLOTS, ItemStack.EMPTY);
     @Nullable private ResourceKey<LootTable> lootTable;
     private long lootTableSeed;
     protected boolean cargoDelivered = false;
     protected int emptyTicks = 0;
 
-    // --- Trade Mission State ---
+    // Trade mission state
     public enum TradeMissionPhase { NONE, OUTBOUND, RETURNING }
 
     protected boolean isTradeMission = false;
@@ -128,8 +128,6 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         this.yo = y;
         this.zo = z;
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
-        this.setCustomName(Component.literal("Trade Ship"));
-        this.setCustomNameVisible(true);
     }
 
     @Override

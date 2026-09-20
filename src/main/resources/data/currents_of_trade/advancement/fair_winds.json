@@ -1,0 +1,26 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:sloop"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.fair_winds.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.fair_winds.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:first_chart",
+  "criteria": {
+    "craft_sloop": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipe_id": "currents_of_trade:sloop"
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:trade_ledger"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.sealed_contract.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.sealed_contract.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:root",
+  "criteria": {
+    "has_trade_ledger": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:trade_ledger"
+          }
+        ]
+      }
+    }
+  }
+}

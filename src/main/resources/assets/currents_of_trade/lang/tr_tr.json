@@ -203,6 +203,24 @@
   "item.currents_of_trade.trade_boat.desc": "§7Limanlar arası deniz ticaret rotalarında yük ve tüccar taşıyan korumalı ticaret gemisi.",
   "entity.currents_of_trade.wandering_sailor": "Gezgin Denizci Tüccar",
   "message.currents_of_trade.wandering_sailor_arrived": "§6⚓ [Gezgin Tüccar]§r Egzotik deniz mallarıyla bir Gezgin Denizci §e%s§r limanına demir attı!",
-  "message.currents_of_trade.wandering_sailor_village_arrived": "§6⚓ [Gezgin Tüccar]§r Egzotik deniz mallarıyla bir Gezgin Denizci köye yanaştı!"
+  "message.currents_of_trade.wandering_sailor_village_arrived": "§6⚓ [Gezgin Tüccar]§r Egzotik deniz mallarıyla bir Gezgin Denizci köye yanaştı!",
+
+  "advancement.currents_of_trade.root.title": "Deniz Ticaretinin Akıntıları",
+  "advancement.currents_of_trade.root.desc": "Açık denizlerin deniz ticaret rotalarına yelken açın.",
+
+  "advancement.currents_of_trade.first_chart.title": "Yeni Sulara Harita Çizmek",
+  "advancement.currents_of_trade.first_chart.desc": "Bir Deniz Haritası edinin ve ilk liman hedefinizi işaretleyin.",
+
+  "advancement.currents_of_trade.fair_winds.title": "Uygun Rüzgar & Kıç Dalgası",
+  "advancement.currents_of_trade.fair_winds.desc": "Bir Şalupa inşa edin ve açık okyanusa yelken açın.",
+
+  "advancement.currents_of_trade.sealed_contract.title": "Mühürlü Mukavele",
+  "advancement.currents_of_trade.sealed_contract.desc": "Ticaret Mukavelesi kullanarak Liman Reisi ile bir anlaşmayı mühürleyin.",
+
+  "advancement.currents_of_trade.whispers.title": "Derinliklerin Fısıltısı",
+  "advancement.currents_of_trade.whispers.desc": "Bir Şişede Mektup'u açın ve içindeki hikâyeyi okuyun.",
+
+  "advancement.currents_of_trade.ocean_tycoon.title": "Okyanus Patronu",
+  "advancement.currents_of_trade.ocean_tycoon.desc": "Envanterinizde 64 Düblon biriktirerek bir deniz serveti oluşturun."
 }
 

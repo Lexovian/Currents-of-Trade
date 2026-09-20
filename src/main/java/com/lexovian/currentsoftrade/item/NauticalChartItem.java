@@ -35,7 +35,7 @@ public class NauticalChartItem extends Item {
         super(properties);
     }
 
-    // --- Right-click on Anchor Point  ---
+    // Right-click on Anchor Point
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
@@ -108,7 +108,7 @@ public class NauticalChartItem extends Item {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    // --- Tooltip  ---
+    // Tooltip
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
@@ -126,7 +126,7 @@ public class NauticalChartItem extends Item {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 
-    // --- Static helpers  ---
+    // Static helpers
 
     @Nullable
     public static BlockPos getTargetPos(ItemStack stack) {

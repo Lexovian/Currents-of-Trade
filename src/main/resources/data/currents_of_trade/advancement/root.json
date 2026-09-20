@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:anchor_point"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.root.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.root.desc"
+    },
+    "background": "minecraft:textures/block/dark_oak_planks.png",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_anchor_point": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:anchor_point"
+          }
+        ]
+      }
+    }
+  }
+}

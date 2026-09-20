@@ -207,6 +207,24 @@
   "item.currents_of_trade.trade_boat.desc": "§7A merchant vessel designed for maritime trade and commerce routes.",
   "entity.currents_of_trade.wandering_sailor": "Wandering Sailor",
   "message.currents_of_trade.wandering_sailor_arrived": "§6⚓ [Maritime Trader]§r A Wandering Sailor has docked at §e%s§r with exotic sea goods!",
-  "message.currents_of_trade.wandering_sailor_village_arrived": "§6⚓ [Maritime Trader]§r A Wandering Sailor has arrived at the village with exotic sea goods!"
+  "message.currents_of_trade.wandering_sailor_village_arrived": "§6⚓ [Maritime Trader]§r A Wandering Sailor has arrived at the village with exotic sea goods!",
+
+  "advancement.currents_of_trade.root.title": "Currents of Trade",
+  "advancement.currents_of_trade.root.desc": "Embark on the maritime trade routes of the open seas.",
+
+  "advancement.currents_of_trade.first_chart.title": "Charting New Waters",
+  "advancement.currents_of_trade.first_chart.desc": "Obtain a Nautical Chart and plot your first harbor destination.",
+
+  "advancement.currents_of_trade.fair_winds.title": "Fair Winds & Following Seas",
+  "advancement.currents_of_trade.fair_winds.desc": "Craft a Sloop and set sail across the open ocean.",
+
+  "advancement.currents_of_trade.sealed_contract.title": "The Sealed Contract",
+  "advancement.currents_of_trade.sealed_contract.desc": "Seal a trade deal with a Harbormaster using a Trade Ledger.",
+
+  "advancement.currents_of_trade.whispers.title": "Whispers from the Deep",
+  "advancement.currents_of_trade.whispers.desc": "Uncork a Message in a Bottle and read the tale within.",
+
+  "advancement.currents_of_trade.ocean_tycoon.title": "Ocean Tycoon",
+  "advancement.currents_of_trade.ocean_tycoon.desc": "Amass a fortune of 64 Doubloons in your inventory."
 }
 

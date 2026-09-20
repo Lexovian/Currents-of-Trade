@@ -43,15 +43,12 @@ public class WanderingSailorSpawner {
             return;
         }
 
-        int interval = (Config.WANDERING_SAILOR_CHECK_INTERVAL != null)
-                ? Config.WANDERING_SAILOR_CHECK_INTERVAL.get() : CHECK_INTERVAL_TICKS;
-        double chance = (Config.WANDERING_SAILOR_SPAWN_CHANCE != null)
-                ? Config.WANDERING_SAILOR_SPAWN_CHANCE.get() : SPAWN_CHANCE;
+        int interval = Config.WANDERING_SAILOR_CHECK_INTERVAL.get();
+        double chance  = Config.WANDERING_SAILOR_SPAWN_CHANCE.get();
 
         if (++tickCounter >= interval) {
             tickCounter = 0;
-            RandomSource random = level.getRandom();
-            if (random.nextDouble() < chance) {
+            if (level.getRandom().nextDouble() < chance) {
                 spawnSailorNaturally(level);
             }
         }

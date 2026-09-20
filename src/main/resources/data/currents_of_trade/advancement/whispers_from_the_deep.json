@@ -1,0 +1,41 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:message_in_a_bottle"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.whispers.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.whispers.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:root",
+  "criteria": {
+    "open_bottle": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:glass_bottle"
+          }
+        ]
+      }
+    },
+    "had_bottle": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:message_in_a_bottle"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [["had_bottle"], ["open_bottle"]]
+}

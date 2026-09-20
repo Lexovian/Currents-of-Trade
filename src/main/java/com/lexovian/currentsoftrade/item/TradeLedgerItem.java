@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -106,7 +107,7 @@ public class TradeLedgerItem extends Item {
             }
             tradeSummary += " \u2794 " + chosenOffer.getResult().getCount() + "x " + chosenOffer.getResult().getHoverName().getString();
 
-            // Show in action bar (true) for immediate feedback, and in chat (false) so it persists in scroll history
+            // Show in action bar for immediacy, and also in chat scroll history
             player.displayClientMessage(
                     Component.translatable("message.currents_of_trade.ledger_bound_success", tradeSummary),
                     true
@@ -116,7 +117,7 @@ public class TradeLedgerItem extends Item {
                     false
             );
 
-            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            if (player instanceof ServerPlayer serverPlayer) {
                 serverPlayer.inventoryMenu.broadcastChanges();
             }
         }
@@ -159,7 +160,7 @@ public class TradeLedgerItem extends Item {
 
                         // Clear the ledger so it can record another trade
                         stack.remove(DataComponents.CUSTOM_DATA);
-                        if (context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                        if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
                             serverPlayer.inventoryMenu.broadcastChanges();
                         }
                         return InteractionResult.SUCCESS;
@@ -181,7 +182,7 @@ public class TradeLedgerItem extends Item {
     public static class Events {
         @net.neoforged.bus.api.SubscribeEvent
         public static void onEntityInteract(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
-            if (event.getTarget() instanceof net.minecraft.world.entity.npc.AbstractVillager villager) {
+            if (event.getTarget() instanceof AbstractVillager villager) {
                 ItemStack stack = event.getItemStack();
                 if (stack.getItem() instanceof TradeLedgerItem ledger) {
                     InteractionResult result = ledger.handleVillagerInteract(stack, event.getEntity(), villager, event.getHand());

@@ -1,0 +1,30 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:nautical_chart"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.first_chart.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.first_chart.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:root",
+  "criteria": {
+    "has_nautical_chart": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:nautical_chart"
+          }
+        ]
+      }
+    }
+  }
+}
