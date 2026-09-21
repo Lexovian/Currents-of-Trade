@@ -20,6 +20,7 @@ public class HarborSavedData extends SavedData {
     private static final String DATA_NAME = "currents_of_trade_harbors";
     private final Map<BlockPos, List<HarborTradeOffer>> harborTradesMap = new HashMap<>();
     private final Map<BlockPos, String> harborNamesMap = new HashMap<>();
+    private final Map<BlockPos, Integer> harborLevelsMap = new HashMap<>();
 
     public HarborSavedData() {
     }
@@ -54,20 +55,27 @@ public class HarborSavedData extends SavedData {
         setDirty();
     }
 
+    public int getHarborLevel(BlockPos pos) {
+        return harborLevelsMap.getOrDefault(pos, 1);
+    }
+
+    public void setHarborLevel(BlockPos pos, int level) {
+        harborLevelsMap.put(pos.immutable(), Math.max(1, Math.min(5, level)));
+        setDirty();
+    }
+
     public Set<BlockPos> getAllHarborPositions() {
         Set<BlockPos> all = new HashSet<>(harborTradesMap.keySet());
         all.addAll(harborNamesMap.keySet());
+        all.addAll(harborLevelsMap.keySet());
         return all;
     }
 
     public void removeHarbor(BlockPos pos) {
         boolean changed = harborTradesMap.remove(pos) != null;
-        if (harborNamesMap.remove(pos) != null) {
-            changed = true;
-        }
-        if (changed) {
-            setDirty();
-        }
+        if (harborNamesMap.remove(pos) != null) changed = true;
+        if (harborLevelsMap.remove(pos) != null) changed = true;
+        if (changed) setDirty();
     }
 
     public static HarborSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
@@ -79,6 +87,9 @@ public class HarborSavedData extends SavedData {
 
             if (harborTag.contains("Name")) {
                 data.harborNamesMap.put(pos, harborTag.getString("Name"));
+            }
+            if (harborTag.contains("Level")) {
+                data.harborLevelsMap.put(pos, harborTag.getInt("Level"));
             }
 
             ListTag tradesList = harborTag.getList("Trades", Tag.TAG_COMPOUND);
@@ -104,9 +115,10 @@ public class HarborSavedData extends SavedData {
             harborTag.putLong("Pos", pos.asLong());
 
             String name = harborNamesMap.get(pos);
-            if (name != null) {
-                harborTag.putString("Name", name);
-            }
+            if (name != null) harborTag.putString("Name", name);
+
+            Integer level = harborLevelsMap.get(pos);
+            if (level != null && level > 1) harborTag.putInt("Level", level);
 
             List<HarborTradeOffer> trades = harborTradesMap.get(pos);
             if (trades != null && !trades.isEmpty()) {

@@ -87,10 +87,18 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            int harborLevel = 1;
+            if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                harborLevel = anchor.getTradeLevel();
+            }
+            final int finalLevel = harborLevel;
             serverPlayer.openMenu(new SimpleMenuProvider(
                     (containerId, playerInventory, p) -> new AnchorPointMenu(containerId, playerInventory, ContainerLevelAccess.create(level, pos), pos),
                     Component.translatable("gui.currents_of_trade.anchor_point")
-            ));
+            ), buf -> {
+                buf.writeBlockPos(pos);
+                buf.writeVarInt(finalLevel);
+            });
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

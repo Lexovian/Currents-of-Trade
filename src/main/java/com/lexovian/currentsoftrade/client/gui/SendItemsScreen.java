@@ -21,6 +21,8 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
 
     private Button sendCargoButton;
     private Button backButton;
+    private Button prevPageBtn;
+    private Button nextPageBtn;
 
     public SendItemsScreen(SendItemsMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -49,8 +51,19 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
             PacketDistributor.sendToServer(new ModPayloads.ExecuteSendCargoPayload(this.menu.getCurrentPos()));
         }).bounds(sendBtnX, this.topPos + 109, sendBtnWidth, sendBtnHeight).build();
 
+        // Paging buttons for cargo hold (when harbor has > 18 slots)
+        this.prevPageBtn = Button.builder(Component.literal("◀"), b -> {
+            this.menu.prevPage();
+        }).bounds(this.leftPos + 144, this.topPos + 54, 16, 12).build();
+
+        this.nextPageBtn = Button.builder(Component.literal("▶"), b -> {
+            this.menu.nextPage();
+        }).bounds(this.leftPos + 162, this.topPos + 54, 16, 12).build();
+
         this.addRenderableWidget(this.backButton);
         this.addRenderableWidget(this.sendCargoButton);
+        this.addRenderableWidget(this.prevPageBtn);
+        this.addRenderableWidget(this.nextPageBtn);
     }
 
     @Override
@@ -75,6 +88,15 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
                 this.sendCargoButton.setMessage(Component.translatable("gui.currents_of_trade.send_cargo_btn"));
             }
         }
+
+        if (this.prevPageBtn != null && this.nextPageBtn != null) {
+            int maxPages = this.menu.getMaxPages();
+            boolean multiPage = maxPages > 1;
+            this.prevPageBtn.visible = multiPage;
+            this.nextPageBtn.visible = multiPage;
+            this.prevPageBtn.active = this.menu.getCurrentPage() > 0;
+            this.nextPageBtn.active = this.menu.getCurrentPage() < maxPages - 1;
+        }
     }
 
     @Override
@@ -87,10 +109,21 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         // Fee slot box (x=63, y=35)
         guiGraphics.blit(GUI_TEXTURE, this.leftPos + 63, this.topPos + 35, 17, 146, 18, 18);
 
-        // 18 Cargo slot boxes (2 rows x 9 columns) at x = 17 + col * 18, y = 69 + row * 18
+        // Draw cargo slot boxes for current page
+        int page = this.menu.getCurrentPage();
+        int startIndex = page * SendItemsMenu.SLOTS_PER_PAGE;
+        int totalSlots = this.menu.getCargoSlotCount();
+
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 9; col++) {
-                guiGraphics.blit(GUI_TEXTURE, this.leftPos + 17 + col * 18, this.topPos + 69 + row * 18, 17, 146, 18, 18);
+                int slotIndex = startIndex + row * 9 + col;
+                int x = this.leftPos + 17 + col * 18;
+                int y = this.topPos + 69 + row * 18;
+                guiGraphics.blit(GUI_TEXTURE, x, y, 17, 146, 18, 18);
+                if (slotIndex >= totalSlots) {
+                    // Dim locked slots
+                    guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0x77000000);
+                }
             }
         }
     }
@@ -130,8 +163,16 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
             guiGraphics.drawString(this.font, Component.literal("§8Insert chart"), 88, 42, 0x999999, false);
         }
 
-        // Cargo section title (cleanly above cargo slots at y=58)
-        guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.cargo_hold_title"), 18, 58, 0x333333, false);
+        // Cargo section title (displays dynamic slot count and page)
+        int cargoSlots = this.menu.getCargoSlotCount();
+        int maxPages = this.menu.getMaxPages();
+        String cargoTitle;
+        if (maxPages > 1) {
+            cargoTitle = "Cargo (" + (this.menu.getCurrentPage() + 1) + "/" + maxPages + " — " + cargoSlots + "s):";
+        } else {
+            cargoTitle = "Cargo Hold (" + cargoSlots + " Slots):";
+        }
+        guiGraphics.drawString(this.font, Component.literal(cargoTitle), 18, 58, 0x333333, false);
 
         // Player Inventory label (cleanly above inventory slots at y=136)
         guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);

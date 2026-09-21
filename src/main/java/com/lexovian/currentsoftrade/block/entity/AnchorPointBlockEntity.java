@@ -4,6 +4,7 @@ import com.lexovian.currentsoftrade.Config;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
+import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -38,6 +39,7 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     public static final int MAX_HARBOR_TRADES = 12;
     public static final int MIN_HARBOR_WATER_BLOCKS = 40;
+    public static final int MAX_HARBOR_LEVEL = 5;
 
     // Harbor state
     private int tradeLevel = 1;
@@ -85,7 +87,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
     }
 
     public boolean addHarborTrade(HarborTradeOffer trade) {
-        int maxTrades = Config.MAX_HARBOR_TRADES != null ? Config.MAX_HARBOR_TRADES.get() : MAX_HARBOR_TRADES;
+        // Use level-based cap; fall back to global config if somehow called before level is set
+        int maxTrades = getMaxTradeOffers();
         if (this.harborTrades.size() < maxTrades) {
             this.harborTrades.add(trade);
             setChanged();
@@ -94,6 +97,7 @@ public class AnchorPointBlockEntity extends BlockEntity {
         }
         return false;
     }
+
 
     public boolean removeHarborTrade(int index) {
         if (index >= 0 && index < this.harborTrades.size()) {
@@ -121,8 +125,89 @@ public class AnchorPointBlockEntity extends BlockEntity {
     }
 
     public void setTradeLevel(int tradeLevel) {
-        this.tradeLevel = tradeLevel;
+        this.tradeLevel = Math.max(1, Math.min(MAX_HARBOR_LEVEL, tradeLevel));
         setChanged();
+    }
+
+    /**
+     * Human-readable level title, e.g. "Fishing Wharf" or "Royal Dockyard".
+     */
+    public String getHarborLevelName() {
+        return switch (this.tradeLevel) {
+            case 2 -> "Trading Post";
+            case 3 -> "Harbor";
+            case 4 -> "Grand Port";
+            case 5 -> "Royal Dockyard";
+            default -> "Fishing Wharf";
+        };
+    }
+
+    /**
+     * Returns the voyage cooldown in seconds for this harbor level.
+     * Higher levels = shorter cooldowns.
+     */
+    public int getLevelCooldownSeconds() {
+        return switch (this.tradeLevel) {
+            case 2 -> 45;
+            case 3 -> 30;
+            case 4 -> 20;
+            case 5 -> 10;
+            default -> 60;
+        };
+    }
+
+    /**
+     * Returns the cargo slot count available for Send Items / Return Trade at this level.
+     * Grows from 18 (Lv1) to 54 (Lv5) in steps of 9.
+     */
+    public int getCargoSlotCount() {
+        return switch (this.tradeLevel) {
+            case 2 -> 27;
+            case 3 -> 36;
+            case 4 -> 45;
+            case 5 -> 54;
+            default -> 18;
+        };
+    }
+
+    /**
+     * Returns the maximum number of trade offers this harbor can hold at its current level.
+     */
+    public int getMaxTradeOffers() {
+        return switch (this.tradeLevel) {
+            case 2 -> 8;
+            case 3 -> 10;
+            case 4 -> 12;
+            case 5 -> 14;
+            default -> 6;
+        };
+    }
+
+    /**
+     * Returns true when the player can pay the upgrade cost for the next harbor level.
+     * Returns false at max level.
+     */
+    public boolean canUpgrade(net.minecraft.world.entity.player.Player player) {
+        if (this.tradeLevel >= MAX_HARBOR_LEVEL) return false;
+        HarborUpgradeCost cost = HarborUpgradeCost.forLevel(this.tradeLevel);
+        return cost != null && cost.canAfford(player);
+    }
+
+    /**
+     * Consumes the required materials and advances this harbor to the next level.
+     * Caller MUST verify {@link #canUpgrade(net.minecraft.world.entity.player.Player)} first.
+     */
+    public void executeUpgrade(net.minecraft.world.entity.player.Player player) {
+        if (this.tradeLevel >= MAX_HARBOR_LEVEL) return;
+        HarborUpgradeCost cost = HarborUpgradeCost.forLevel(this.tradeLevel);
+        if (cost == null || !cost.canAfford(player)) return;
+        cost.consume(player);
+        this.tradeLevel++;
+        setChanged();
+        if (this.level instanceof ServerLevel serverLevel) {
+            HarborSavedData.get(serverLevel).setHarborLevel(this.worldPosition, this.tradeLevel);
+        }
+        this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
     }
 
     public String getHarborName() {
@@ -245,13 +330,17 @@ public class AnchorPointBlockEntity extends BlockEntity {
     public int getRemainingCooldownSeconds() {
         if (this.level == null) return 0;
         long elapsed = this.level.getGameTime() - this.lastTravelTime;
-        int cooldownSec = Config.VOYAGE_COOLDOWN_SECONDS != null ? Config.VOYAGE_COOLDOWN_SECONDS.get() : 60;
+        // Use level-based cooldown; config value acts as a hard ceiling if set lower
+        int levelCooldown = getLevelCooldownSeconds();
+        int configCooldown = Config.VOYAGE_COOLDOWN_SECONDS != null ? Config.VOYAGE_COOLDOWN_SECONDS.get() : 60;
+        int cooldownSec = Math.min(levelCooldown, configCooldown);
         long cooldownTicks = 20L * cooldownSec;
         if (elapsed < cooldownTicks && elapsed >= 0) {
             return (int) Math.ceil((cooldownTicks - elapsed) / 20.0);
         }
         return 0;
     }
+
 
     public void triggerTravelCooldown() {
         if (this.level != null) {

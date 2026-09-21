@@ -225,6 +225,21 @@
   "advancement.currents_of_trade.whispers.desc": "Uncork a Message in a Bottle and read the tale within.",
 
   "advancement.currents_of_trade.ocean_tycoon.title": "Ocean Tycoon",
-  "advancement.currents_of_trade.ocean_tycoon.desc": "Amass a fortune of 64 Doubloons in your inventory."
+  "advancement.currents_of_trade.ocean_tycoon.desc": "Amass a fortune of 64 Doubloons in your inventory.",
+
+  "gui.currents_of_trade.upgrade_harbor": "⬆ Upgrade Harbor",
+  "gui.currents_of_trade.harbor_max_level": "⚓ Royal Dockyard (Max Level)",
+  "gui.currents_of_trade.upgrade_cost": "Upgrade Cost:",
+
+  "harbor.currents_of_trade.level.1": "Fishing Wharf",
+  "harbor.currents_of_trade.level.2": "Trading Post",
+  "harbor.currents_of_trade.level.3": "Harbor",
+  "harbor.currents_of_trade.level.4": "Grand Port",
+  "harbor.currents_of_trade.level.5": "Royal Dockyard",
+
+  "message.currents_of_trade.harbor_upgraded": "§a⚓ Harbor upgraded to Level %s — §e%s§a!",
+  "message.currents_of_trade.harbor_max_level": "§6⚓ This harbor has already reached Royal Dockyard level!",
+  "message.currents_of_trade.harbor_cannot_afford": "§c⚓ Insufficient resources to upgrade this harbor."
 }
+
 

@@ -221,6 +221,20 @@
   "advancement.currents_of_trade.whispers.desc": "Bir Şişede Mektup'u açın ve içindeki hikâyeyi okuyun.",
 
   "advancement.currents_of_trade.ocean_tycoon.title": "Okyanus Patronu",
-  "advancement.currents_of_trade.ocean_tycoon.desc": "Envanterinizde 64 Düblon biriktirerek bir deniz serveti oluşturun."
+  "advancement.currents_of_trade.ocean_tycoon.desc": "Envanterinizde 64 Düblon biriktirerek bir deniz serveti oluşturun.",
+
+  "gui.currents_of_trade.upgrade_harbor": "⬆ Limanı Yükselt",
+  "gui.currents_of_trade.harbor_max_level": "⚓ Kraliyet Tersanesi (Maksimum)",
+  "gui.currents_of_trade.upgrade_cost": "Yükseltme Maliyeti:",
+
+  "harbor.currents_of_trade.level.1": "Balıkçı İskelesi",
+  "harbor.currents_of_trade.level.2": "Ticaret Noktası",
+  "harbor.currents_of_trade.level.3": "Liman",
+  "harbor.currents_of_trade.level.4": "Büyük Liman",
+  "harbor.currents_of_trade.level.5": "Kraliyet Tersanesi",
+
+  "message.currents_of_trade.harbor_upgraded": "§a⚓ Liman Seviye %s'ye yükseltildi — §e%s§a!",
+  "message.currents_of_trade.harbor_max_level": "§6⚓ Bu liman zaten Kraliyet Tersanesi seviyesinde!",
+  "message.currents_of_trade.harbor_cannot_afford": "§c⚓ Bu limanı yükseltmek için yeterli kaynak yok."
 }
 

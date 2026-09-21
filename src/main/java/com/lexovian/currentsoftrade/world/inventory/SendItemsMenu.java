@@ -7,12 +7,10 @@ import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.util.Mth;
-import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -28,22 +26,27 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 public class SendItemsMenu extends AbstractContainerMenu {
 
     public static final int MAX_DOUBLOONS = 64;
-    public static final int CARGO_SLOT_COUNT = 18;
+    public static final int MAX_CARGO_SLOTS = 54;
+    public static final int SLOTS_PER_PAGE = 18;
 
     private final ContainerLevelAccess access;
     private final BlockPos currentPos;
     private final Player player;
     private final SimpleContainer travelContainer = new SimpleContainer(2);
-    private final SimpleContainer cargoContainer = new SimpleContainer(CARGO_SLOT_COUNT);
+    private final SimpleContainer cargoContainer = new SimpleContainer(MAX_CARGO_SLOTS);
     private final ContainerData data;
+
+    private int currentDisplayPage = 0;
 
     public SendItemsMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, createClientContainerData());
     }
 
     private static ContainerData createClientContainerData() {
-        SimpleContainerData clientData = new SimpleContainerData(2);
+        SimpleContainerData clientData = new SimpleContainerData(3);
+        clientData.set(0, 0); // cooldown
         clientData.set(1, AnchorPointBlockEntity.HarborStatus.VALID.ordinal());
+        clientData.set(2, 18); // default cargo slot count
         return clientData;
     }
 
@@ -82,11 +85,27 @@ public class SendItemsMenu extends AbstractContainerMenu {
             }
         });
 
-        // Cargo slots: 18 slots (2 rows x 9 columns) starting at x=18, y=70
-        for (int row = 0; row < 2; ++row) {
-            for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(this.cargoContainer, col + row * 9, 18 + col * 18, 70 + row * 18));
-            }
+        // Cargo slots: Always add all 54 slots (3 pages of 18) to ensure client and server
+        // slot counts match (total 92 slots). On client, only current page slots are active.
+        for (int i = 0; i < MAX_CARGO_SLOTS; ++i) {
+            final int slotIndex = i;
+            final int page = i / SLOTS_PER_PAGE;
+            int pageSlot = i % SLOTS_PER_PAGE;
+            int row = pageSlot / 9;
+            int col = pageSlot % 9;
+
+            this.addSlot(new Slot(this.cargoContainer, i, 18 + col * 18, 70 + row * 18) {
+                @Override
+                public boolean isActive() {
+                    if (slotIndex >= getCargoSlotCount()) {
+                        return false;
+                    }
+                    if (SendItemsMenu.this.player != null && SendItemsMenu.this.player.level().isClientSide()) {
+                        return page == SendItemsMenu.this.currentDisplayPage;
+                    }
+                    return true;
+                }
+            });
         }
 
         // Player Inventory (3 rows x 9 columns at x=18, y=147)
@@ -111,11 +130,9 @@ public class SendItemsMenu extends AbstractContainerMenu {
                 return access.evaluate((level, blockPos) -> {
                     BlockEntity be = level.getBlockEntity(blockPos);
                     if (be instanceof AnchorPointBlockEntity anchor) {
-                        if (index == 0) {
-                            return anchor.getRemainingCooldownSeconds();
-                        } else if (index == 1) {
-                            return anchor.getHarborStatus().ordinal();
-                        }
+                        if (index == 0) return anchor.getRemainingCooldownSeconds();
+                        if (index == 1) return anchor.getHarborStatus().ordinal();
+                        if (index == 2) return anchor.getCargoSlotCount();
                     }
                     return 0;
                 }).orElse(0);
@@ -127,9 +144,41 @@ public class SendItemsMenu extends AbstractContainerMenu {
 
             @Override
             public int getCount() {
-                return 2;
+                return 3;
             }
         };
+    }
+
+    public int getCargoSlotCount() {
+        if (this.data != null && this.data.getCount() > 2) {
+            int val = this.data.get(2);
+            if (val >= 18 && val <= MAX_CARGO_SLOTS) return val;
+        }
+        return 18;
+    }
+
+    public int getCurrentPage() {
+        return this.currentDisplayPage;
+    }
+
+    public int getMaxPages() {
+        return Math.max(1, (int) Math.ceil((double) getCargoSlotCount() / SLOTS_PER_PAGE));
+    }
+
+    public void setPage(int page) {
+        this.currentDisplayPage = Math.max(0, Math.min(getMaxPages() - 1, page));
+    }
+
+    public void nextPage() {
+        if (this.currentDisplayPage < getMaxPages() - 1) {
+            this.currentDisplayPage++;
+        }
+    }
+
+    public void prevPage() {
+        if (this.currentDisplayPage > 0) {
+            this.currentDisplayPage--;
+        }
     }
 
     public int getCooldownSeconds() {
@@ -142,45 +191,21 @@ public class SendItemsMenu extends AbstractContainerMenu {
         if (ordinal >= 0 && ordinal < values.length) {
             return values[ordinal];
         }
-        return AnchorPointBlockEntity.HarborStatus.VALID;
+        return AnchorPointBlockEntity.HarborStatus.NO_WATER;
     }
 
-    public boolean isNearWater() {
-        return getHarborStatus() == AnchorPointBlockEntity.HarborStatus.VALID;
-    }
-
-    @Override
-    public void slotsChanged(Container container) {
-        super.slotsChanged(container);
-        this.broadcastChanges();
+    public BlockPos getCurrentPos() {
+        return currentPos;
     }
 
     public BlockPos getOriginPos() {
         if (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO)) {
-            if (this.player != null && this.player.level() != null) {
-                if (this.player.level().getBlockEntity(this.currentPos) instanceof AnchorPointBlockEntity) {
-                    return this.currentPos;
-                }
-            } else {
-                return this.currentPos;
-            }
+            return this.currentPos;
         }
         if (this.player != null) {
-            if (this.player.level() != null) {
-                BlockPos pPos = this.player.blockPosition();
-                for (BlockPos check : BlockPos.betweenClosed(pPos.offset(-5, -3, -5), pPos.offset(5, 3, 5))) {
-                    if (this.player.level().getBlockEntity(check) instanceof AnchorPointBlockEntity) {
-                        return check.immutable();
-                    }
-                }
-            }
             return this.player.blockPosition();
         }
         return BlockPos.ZERO;
-    }
-
-    public BlockPos getCurrentPos() {
-        return getOriginPos();
     }
 
     public ItemStack getChartStack() {
@@ -236,7 +261,7 @@ public class SendItemsMenu extends AbstractContainerMenu {
     }
 
     public boolean hasCargo() {
-        for (int i = 0; i < CARGO_SLOT_COUNT; i++) {
+        for (int i = 0; i < getCargoSlotCount(); i++) {
             if (!this.cargoContainer.getItem(i).isEmpty()) {
                 return true;
             }
@@ -246,73 +271,37 @@ public class SendItemsMenu extends AbstractContainerMenu {
 
     public int getCargoItemCount() {
         int count = 0;
-        for (int i = 0; i < CARGO_SLOT_COUNT; i++) {
+        for (int i = 0; i < getCargoSlotCount(); i++) {
             ItemStack stack = this.cargoContainer.getItem(i);
-            if (!stack.isEmpty()) {
-                count += stack.getCount();
-            }
+            if (!stack.isEmpty()) count += stack.getCount();
         }
         return count;
     }
 
     public boolean canSendCargo() {
         return getHarborStatus() == AnchorPointBlockEntity.HarborStatus.VALID
-                && getCooldownSeconds() == 0
-                && !isTooExpensive()
+                && getCooldownSeconds() <= 0
                 && hasValidChart()
                 && hasEnoughDoubloons()
+                && !isTooExpensive()
                 && hasCargo();
     }
 
     public boolean executeSendCargo(ServerPlayer player) {
-        if (!canSendCargo()) {
-            player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_failed"), true);
-            return false;
-        }
+        if (!canSendCargo()) return false;
+
+        Level rawLevel = player.level();
+        if (!(rawLevel instanceof ServerLevel level)) return false;
 
         ItemStack chart = getChartStack();
         BlockPos target = NauticalChartItem.getTargetPos(chart);
         String destHarbor = NauticalChartItem.getTargetHarbor(chart);
-        if (target == null) return false;
-
-        // Deduct shipping fee
-        int requiredFee = getRequiredFee();
-        ItemStack doubloons = getDoubloonStack();
-        doubloons.shrink(requiredFee);
-        this.travelContainer.setItem(1, doubloons);
-
-        // Find initial launch position on local water surface
+        int fee = getRequiredFee();
         BlockPos origin = getOriginPos();
-        Level level = player.level();
-        BlockPos waterStart = null;
-        for (BlockPos check : BlockPos.betweenClosed(origin.offset(-4, -3, -4), centerOffset(origin, 4, 1, 4))) {
-            if (level.getFluidState(check).is(FluidTags.WATER)) {
-                waterStart = check.immutable();
-                break;
-            }
-        }
-        if (waterStart == null) {
-            waterStart = origin;
-        }
 
-        int topWaterY = waterStart.getY();
-        while (topWaterY < level.getMaxBuildHeight() && level.getFluidState(new BlockPos(waterStart.getX(), topWaterY + 1, waterStart.getZ())).is(FluidTags.WATER)) {
-            topWaterY++;
-        }
+        this.travelContainer.removeItem(1, fee);
 
-        double spawnX = waterStart.getX() + 0.5;
-        double spawnY = topWaterY + 0.85;
-        double spawnZ = waterStart.getZ() + 0.5;
-
-        double dx = (target.getX() + 0.5) - spawnX;
-        double dz = (target.getZ() + 0.5) - spawnZ;
-        float initialYaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
-
-        // Initialize and load autonomous freight entity
-        CargoBoatEntity cargoBoat = new CargoBoatEntity(level, spawnX, spawnY, spawnZ);
-        cargoBoat.setYRot(initialYaw);
-        cargoBoat.setYHeadRot(initialYaw);
-        cargoBoat.yRotO = initialYaw;
+        CargoBoatEntity cargoBoat = new CargoBoatEntity(level, origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() + 0.5);
         cargoBoat.setVoyageTarget(target, destHarbor);
         cargoBoat.setSender(this.player);
 
@@ -326,7 +315,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
         cargoBoat.setCustomNameVisible(true);
 
         int totalItems = 0;
-        for (int i = 0; i < CARGO_SLOT_COUNT; i++) {
+        int activeSlots = getCargoSlotCount();
+        for (int i = 0; i < activeSlots; i++) {
             ItemStack stack = this.cargoContainer.getItem(i);
             if (!stack.isEmpty()) {
                 cargoBoat.setItem(i, stack.copy());
@@ -344,10 +334,6 @@ public class SendItemsMenu extends AbstractContainerMenu {
         player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_departed", destHarbor, totalItems), false);
 
         return true;
-    }
-
-    private static BlockPos centerOffset(BlockPos pos, int x, int y, int z) {
-        return pos.offset(x, y, z);
     }
 
     @Override
@@ -373,17 +359,17 @@ public class SendItemsMenu extends AbstractContainerMenu {
             // Total slots breakdown:
             // 0: Chart
             // 1: Doubloon
-            // 2..19: Cargo (18 slots)
-            // 20..46: Player main inventory (27 slots)
-            // 47..55: Player hotbar (9 slots)
+            // 2..55: Cargo (54 slots)
+            // 56..82: Player main inventory (27 slots)
+            // 83..91: Player hotbar (9 slots)
             if (index == 0 || index == 1) {
                 // Move from chart/doubloon to player inventory
-                if (!this.moveItemStackTo(currentStack, 20, 56, true)) {
+                if (!this.moveItemStackTo(currentStack, 56, 92, true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (index >= 2 && index < 20) {
+            } else if (index >= 2 && index < 56) {
                 // Move from cargo slots to player inventory
-                if (!this.moveItemStackTo(currentStack, 20, 56, true)) {
+                if (!this.moveItemStackTo(currentStack, 56, 92, true)) {
                     return ItemStack.EMPTY;
                 }
             } else {
@@ -397,13 +383,14 @@ public class SendItemsMenu extends AbstractContainerMenu {
                         return ItemStack.EMPTY;
                     }
                 } else {
-                    // Try to move into cargo hold
-                    if (!this.moveItemStackTo(currentStack, 2, 20, false)) {
-                        if (index < 47) {
-                            if (!this.moveItemStackTo(currentStack, 47, 56, false)) {
+                    // Try to move into cargo hold (only active slots)
+                    int activeCargoEnd = 2 + getCargoSlotCount();
+                    if (!this.moveItemStackTo(currentStack, 2, activeCargoEnd, false)) {
+                        if (index < 83) {
+                            if (!this.moveItemStackTo(currentStack, 83, 92, false)) {
                                 return ItemStack.EMPTY;
                             }
-                        } else if (!this.moveItemStackTo(currentStack, 20, 47, false)) {
+                        } else if (!this.moveItemStackTo(currentStack, 56, 83, false)) {
                             return ItemStack.EMPTY;
                         }
                     }

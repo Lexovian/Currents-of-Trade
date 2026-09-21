@@ -186,7 +186,7 @@ public class CurrentsofTrade {
 
     // --- Menu Types ---
     public static final DeferredHolder<MenuType<?>, MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
-            MENUS.register("anchor_point", () -> new MenuType<>(AnchorPointMenu::new, FeatureFlags.DEFAULT_FLAGS));
+            MENUS.register("anchor_point", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(AnchorPointMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<TravelMenu>> TRAVEL_MENU =
             MENUS.register("travel", () -> new MenuType<>(TravelMenu::new, FeatureFlags.DEFAULT_FLAGS));

@@ -188,10 +188,18 @@ public class ModPayloads {
                     }
 
                     final BlockPos finalPos = targetPos;
+                    int harborLevel = 1;
+                    if (player.level().getBlockEntity(finalPos) instanceof AnchorPointBlockEntity anchor) {
+                        harborLevel = anchor.getTradeLevel();
+                    }
+                    final int finalLevel = harborLevel;
                     player.openMenu(new SimpleMenuProvider(
                             (id, inv, p) -> new AnchorPointMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
                             Component.translatable("gui.currents_of_trade.anchor_point")
-                    ));
+                    ), buf -> {
+                        buf.writeBlockPos(finalPos);
+                        buf.writeVarInt(finalLevel);
+                    });
                     player.inventoryMenu.broadcastChanges();
                 }
             });
@@ -378,6 +386,67 @@ public class ModPayloads {
         }
     }
 
+    // --- Upgrade Harbor ---
+
+    public record UpgradeHarborPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<UpgradeHarborPayload> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "upgrade_harbor"));
+        public static final StreamCodec<ByteBuf, UpgradeHarborPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, UpgradeHarborPayload::pos, UpgradeHarborPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    Level level = player.level();
+                    if (level.getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        if (anchor.getTradeLevel() >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
+                            player.displayClientMessage(
+                                    Component.translatable("message.currents_of_trade.harbor_max_level"), true);
+                            return;
+                        }
+                        if (!anchor.canUpgrade(player)) {
+                            player.displayClientMessage(
+                                    Component.translatable("message.currents_of_trade.harbor_cannot_afford"), true);
+                            return;
+                        }
+                        anchor.executeUpgrade(player);
+                        int newLevel = anchor.getTradeLevel();
+                        String levelName = anchor.getHarborLevelName();
+                        player.displayClientMessage(
+                                Component.translatable("message.currents_of_trade.harbor_upgraded",
+                                        newLevel, levelName), true);
+                        level.playSound(null, targetPos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.9F, 1.2F);
+                        level.playSound(null, targetPos, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.6F, 1.4F);
+
+                        if (newLevel >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
+                            final BlockPos finalTargetPos = targetPos;
+                            final int finalLevel = newLevel;
+                            player.openMenu(new SimpleMenuProvider(
+                                    (id, inv, p) -> new AnchorPointMenu(id, inv, ContainerLevelAccess.create(level, finalTargetPos), finalTargetPos),
+                                    Component.translatable("gui.currents_of_trade.anchor_point")
+                            ), buf -> {
+                                buf.writeBlockPos(finalTargetPos);
+                                buf.writeVarInt(finalLevel);
+                            });
+                        } else {
+                            player.containerMenu.broadcastChanges();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     // --- Payload registration ---
 
     @EventBusSubscriber(modid = CurrentsofTrade.MODID)
@@ -396,6 +465,7 @@ public class ModPayloads {
             registrar.playToServer(SelectTradeIndexPayload.TYPE,    SelectTradeIndexPayload.STREAM_CODEC,    SelectTradeIndexPayload::handle);
             registrar.playToServer(ResetTradeOrderPayload.TYPE,     ResetTradeOrderPayload.STREAM_CODEC,     ResetTradeOrderPayload::handle);
             registrar.playToServer(RenameHarborPayload.TYPE,        RenameHarborPayload.STREAM_CODEC,        RenameHarborPayload::handle);
+            registrar.playToServer(UpgradeHarborPayload.TYPE,       UpgradeHarborPayload.STREAM_CODEC,       UpgradeHarborPayload::handle);
         }
     }
 }
