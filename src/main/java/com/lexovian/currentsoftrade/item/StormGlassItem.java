@@ -19,6 +19,8 @@ public class StormGlassItem extends Item {
         super(properties.stacksTo(1));
     }
 
+    // --- Interaction ---
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -46,6 +48,8 @@ public class StormGlassItem extends Item {
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
+
+    // --- Tooltip ---
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {

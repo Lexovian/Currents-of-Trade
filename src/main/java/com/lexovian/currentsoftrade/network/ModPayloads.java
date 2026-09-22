@@ -27,10 +27,8 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class ModPayloads {
 
-    /**
-     * Resolves the real AnchorPointBlock position near the player.
-     * Avoids (0,0,0) or player-foot coordinates that the client can accidentally send.
-     */
+    // --- Helper Methods ---
+
     public static BlockPos findAnchorPointNear(ServerPlayer player, BlockPos preferredPos) {
         Level level = player.level();
         if (preferredPos != null && !preferredPos.equals(BlockPos.ZERO)) {

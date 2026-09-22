@@ -26,6 +26,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 public class SendItemsMenu extends AbstractContainerMenu {
 
+    // --- Constants ---
+
     public static final int MAX_DOUBLOONS = 64;
     public static final int MAX_CARGO_SLOTS = 54;
     public static final int SLOTS_PER_PAGE = 18;
@@ -38,6 +40,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
     private final ContainerData data;
 
     private int currentDisplayPage = 0;
+
+    // --- Constructors & Setup ---
 
     public SendItemsMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, createClientContainerData());
@@ -150,6 +154,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
         };
     }
 
+    // --- Pagination & Cargo Hold ---
+
     public int getCargoSlotCount() {
         if (this.data != null && this.data.getCount() > 2) {
             int val = this.data.get(2);
@@ -217,6 +223,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
         return this.travelContainer.getItem(1);
     }
 
+    // --- Voyage & Fee Calculation ---
+
     public int getDistance() {
         ItemStack chart = getChartStack();
         if (chart.getItem() instanceof NauticalChartItem) {
@@ -279,6 +287,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
         return count;
     }
 
+    // --- Cargo Dispatch ---
+
     public boolean canSendCargo() {
         return getHarborStatus() == AnchorPointBlockEntity.HarborStatus.VALID
                 && getCooldownSeconds() <= 0
@@ -336,6 +346,8 @@ public class SendItemsMenu extends AbstractContainerMenu {
 
         return true;
     }
+
+    // --- Container Operations ---
 
     @Override
     public void removed(Player player) {

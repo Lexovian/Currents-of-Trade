@@ -22,6 +22,8 @@ public class HarborSavedData extends SavedData {
     private final Map<BlockPos, String> harborNamesMap = new HashMap<>();
     private final Map<BlockPos, Integer> harborLevelsMap = new HashMap<>();
 
+    // --- Persistence & Access ---
+
     public HarborSavedData() {
     }
 
@@ -32,6 +34,8 @@ public class HarborSavedData extends SavedData {
                 DATA_NAME
         );
     }
+
+    // --- Harbor Data Accessors ---
 
     public List<HarborTradeOffer> getTrades(BlockPos pos) {
         return harborTradesMap.getOrDefault(pos, List.of());
@@ -78,6 +82,8 @@ public class HarborSavedData extends SavedData {
         if (changed) setDirty();
     }
 
+    // --- NBT Serialization ---
+
     public static HarborSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         HarborSavedData data = new HarborSavedData();
         ListTag harborsList = tag.getList("Harbors", Tag.TAG_COMPOUND);
@@ -105,7 +111,6 @@ public class HarborSavedData extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag harborsList = new ListTag();
-        // Collect all known harbor positions from both trades and names
         Set<BlockPos> allPositions = new HashSet<>();
         allPositions.addAll(harborTradesMap.keySet());
         allPositions.addAll(harborNamesMap.keySet());

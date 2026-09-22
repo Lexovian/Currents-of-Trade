@@ -16,6 +16,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
 
+    // --- Constants & Widgets ---
+
     private static final ResourceLocation GUI_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
 
@@ -23,6 +25,8 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
     private Button backButton;
     private Button prevPageBtn;
     private Button nextPageBtn;
+
+    // --- Initialization ---
 
     public SendItemsScreen(SendItemsMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -38,7 +42,6 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
     protected void init() {
         super.init();
 
-        // Back button to return to Anchor Point main menu
         this.backButton = Button.builder(Component.translatable("gui.currents_of_trade.back"), b -> {
             PacketDistributor.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
         }).bounds(this.leftPos + 7, this.topPos + 6, 36, 15).build();
@@ -51,7 +54,6 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
             PacketDistributor.sendToServer(new ModPayloads.ExecuteSendCargoPayload(this.menu.getCurrentPos()));
         }).bounds(sendBtnX, this.topPos + 109, sendBtnWidth, sendBtnHeight).build();
 
-        // Paging buttons for cargo hold (when harbor has > 18 slots)
         this.prevPageBtn = Button.builder(Component.literal("◀"), b -> {
             this.menu.prevPage();
         }).bounds(this.leftPos + 144, this.topPos + 54, 16, 12).build();
@@ -65,6 +67,8 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         this.addRenderableWidget(this.prevPageBtn);
         this.addRenderableWidget(this.nextPageBtn);
     }
+
+    // --- State & Paging Updates ---
 
     @Override
     protected void containerTick() {
@@ -98,6 +102,8 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
             this.nextPageBtn.active = this.menu.getCurrentPage() < maxPages - 1;
         }
     }
+
+    // --- Rendering ---
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {

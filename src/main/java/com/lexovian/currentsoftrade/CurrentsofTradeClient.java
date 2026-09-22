@@ -6,6 +6,10 @@ import com.lexovian.currentsoftrade.client.gui.SendItemsScreen;
 import com.lexovian.currentsoftrade.client.gui.TravelScreen;
 import com.lexovian.currentsoftrade.client.model.SloopModel;
 import com.lexovian.currentsoftrade.client.renderer.SloopRenderer;
+import net.minecraft.client.renderer.entity.WanderingTraderRenderer;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -17,24 +21,26 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
-// This class is only loaded on the client -- server-side code must never be called from here.
 @Mod(value = CurrentsofTrade.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = CurrentsofTrade.MODID, value = Dist.CLIENT)
 public class CurrentsofTradeClient {
 
+    // --- Config Screen ---
+
     public CurrentsofTradeClient(ModContainer container) {
-        // Enables the mod's config screen via Mods -> Currents of Trade -> Config.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
+
+    // --- Client Setup & Predicates ---
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            net.minecraft.client.renderer.item.ItemProperties.register(
+            ItemProperties.register(
                     CurrentsofTrade.STORM_GLASS.get(),
-                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "weather"),
+                    ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "weather"),
                     (stack, level, entity, seed) -> {
-                        net.minecraft.world.level.Level world = level;
+                        Level world = level;
                         if (world == null && entity != null) {
                             world = entity.level();
                         }
@@ -48,6 +54,8 @@ public class CurrentsofTradeClient {
         CurrentsofTrade.LOGGER.info("Currents of Trade client setup completed.");
     }
 
+    // --- Screen Registration ---
+
     @SubscribeEvent
     static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(CurrentsofTrade.ANCHOR_POINT_MENU.get(), AnchorPointScreen::new);
@@ -55,6 +63,8 @@ public class CurrentsofTradeClient {
         event.register(CurrentsofTrade.SEND_ITEMS_MENU.get(), SendItemsScreen::new);
         event.register(CurrentsofTrade.REQUEST_TRADE_MENU.get(), RequestTradeScreen::new);
     }
+
+    // --- Entity & Layer Renderers ---
 
     @SubscribeEvent
     static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
@@ -66,6 +76,6 @@ public class CurrentsofTradeClient {
         event.registerEntityRenderer(CurrentsofTrade.SLOOP.get(), SloopRenderer::new);
         event.registerEntityRenderer(CurrentsofTrade.TRADE_BOAT.get(), SloopRenderer::new);
         event.registerEntityRenderer(CurrentsofTrade.CARGO_BOAT.get(), SloopRenderer::new);
-        event.registerEntityRenderer(CurrentsofTrade.WANDERING_SAILOR.get(), net.minecraft.client.renderer.entity.WanderingTraderRenderer::new);
+        event.registerEntityRenderer(CurrentsofTrade.WANDERING_SAILOR.get(), WanderingTraderRenderer::new);
     }
 }

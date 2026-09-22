@@ -4,12 +4,22 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
@@ -25,20 +35,24 @@ public class AnchorPointBlock extends Block implements EntityBlock {
         super(properties);
     }
 
+    // --- Block Entity Lifecycle ---
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new AnchorPointBlockEntity(pos, state);
     }
 
+    // --- Placement & Setup ---
+
     @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable net.minecraft.world.entity.LivingEntity placer, net.minecraft.world.item.ItemStack stack) {
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (!level.isClientSide && placer instanceof Player player) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof AnchorPointBlockEntity anchor) {
                 try {
-                    if (stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+                    if (stack.has(DataComponents.CUSTOM_NAME)) {
                         anchor.setHarborName(stack.getHoverName().getString());
                     } else {
                         anchor.setHarborName(AnchorPointBlockEntity.generateDynamicHarborName(level, pos));
@@ -64,9 +78,11 @@ public class AnchorPointBlock extends Block implements EntityBlock {
         }
     }
 
+    // --- Interaction ---
+
     @Override
-    protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hitResult) {
-        if (stack.is(net.minecraft.world.item.Items.NAME_TAG) && stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (stack.is(Items.NAME_TAG) && stack.has(DataComponents.CUSTOM_NAME)) {
             if (!level.isClientSide) {
                 BlockEntity be = level.getBlockEntity(pos);
                 if (be instanceof AnchorPointBlockEntity anchor) {
@@ -75,11 +91,11 @@ public class AnchorPointBlock extends Block implements EntityBlock {
                     if (!player.getAbilities().instabuild) {
                         stack.shrink(1);
                     }
-                    level.playSound(null, pos, net.minecraft.sounds.SoundEvents.ANVIL_USE, net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.2F);
+                    level.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.8F, 1.2F);
                     player.displayClientMessage(Component.translatable("message.currents_of_trade.harbor_renamed", newName), true);
                 }
             }
-            return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
     }
@@ -103,8 +119,10 @@ public class AnchorPointBlock extends Block implements EntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    // --- Visual & Ambient Effects ---
+
     @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (!level.isClientSide) return;
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof AnchorPointBlockEntity anchor)) return;
@@ -117,23 +135,23 @@ public class AnchorPointBlock extends Block implements EntityBlock {
         double z = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
 
         if (lvl == 2 && random.nextFloat() < 0.25F) {
-            level.addParticle(net.minecraft.core.particles.ParticleTypes.SPLASH, x, y, z, 0.0, 0.04, 0.0);
+            level.addParticle(ParticleTypes.SPLASH, x, y, z, 0.0, 0.04, 0.0);
         } else if (lvl == 3 && random.nextFloat() < 0.35F) {
-            level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+            level.addParticle(ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
         } else if (lvl == 4 && random.nextFloat() < 0.40F) {
             if (random.nextBoolean()) {
-                level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+                level.addParticle(ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
             } else {
-                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+                level.addParticle(ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
             }
         } else if (lvl >= 5 && random.nextFloat() < 0.50F) {
             float r = random.nextFloat();
             if (r < 0.4F) {
-                level.addParticle(net.minecraft.core.particles.ParticleTypes.WAX_ON, x, y + 0.15, z, 0.0, 0.03, 0.0);
+                level.addParticle(ParticleTypes.WAX_ON, x, y + 0.15, z, 0.0, 0.03, 0.0);
             } else if (r < 0.75F) {
-                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+                level.addParticle(ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
             } else {
-                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW_SQUID_INK, x, y + 0.1, z, 0.0, 0.01, 0.0);
+                level.addParticle(ParticleTypes.GLOW_SQUID_INK, x, y + 0.1, z, 0.0, 0.01, 0.0);
             }
         }
     }

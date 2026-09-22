@@ -29,6 +29,8 @@ import java.util.List;
 
 public class RouteJournalItem extends Item {
 
+    // --- Constants & Records ---
+
     public static final int MAX_ROUTES = 10;
     public static final String TAG_ROUTES = "Routes";
     public static final String TAG_SELECTED_INDEX = "SelectedIndex";
@@ -38,6 +40,8 @@ public class RouteJournalItem extends Item {
     public RouteJournalItem(Properties properties) {
         super(properties.stacksTo(1));
     }
+
+    // --- Interaction ---
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
@@ -72,7 +76,6 @@ public class RouteJournalItem extends Item {
                 ItemStack stack = context.getItemInHand();
                 List<RouteEntry> routes = getRoutes(stack);
 
-                // Check duplicate
                 for (RouteEntry entry : routes) {
                     if (entry.pos().equals(pos)) {
                         if (player != null) {
@@ -89,7 +92,6 @@ public class RouteJournalItem extends Item {
                     return InteractionResult.FAIL;
                 }
 
-                // Add new entry
                 addRoute(stack, new RouteEntry(harborName, pos, anchor.getTradeLevel()));
 
                 level.playSound(null, pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -142,6 +144,8 @@ public class RouteJournalItem extends Item {
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
+    // --- Tooltip ---
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
         List<RouteEntry> routes = getRoutes(stack);
@@ -160,7 +164,7 @@ public class RouteJournalItem extends Item {
         super.appendHoverText(stack, context, tooltip, tooltipFlag);
     }
 
-    // --- Static Helpers for Menus and Data ---
+    // --- NBT & Data Helpers ---
 
     public static List<RouteEntry> getRoutes(ItemStack stack) {
         List<RouteEntry> result = new ArrayList<>();

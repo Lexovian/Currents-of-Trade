@@ -4,6 +4,7 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -20,7 +21,9 @@ public class AnchorPointMenu extends AbstractContainerMenu {
     private final Player player;
     private final ContainerData data;
 
-    public AnchorPointMenu(int containerId, Inventory playerInventory, net.minecraft.network.RegistryFriendlyByteBuf buf) {
+    // --- Constructors & Factory ---
+
+    public AnchorPointMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
         this(containerId, playerInventory, buf.readBlockPos(), buf.readVarInt());
     }
 
@@ -85,20 +88,22 @@ public class AnchorPointMenu extends AbstractContainerMenu {
         int invStartY = isMax ? 129 : 157;
         int hotbarY = isMax ? 189 : 217;
 
-        // Player Inventory (3 rows x 9 columns at x=18)
+        // Player Inventory
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 18 + col * 18, invStartY + row * 18));
             }
         }
 
-        // Player Hotbar (9 slots at x=18)
+        // Player Hotbar
         for (int col = 0; col < 9; ++col) {
             this.addSlot(new Slot(playerInventory, col, 18 + col * 18, hotbarY));
         }
 
         this.addDataSlots(data);
     }
+
+    // --- Harbor Data & Upgrades ---
 
     public BlockPos getBlockPos() {
         if (this.pos != null && !this.pos.equals(BlockPos.ZERO)) {
@@ -113,17 +118,12 @@ public class AnchorPointMenu extends AbstractContainerMenu {
         return BlockPos.ZERO;
     }
 
-    /**
-     * Finds the AnchorPointBlockEntity associated with this menu.
-     * First tries the stored pos, then falls back to searching near the player.
-     */
     private AnchorPointBlockEntity findAnchorBE() {
         if (this.player == null || this.player.level() == null) return null;
         BlockPos p = getBlockPos();
         var level = this.player.level();
-        // Direct lookup first
         if (level.getBlockEntity(p) instanceof AnchorPointBlockEntity a) return a;
-        // Fallback: scan nearby blocks
+
         BlockPos pPos = this.player.blockPosition();
         for (BlockPos check : BlockPos.betweenClosed(pPos.offset(-5, -3, -5), pPos.offset(5, 3, 5))) {
             if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity a)
@@ -157,7 +157,7 @@ public class AnchorPointMenu extends AbstractContainerMenu {
         return cost != null && this.player != null && cost.canAfford(this.player);
     }
 
-    @Override
+    // --- Container Operations ---
     public ItemStack quickMoveStack(Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);

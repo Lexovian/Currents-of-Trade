@@ -24,26 +24,24 @@ import java.util.List;
  */
 public enum HarborUpgradeCost {
 
-    /** Upgrade from Level 1 → Level 2 */
+    // --- Tier Definitions ---
+
     LEVEL_2(8,
             List.of(
                     new ItemStack(Items.OAK_PLANKS, 16)
             )),
 
-    /** Upgrade from Level 2 → Level 3 */
     LEVEL_3(20,
             List.of(
                     new ItemStack(Items.IRON_INGOT, 8)
             )),
 
-    /** Upgrade from Level 3 → Level 4 */
     LEVEL_4(40,
             List.of(
                     new ItemStack(Items.GOLD_INGOT, 4),
                     new ItemStack(CurrentsofTrade.SILK_BALE.get(), 2)
             )),
 
-    /** Upgrade from Level 4 → Level 5 */
     LEVEL_5(64,
             List.of(
                     new ItemStack(Items.HEART_OF_THE_SEA, 1),
@@ -58,14 +56,15 @@ public enum HarborUpgradeCost {
         this.materialCost = materialCost;
     }
 
-    /** Returns the upgrade cost entry for advancing from the given level to the next. */
+    // --- Cost Resolution ---
+
     public static HarborUpgradeCost forLevel(int currentLevel) {
         return switch (currentLevel) {
             case 1 -> LEVEL_2;
             case 2 -> LEVEL_3;
             case 3 -> LEVEL_4;
             case 4 -> LEVEL_5;
-            default -> null; // Level 5 is max, no upgrade available
+            default -> null;
         };
     }
 
@@ -77,10 +76,6 @@ public enum HarborUpgradeCost {
         return materialCost;
     }
 
-    /**
-     * Returns a human-readable summary of the upgrade cost,
-     * e.g. "8 Doubloons + 16 Oak Planks".
-     */
     public List<String> getCostLines() {
         List<String> lines = new ArrayList<>();
         lines.add("§6" + doubloonCost + " Doubloon" + (doubloonCost != 1 ? "s" : ""));
@@ -90,9 +85,8 @@ public enum HarborUpgradeCost {
         return lines;
     }
 
-    /**
-     * Returns true if the player has enough Doubloons and all required materials.
-     */
+    // --- Inventory Operations ---
+
     public boolean canAfford(Player player) {
         int doubloons = countItem(player, CurrentsofTrade.DOUBLOON.get());
         if (doubloons < doubloonCost) return false;
@@ -102,10 +96,6 @@ public enum HarborUpgradeCost {
         return true;
     }
 
-    /**
-     * Consumes Doubloons and all required materials from the player's inventory.
-     * Caller MUST check {@link #canAfford(Player)} before calling this.
-     */
     public void consume(Player player) {
         shrinkItem(player, CurrentsofTrade.DOUBLOON.get(), doubloonCost);
         for (ItemStack required : materialCost) {
@@ -113,7 +103,7 @@ public enum HarborUpgradeCost {
         }
     }
 
-    // ---- helpers ----
+    // --- Helper Methods ---
 
     private static int countItem(Player player, net.minecraft.world.item.Item item) {
         int count = 0;
