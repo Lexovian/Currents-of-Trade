@@ -2,5 +2,19 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "currents_of_trade:item/storm_glass"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "currents_of_trade:weather": 1.0
+      },
+      "model": "currents_of_trade:item/storm_glass_rain"
+    },
+    {
+      "predicate": {
+        "currents_of_trade:weather": 2.0
+      },
+      "model": "currents_of_trade:item/storm_glass_thunder"
+    }
+  ]
 }

@@ -29,6 +29,22 @@ public class CurrentsofTradeClient {
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            net.minecraft.client.renderer.item.ItemProperties.register(
+                    CurrentsofTrade.STORM_GLASS.get(),
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "weather"),
+                    (stack, level, entity, seed) -> {
+                        net.minecraft.world.level.Level world = level;
+                        if (world == null && entity != null) {
+                            world = entity.level();
+                        }
+                        if (world == null) return 0.0F;
+                        if (world.isThundering()) return 2.0F;
+                        if (world.isRaining()) return 1.0F;
+                        return 0.0F;
+                    }
+            );
+        });
         CurrentsofTrade.LOGGER.info("Currents of Trade client setup completed.");
     }
 

@@ -8,6 +8,7 @@ import com.lexovian.currentsoftrade.entity.SloopEntity;
 import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.item.SloopItem;
 import com.lexovian.currentsoftrade.item.TradeLedgerItem;
 import com.lexovian.currentsoftrade.item.SpiceSackItem;
@@ -111,6 +112,9 @@ public class CurrentsofTrade {
     // --- Core Navigation & Vessels ---
     public static final DeferredItem<NauticalChartItem> NAUTICAL_CHART =
             ITEMS.registerItem("nautical_chart", NauticalChartItem::new, new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<RouteJournalItem> ROUTE_JOURNAL =
+            ITEMS.registerItem("route_journal", RouteJournalItem::new, new Item.Properties().stacksTo(1));
 
     public static final DeferredItem<DoubloonItem> DOUBLOON =
             ITEMS.registerItem("doubloon", DoubloonItem::new, new Item.Properties().stacksTo(64));
@@ -259,6 +263,7 @@ public class CurrentsofTrade {
                             .displayItems((parameters, output) -> {
                                 output.accept(ANCHOR_POINT_ITEM.get());
                                 output.accept(NAUTICAL_CHART.get());
+                                output.accept(ROUTE_JOURNAL.get());
                                 output.accept(DOUBLOON.get());
                                 output.accept(SILK_BALE.get());
                                 output.accept(TEA_BRICK.get());
@@ -316,6 +321,7 @@ public class CurrentsofTrade {
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(NAUTICAL_CHART);
+            event.accept(ROUTE_JOURNAL);
             event.accept(BRASS_ASTROLABE);
             event.accept(STORM_GLASS);
             event.accept(CAPTAINS_PIPE);

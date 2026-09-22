@@ -222,6 +222,16 @@ public class SloopEntity extends Boat {
             }
         }
 
+        // 4. Storm dynamic sea spray & wave effects:
+        if (this.level().isClientSide && this.level().isThundering() && this.getDeltaMovement().horizontalDistanceSqr() > 0.005) {
+            double sprayX = prowX + (this.random.nextDouble() - 0.5) * 1.2;
+            double sprayZ = prowZ + (this.random.nextDouble() - 0.5) * 1.2;
+            this.level().addParticle(net.minecraft.core.particles.ParticleTypes.SPLASH, sprayX, this.getY() + 0.3, sprayZ, 0.0, 0.15, 0.0);
+            if (this.random.nextFloat() < 0.3F) {
+                this.level().addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE, sprayX, this.getY() + 0.1, sprayZ, 0.0, 0.05, 0.0);
+            }
+        }
+
         // Keep center bounding box synchronized
         this.setBoundingBox(this.makeBoundingBox());
     }

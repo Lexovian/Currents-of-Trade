@@ -747,12 +747,14 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             this.move(MoverType.SELF, this.getDeltaMovement());
 
             if (this.level() instanceof ServerLevel serverLevel) {
+                int splashCount = this.level().isThundering() ? 14 : 5;
+                int bubbleCount = this.level().isThundering() ? 8 : 3;
                 serverLevel.sendParticles(ParticleTypes.SPLASH,
                         this.getX() - normX * 0.8, this.getY() + 0.1, this.getZ() - normZ * 0.8,
-                        5, 0.3, 0.1, 0.3, 0.05);
+                        splashCount, 0.4, 0.2, 0.4, 0.08);
                 serverLevel.sendParticles(ParticleTypes.BUBBLE,
                         this.getX() - normX * 0.5, this.getY(), this.getZ() - normZ * 0.5,
-                        3, 0.2, 0.1, 0.2, 0.02);
+                        bubbleCount, 0.3, 0.1, 0.3, 0.04);
             }
 
             if (passenger instanceof Player player && this.tickCount % 4 == 0) {

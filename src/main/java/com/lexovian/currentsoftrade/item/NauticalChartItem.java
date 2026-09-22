@@ -130,6 +130,9 @@ public class NauticalChartItem extends Item {
 
     @Nullable
     public static BlockPos getTargetPos(ItemStack stack) {
+        if (stack.getItem() instanceof RouteJournalItem) {
+            return RouteJournalItem.getSelectedTargetPos(stack);
+        }
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (tag.getBoolean("Bound")) {
             return new BlockPos(tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ"));
@@ -139,6 +142,9 @@ public class NauticalChartItem extends Item {
 
     @Nullable
     public static String getHarborName(ItemStack stack) {
+        if (stack.getItem() instanceof RouteJournalItem) {
+            return RouteJournalItem.getSelectedTargetName(stack);
+        }
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.getBoolean("Bound") ? tag.getString("HarborName") : null;
     }

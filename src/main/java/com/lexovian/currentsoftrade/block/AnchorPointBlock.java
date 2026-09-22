@@ -102,4 +102,39 @@ public class AnchorPointBlock extends Block implements EntityBlock {
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        if (!level.isClientSide) return;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof AnchorPointBlockEntity anchor)) return;
+
+        int lvl = anchor.getTradeLevel();
+        if (lvl <= 1) return;
+
+        double x = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+        double y = pos.getY() + 1.0 + random.nextDouble() * 0.2;
+        double z = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+
+        if (lvl == 2 && random.nextFloat() < 0.25F) {
+            level.addParticle(net.minecraft.core.particles.ParticleTypes.SPLASH, x, y, z, 0.0, 0.04, 0.0);
+        } else if (lvl == 3 && random.nextFloat() < 0.35F) {
+            level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+        } else if (lvl == 4 && random.nextFloat() < 0.40F) {
+            if (random.nextBoolean()) {
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+            } else {
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+            }
+        } else if (lvl >= 5 && random.nextFloat() < 0.50F) {
+            float r = random.nextFloat();
+            if (r < 0.4F) {
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.WAX_ON, x, y + 0.15, z, 0.0, 0.03, 0.0);
+            } else if (r < 0.75F) {
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+            } else {
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.GLOW_SQUID_INK, x, y + 0.1, z, 0.0, 0.01, 0.0);
+            }
+        }
+    }
 }

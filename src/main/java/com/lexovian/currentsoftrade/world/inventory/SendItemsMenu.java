@@ -5,6 +5,7 @@ import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.entity.CargoBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -64,11 +65,11 @@ public class SendItemsMenu extends AbstractContainerMenu {
         this.travelContainer.addListener(this::slotsChanged);
         this.cargoContainer.addListener(this::slotsChanged);
 
-        // Slot 0: Nautical Chart Slot (at x=24, y=36)
+        // Slot 0: Nautical Chart or Route Journal Slot (at x=24, y=36)
         this.addSlot(new Slot(this.travelContainer, 0, 24, 36) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof NauticalChartItem;
+                return stack.getItem() instanceof NauticalChartItem || stack.getItem() instanceof RouteJournalItem;
             }
 
             @Override

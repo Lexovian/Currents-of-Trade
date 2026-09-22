@@ -206,6 +206,23 @@ public class AnchorPointBlockEntity extends BlockEntity {
         setChanged();
         if (this.level instanceof ServerLevel serverLevel) {
             HarborSavedData.get(serverLevel).setHarborLevel(this.worldPosition, this.tradeLevel);
+            // Upgrade celebration sound & particles
+            double px = this.worldPosition.getX() + 0.5;
+            double py = this.worldPosition.getY() + 1.2;
+            double pz = this.worldPosition.getZ() + 0.5;
+            if (this.tradeLevel >= MAX_HARBOR_LEVEL) {
+                // Royal Dockyard (Lv.5) ultimate celebration
+                serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+                serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.BELL_BLOCK, net.minecraft.sounds.SoundSource.BLOCKS, 1.5F, 0.9F);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING, px, py, pz, 35, 0.4, 0.4, 0.4, 0.15);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK, px, py, pz, 20, 0.3, 0.5, 0.3, 0.1);
+            } else {
+                // Tier progress celebration
+                serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, net.minecraft.sounds.SoundSource.BLOCKS, 0.9F, 1.2F);
+                serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, px, py, pz, 16, 0.35, 0.35, 0.35, 0.05);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SPLASH, px, py, pz, 25, 0.3, 0.2, 0.3, 0.1);
+            }
         }
         this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
     }

@@ -5,6 +5,7 @@ import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -65,11 +66,11 @@ public class TravelMenu extends AbstractContainerMenu {
         // Sync to client whenever a slot changes
         this.travelContainer.addListener(this::slotsChanged);
 
-        // Slot 0: Nautical Chart (x=43, y=36)
+        // Slot 0: Nautical Chart or Route Journal (x=43, y=36)
         this.addSlot(new Slot(this.travelContainer, 0, 43, 36) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof NauticalChartItem;
+                return stack.getItem() instanceof NauticalChartItem || stack.getItem() instanceof RouteJournalItem;
             }
 
             @Override

@@ -451,8 +451,14 @@ public class SloopModel extends EntityModel<Boat> {
     public void setupAnim(Boat entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
 
-        // Main sail & Topsail: gentle natural forward billowing with wave rock
-        float windBow = -0.06F - Mth.sin(ageInTicks * 0.08F) * 0.04F;
+        // Main sail & Topsail: wind strength dynamically scales with weather (gale/storm billowing)
+        boolean isThundering = entity.level().isThundering();
+        boolean isRaining = entity.level().isRaining();
+        float windSpeed = isThundering ? 0.22F : (isRaining ? 0.14F : 0.08F);
+        float windAmplitude = isThundering ? 0.09F : (isRaining ? 0.06F : 0.04F);
+        float windBase = isThundering ? -0.12F : -0.06F;
+
+        float windBow = windBase - Mth.sin(ageInTicks * windSpeed) * windAmplitude;
         this.sail.xRot = windBow;
         this.sailTop.xRot = windBow * 1.15F;
 

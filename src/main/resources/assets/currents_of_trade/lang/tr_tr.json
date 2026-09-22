@@ -235,6 +235,23 @@
 
   "message.currents_of_trade.harbor_upgraded": "§a⚓ Liman Seviye %s'ye yükseltildi — §e%s§a!",
   "message.currents_of_trade.harbor_max_level": "§6⚓ Bu liman zaten Kraliyet Tersanesi seviyesinde!",
-  "message.currents_of_trade.harbor_cannot_afford": "§c⚓ Bu limanı yükseltmek için yeterli kaynak yok."
+  "message.currents_of_trade.harbor_cannot_afford": "§c⚓ Bu limanı yükseltmek için yeterli kaynak yok.",
+
+  "item.currents_of_trade.route_journal": "Seyir Defteri",
+  "message.currents_of_trade.journal_recorded": "§6⚓ [Seyir Defteri] %s kaydedildi! (%d/%d liman)",
+  "message.currents_of_trade.journal_already_recorded": "§e⚓ %s limanı zaten Seyir Defterinizde kayıtlı!",
+  "message.currents_of_trade.journal_full": "§c⚓ Seyir Defteri dolu! (Maksimum %d limana ulaşıldı)",
+  "message.currents_of_trade.journal_empty": "§7⚓ Seyir Defteri boş. Liman kaydetmek için bir Anchor Point'e sağ tıklayın.",
+  "message.currents_of_trade.journal_switched": "§e⚓ Seçili Rota: §f%s §7(%d, %d) §8[%d/%d]",
+  "tooltip.currents_of_trade.journal_empty_desc": "§7Bağlanmamış seyir defteri.",
+  "tooltip.currents_of_trade.journal_hint": "§8Liman kaydetmek için bir Anchor Point'e sağ tıklayın.",
+  "tooltip.currents_of_trade.journal_active": "§e⚓ Rota: §f%s §7(%d, %d)",
+  "tooltip.currents_of_trade.journal_count": "§7Kayıtlı Limanlar: §b%d§7/§b%d",
+  "tooltip.currents_of_trade.journal_cycle_hint": "§8Hedef değiştirmek için havada sağ tıklayın.",
+
+  "message.currents_of_trade.storm_glass_thunder": "§c⚡ [Fırtına Camı] Kristaller çılgınca yükseliyor! Şiddetli bir okyanus fırtınası hüküm sürüyor!",
+  "message.currents_of_trade.storm_glass_rain": "§9🌧 [Fırtına Camı] Kristaller bulanıklaşıp yükseliyor. Yağışlı ve dalgalı deniz bekleniyor.",
+  "message.currents_of_trade.storm_glass_clear": "§b☀ [Fırtına Camı] Sıvı tamamen berrak ve sakin. Açık deniz seyri için ideal rüzgarlar var.",
+  "tooltip.currents_of_trade.storm_glass_use_hint": "§8Barometrik hava durumunu tahmin etmek için sağ tıklayın."
 }
 

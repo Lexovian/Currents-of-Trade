@@ -5,6 +5,7 @@ import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import net.minecraft.core.BlockPos;
@@ -78,11 +79,11 @@ public class RequestTradeMenu extends AbstractContainerMenu {
             sc.addListener(this::slotsChanged);
         }
 
-        // Slot 0: Nautical Chart (x=24, y=36)
+        // Slot 0: Nautical Chart or Route Journal (x=24, y=36)
         this.addSlot(new Slot(this.tradeContainer, SLOT_CHART, 24, 36) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof NauticalChartItem;
+                return stack.getItem() instanceof NauticalChartItem || stack.getItem() instanceof RouteJournalItem;
             }
 
             @Override
