@@ -40,6 +40,14 @@ public class CurrentsofTradeClient {
                     CurrentsofTrade.STORM_GLASS.get(),
                     ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "weather"),
                     (stack, level, entity, seed) -> {
+                        net.minecraft.world.item.component.CustomData customData =
+                                stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                        if (customData != null) {
+                            net.minecraft.nbt.CompoundTag tag = customData.copyTag();
+                            if (tag.contains(com.lexovian.currentsoftrade.item.StormGlassItem.TAG_WEATHER_STATE)) {
+                                return (float) tag.getInt(com.lexovian.currentsoftrade.item.StormGlassItem.TAG_WEATHER_STATE);
+                            }
+                        }
                         Level world = level;
                         if (world == null && entity != null) {
                             world = entity.level();

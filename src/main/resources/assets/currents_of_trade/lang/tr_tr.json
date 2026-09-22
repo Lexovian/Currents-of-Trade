@@ -250,7 +250,9 @@
   "tooltip.currents_of_trade.journal_cycle_hint": "§8Hedef değiştirmek için havada sağ tıklayın.",
 
   "message.currents_of_trade.storm_glass_thunder": "§c⚡ [Fırtına Camı] Kristaller çılgınca yükseliyor! Şiddetli bir okyanus fırtınası hüküm sürüyor!",
+  "message.currents_of_trade.storm_glass_thunder_incoming": "§c⚡ [Fırtına Camı] Atmosferik basınç hızla düşüyor! 2 dakika içinde şiddetli bir fırtına kopacak!",
   "message.currents_of_trade.storm_glass_rain": "§9🌧 [Fırtına Camı] Kristaller bulanıklaşıp yükseliyor. Yağışlı ve dalgalı deniz bekleniyor.",
+  "message.currents_of_trade.storm_glass_rain_incoming": "§9🌧 [Fırtına Camı] Kristaller hızla tırmanıyor! 2 dakika içinde yağış ve dalgalı deniz yaklaşıyor!",
   "message.currents_of_trade.storm_glass_clear": "§b☀ [Fırtına Camı] Sıvı tamamen berrak ve sakin. Açık deniz seyri için ideal rüzgarlar var.",
   "tooltip.currents_of_trade.storm_glass_use_hint": "§8Barometrik hava durumunu tahmin etmek için sağ tıklayın."
 }

@@ -254,7 +254,9 @@
   "tooltip.currents_of_trade.journal_cycle_hint": "§8Right-click in air to cycle active destination.",
 
   "message.currents_of_trade.storm_glass_thunder": "§c⚡ [Storm Glass] Crystals are surging violently! A severe ocean tempest is raging!",
+  "message.currents_of_trade.storm_glass_thunder_incoming": "§c⚡ [Storm Glass] Atmospheric pressure is plunging! A tempest will strike within 2 minutes!",
   "message.currents_of_trade.storm_glass_rain": "§9🌧 [Storm Glass] Crystals are clouded and climbing. Rain and rough seas expected.",
+  "message.currents_of_trade.storm_glass_rain_incoming": "§9🌧 [Storm Glass] Crystals are climbing rapidly! Rain and rough seas approaching in 2 minutes!",
   "message.currents_of_trade.storm_glass_clear": "§b☀ [Storm Glass] Liquid is crystal clear and calm. Favorable fair winds ahead.",
   "tooltip.currents_of_trade.storm_glass_use_hint": "§8Right-click to inspect barometric weather forecast."
 }
