@@ -232,8 +232,43 @@ public class SloopEntity extends Boat {
             }
         }
 
+        // 5. Tailwind & Captain's Tricorne sailing boost:
+        boolean hasTricorne = false;
+        LivingEntity captain = this.getControllingPassenger();
+        if (captain instanceof Player player) {
+            hasTricorne = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get());
+        }
+
+        if (this.tailwindTicks > 0) {
+            this.tailwindTicks--;
+        }
+
+        if ((this.tailwindTicks > 0 || hasTricorne) && this.getDeltaMovement().horizontalDistanceSqr() > 0.002) {
+            Vec3 motion = this.getDeltaMovement();
+            double boost = (this.tailwindTicks > 0 ? 1.028 : 1.0) * (hasTricorne ? 1.02 : 1.0);
+            this.setDeltaMovement(motion.x * boost, motion.y, motion.z * boost);
+
+            if (this.level().isClientSide && this.random.nextFloat() < 0.35F) {
+                this.level().addParticle(net.minecraft.core.particles.ParticleTypes.GLOW,
+                        this.getX() + (this.random.nextDouble() - 0.5) * 2.0,
+                        this.getY() + 0.5,
+                        this.getZ() + (this.random.nextDouble() - 0.5) * 2.0,
+                        0.0, 0.04, 0.0);
+            }
+        }
+
         // Keep center bounding box synchronized
         this.setBoundingBox(this.makeBoundingBox());
+    }
+
+    private int tailwindTicks = 0;
+
+    public void applyTailwind(int ticks) {
+        this.tailwindTicks = Math.max(this.tailwindTicks, ticks);
+    }
+
+    public boolean hasTailwind() {
+        return this.tailwindTicks > 0;
     }
 
     @Override

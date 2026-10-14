@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:route_journal"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.silk_road_navigator.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.silk_road_navigator.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:sealed_contract",
+  "criteria": {
+    "dispatched_arbitrage_ship": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}
+

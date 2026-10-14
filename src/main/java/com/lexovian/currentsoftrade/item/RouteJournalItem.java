@@ -2,6 +2,7 @@ package com.lexovian.currentsoftrade.item;
 
 import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -35,7 +36,11 @@ public class RouteJournalItem extends Item {
     public static final String TAG_ROUTES = "Routes";
     public static final String TAG_SELECTED_INDEX = "SelectedIndex";
 
-    public record RouteEntry(String name, BlockPos pos, int level) {}
+    public record RouteEntry(String name, BlockPos pos, int level, String regionId) {
+        public RouteEntry(String name, BlockPos pos, int level) {
+            this(name, pos, level, "temperate");
+        }
+    }
 
     public RouteJournalItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -92,7 +97,10 @@ public class RouteJournalItem extends Item {
                     return InteractionResult.FAIL;
                 }
 
-                addRoute(stack, new RouteEntry(harborName, pos, anchor.getTradeLevel()));
+                addRoute(stack, new RouteEntry(harborName, pos, anchor.getTradeLevel(), anchor.getTradeRegion().getId()));
+                if (routes.isEmpty() && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                    syncActiveHarborTrades(stack, pos, serverLevel);
+                }
 
                 level.playSound(null, pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
                 level.playSound(null, pos, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.8F, 1.2F);
@@ -131,6 +139,9 @@ public class RouteJournalItem extends Item {
             level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.8F, 1.1F);
         } else {
             RouteEntry selected = routes.get(nextIdx);
+            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                syncActiveHarborTrades(stack, selected.pos(), serverLevel);
+            }
             player.displayClientMessage(Component.translatable(
                     "message.currents_of_trade.journal_switched",
                     selected.name(),
@@ -142,6 +153,18 @@ public class RouteJournalItem extends Item {
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+    }
+
+    public static void syncActiveHarborTrades(ItemStack stack, BlockPos targetPos, net.minecraft.server.level.ServerLevel serverLevel) {
+        List<com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer> liveTrades =
+                com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getTrades(targetPos);
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            ListTag list = new ListTag();
+            for (com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer offer : liveTrades) {
+                list.add(offer.toTag(serverLevel.registryAccess()));
+            }
+            tag.put("HarborTrades", list);
+        });
     }
 
     // --- Tooltip ---
@@ -157,6 +180,8 @@ public class RouteJournalItem extends Item {
             if (selectedIdx >= 0 && selectedIdx < routes.size()) {
                 RouteEntry active = routes.get(selectedIdx);
                 tooltip.add(Component.translatable("tooltip.currents_of_trade.journal_active", active.name(), active.pos().getX(), active.pos().getZ()));
+                MaritimeTradeRegion region = MaritimeTradeRegion.byId(active.regionId());
+                tooltip.add(Component.translatable("tooltip.currents_of_trade.chart_region", region.getDisplayName()));
             }
             tooltip.add(Component.translatable("tooltip.currents_of_trade.journal_count", routes.size(), MAX_ROUTES));
             tooltip.add(Component.translatable("tooltip.currents_of_trade.journal_cycle_hint"));
@@ -180,7 +205,8 @@ public class RouteJournalItem extends Item {
             String name = entryTag.getString("Name");
             BlockPos pos = new BlockPos(entryTag.getInt("X"), entryTag.getInt("Y"), entryTag.getInt("Z"));
             int lvl = entryTag.contains("Level") ? entryTag.getInt("Level") : 1;
-            result.add(new RouteEntry(name, pos, lvl));
+            String regionId = entryTag.contains("Region") ? entryTag.getString("Region") : "temperate";
+            result.add(new RouteEntry(name, pos, lvl, regionId));
         }
         return result;
     }
@@ -196,6 +222,7 @@ public class RouteJournalItem extends Item {
         entryTag.putInt("Y", entry.pos().getY());
         entryTag.putInt("Z", entry.pos().getZ());
         entryTag.putInt("Level", entry.level());
+        entryTag.putString("Region", entry.regionId());
         list.add(entryTag);
 
         tag.put(TAG_ROUTES, list);

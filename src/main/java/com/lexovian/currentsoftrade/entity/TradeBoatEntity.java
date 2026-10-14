@@ -101,6 +101,15 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     protected int blockedTicks = 0;
 
     private boolean voyageShip = false;
+    private int tailwindTicks = 0;
+
+    public void applyTailwind(int ticks) {
+        this.tailwindTicks = Math.max(this.tailwindTicks, ticks);
+    }
+
+    public boolean hasTailwind() {
+        return this.tailwindTicks > 0;
+    }
 
     public final ShipPart<TradeBoatEntity> sternPart;
     public final ShipPart<TradeBoatEntity> prowPart;
@@ -570,6 +579,17 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         this.setBoundingBox(this.makeBoundingBox());
         this.updateParts();
 
+        if (this.tailwindTicks > 0) {
+            this.tailwindTicks--;
+            if (this.level().isClientSide && this.random.nextFloat() < 0.3F) {
+                this.level().addParticle(ParticleTypes.GLOW,
+                        this.getX() + (this.random.nextDouble() - 0.5) * 2.0,
+                        this.getY() + 0.6,
+                        this.getZ() + (this.random.nextDouble() - 0.5) * 2.0,
+                        0.0, 0.04, 0.0);
+            }
+        }
+
         if (!this.level().isClientSide) {
             if (this.targetPos == null) {
                 this.setNoGravity(false);
@@ -618,7 +638,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
 
             double chosenAngle;
-            double currentSpeed = this.cruiseSpeed;
+            double currentSpeed = this.cruiseSpeed * (this.hasTailwind() ? 1.25 : 1.0);
 
             if (directPathClear) {
                 this.detourWaypoint = null;
@@ -627,7 +647,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 chosenAngle = directAngle;
 
                 if (horizontalDist < 25.0) {
-                    currentSpeed = Math.max(0.4, this.cruiseSpeed * (horizontalDist / 25.0));
+                    currentSpeed = Math.max(0.4, (this.cruiseSpeed * (this.hasTailwind() ? 1.25 : 1.0)) * (horizontalDist / 25.0));
                 }
             } else {
                 this.detourTicks++;

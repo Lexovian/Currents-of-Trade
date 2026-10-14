@@ -75,6 +75,7 @@ public class AmberVialItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.amber_vial_effect"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.amber_vial_warning"));
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.amber_vial.market"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

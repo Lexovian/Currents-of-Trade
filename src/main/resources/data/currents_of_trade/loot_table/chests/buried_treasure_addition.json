@@ -111,6 +111,11 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:storm_glass",
           "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:captains_tricorne",
+          "weight": 10
         }
       ]
     }

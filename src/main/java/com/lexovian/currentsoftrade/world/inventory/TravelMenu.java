@@ -194,7 +194,7 @@ public class TravelMenu extends AbstractContainerMenu {
 
     public int getDistance() {
         ItemStack chart = getChartStack();
-        if (chart.getItem() instanceof NauticalChartItem) {
+        if (chart.getItem() instanceof NauticalChartItem || chart.getItem() instanceof RouteJournalItem) {
             BlockPos target = NauticalChartItem.getTargetPos(chart);
             if (target != null) {
                 BlockPos origin = getOriginPos();
@@ -206,11 +206,15 @@ public class TravelMenu extends AbstractContainerMenu {
         return 0;
     }
 
-    /** 1 Doubloon per 100 blocks, minimum 1. */
+    /** 1 Doubloon per 100 blocks, minimum 1. Wearing Captain's Tricorne grants a 10% discount. */
     public int getRequiredDoubloons() {
         int distance = getDistance();
         if (distance <= 0) return 0;
-        return Math.max(1, (int) Math.ceil(distance / 100.0));
+        int fee = Math.max(1, (int) Math.ceil(distance / 100.0));
+        if (this.player != null && this.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get())) {
+            fee = Math.max(1, (int) Math.floor(fee * 0.9));
+        }
+        return fee;
     }
 
     public static int getMaxDoubloons() {
@@ -264,9 +268,9 @@ public class TravelMenu extends AbstractContainerMenu {
         BlockPos waterSpawn = null;
         int highestWaterY = Integer.MIN_VALUE;
 
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dz = -3; dz <= 3; dz++) {
-                for (int dy = 1; dy >= -3; dy--) {
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dz = -8; dz <= 8; dz++) {
+                for (int dy = 2; dy >= -7; dy--) {
                     BlockPos check = origin.offset(dx, dy, dz);
                     if (player.level().getFluidState(check).is(FluidTags.WATER)) {
                         BlockPos above = check.above();
@@ -338,7 +342,7 @@ public class TravelMenu extends AbstractContainerMenu {
                 }
             } else {
                 // From inventory -> matching custom slot
-                if (currentStack.getItem() instanceof NauticalChartItem) {
+                if (currentStack.getItem() instanceof NauticalChartItem || currentStack.getItem() instanceof RouteJournalItem) {
                     if (!this.moveItemStackTo(currentStack, 0, 1, false)) return ItemStack.EMPTY;
                 } else if (currentStack.getItem() instanceof DoubloonItem) {
                     if (!this.moveItemStackTo(currentStack, 1, 2, false)) return ItemStack.EMPTY;

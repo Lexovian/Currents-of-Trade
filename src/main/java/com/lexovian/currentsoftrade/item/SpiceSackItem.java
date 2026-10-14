@@ -67,6 +67,7 @@ public class SpiceSackItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.spice_sack_effect"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.spice_sack_hint"));
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.spice_sack.market"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

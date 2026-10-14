@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "currents_of_trade:item/salvage_dredge"
+  }
+}

@@ -67,6 +67,11 @@
               }
             }
           ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:salvage_dredge",
+          "weight": 10
         }
       ]
     }

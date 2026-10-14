@@ -258,7 +258,74 @@
   "message.currents_of_trade.storm_glass_rain": "§9🌧 [Storm Glass] Crystals are clouded and climbing. Rain and rough seas expected.",
   "message.currents_of_trade.storm_glass_rain_incoming": "§9🌧 [Storm Glass] Crystals are climbing rapidly! Rain and rough seas approaching in 2 minutes!",
   "message.currents_of_trade.storm_glass_clear": "§b☀ [Storm Glass] Liquid is crystal clear and calm. Favorable fair winds ahead.",
-  "tooltip.currents_of_trade.storm_glass_use_hint": "§8Right-click to inspect barometric weather forecast."
+  "tooltip.currents_of_trade.storm_glass_use_hint": "§8Right-click to inspect barometric weather forecast.",
+
+  "region.currents_of_trade.arid": "Arid Trade Coast",
+  "region.currents_of_trade.arid.exports": "§7Local Exports: §eSilk Bale, Spice Sack, Sea Salt",
+  "region.currents_of_trade.arid.imports": "§7High Demand: §bAmber Vial, Cold Fish (+100% Value)",
+
+  "region.currents_of_trade.cold": "Frozen Reach & Boreal",
+  "region.currents_of_trade.cold.exports": "§7Local Exports: §bAmber Vial, Fossils, Cod & Salmon",
+  "region.currents_of_trade.cold.imports": "§7High Demand: §6Tea Brick, Vanilla, Spices (+100% Value)",
+
+  "region.currents_of_trade.tropical": "Tropical Isles & Rainforest",
+  "region.currents_of_trade.tropical.exports": "§7Local Exports: §aAromatic Sandalwood, Vanilla Bundle",
+  "region.currents_of_trade.tropical.imports": "§7High Demand: §bFine Porcelain, Luxury Silk (+100% Value)",
+
+  "region.currents_of_trade.temperate": "Temperate Maritime Hub",
+  "region.currents_of_trade.temperate.exports": "§7Local Exports: §eFine Porcelain, Tea Brick, Luminous Pearl",
+  "region.currents_of_trade.temperate.imports": "§7High Demand: §aSandalwood, Spices, Northern Amber (+60-100% Value)",
+
+  "tooltip.currents_of_trade.commodity.silk_bale.market": "§6✦ Maritime Route: §eExported by Arid Ports §8| §bHigh Demand: Cold & Tropical Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.spice_sack.market": "§6✦ Maritime Route: §eExported by Arid Ports §8| §bHigh Demand: Cold & Temperate Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.salt_pouch.market": "§6✦ Maritime Route: §eExported by Arid & Coast Ports §8| §bHigh Demand: Inland Ports",
+  "tooltip.currents_of_trade.commodity.amber_vial.market": "§6✦ Maritime Route: §bExported by Frozen Ports §8| §eHigh Demand: Arid & Desert Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.tea_brick.market": "§6✦ Maritime Route: §eExported by Temperate Ports §8| §bHigh Demand: Cold & Frozen Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.fine_porcelain.market": "§6✦ Maritime Route: §eExported by Temperate Ports §8| §aHigh Demand: Tropical & Jungle Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.sandalwood.market": "§6✦ Maritime Route: §aExported by Tropical Ports §8| §eHigh Demand: Temperate & Desert Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.vanilla_bundle.market": "§6✦ Maritime Route: §aExported by Tropical Ports §8| §bHigh Demand: Cold & Frozen Ports (+100%)",
+  "tooltip.currents_of_trade.commodity.ammonite_fossil.market": "§6✦ Maritime Route: §bExported by Frozen Ports §8| §eHigh Demand: Scholar Ports",
+
+  "tooltip.currents_of_trade.chart_region": "§7Trade Basin: %s",
+  "gui.currents_of_trade.harbor_region": "⚓ Basin: %s",
+  "gui.currents_of_trade.arbitrage_badge": "§a✦ Silk Route Active",
+  "tooltip.currents_of_trade.arbitrage_active_title": "§6✦ Active Maritime Arbitrage Route",
+  "tooltip.currents_of_trade.arbitrage_active_desc": "§7Target harbor exports this item and home harbor has high demand. Enjoy -50% shipping fee!",
+  "message.currents_of_trade.arbitrage_route_activated": "§6[Arbitrage]§r §aMaritime Silk Road route activated to §e%s§a! -50% shipping fee discount applied.",
+
+  "block.currents_of_trade.lighthouse": "Lighthouse Lantern",
+  "item.currents_of_trade.lighthouse": "Lighthouse Lantern",
+  "message.currents_of_trade.lighthouse_tailwind": "§b⛵ [Tailwind] Coastal lighthouse guides your sails! (+25% Cruising Speed)",
+  "tooltip.currents_of_trade.lighthouse.desc": "§7Emits a rotating navigational beacon across coastal waters.",
+  "tooltip.currents_of_trade.lighthouse.tailwind": "§b✦ Grants +25% Cruising Speed to nearby vessels in 128 blocks.",
+
+  "item.currents_of_trade.captains_tricorne": "Captain's Tricorne",
+  "tooltip.currents_of_trade.captains_tricorne.desc": "§7Prestigious naval headwear worn by master mariners.",
+  "tooltip.currents_of_trade.captains_tricorne.speed_bonus": "§e✦ +20% Sloop Sailing Velocity",
+  "tooltip.currents_of_trade.captains_tricorne.discount_bonus": "§b✦ 10% Doubloon Discount on Harbor Voyages & Shipping",
+
+  "item.currents_of_trade.salvage_dredge": "Salvage Dredge",
+  "tooltip.currents_of_trade.salvage_dredge.desc": "§7Lowered into waters to scrape the seabed for sunken cargo and relics.",
+  "tooltip.currents_of_trade.salvage_dredge.lore": "§8Right-click on water while aboard a boat or pier.",
+  "message.currents_of_trade.dredge_requires_water": "§c⚓ [Salvage Dredge] Must be cast into open water!",
+  "message.currents_of_trade.dredge_success": "§6⚓ [Salvage Dredge] Hauled up %s from the depths!",
+  "item.currents_of_trade.sunken_treasure_map": "Sunken Navigator's Map",
+
+  "tooltip.currents_of_trade.message_in_a_bottle.treasure_hint": "§8May contain buried treasure charts, ancient coordinates, or lost relics.",
+  "message.currents_of_trade.bottle_found_map": "§6⚓ [Message in a Bottle] Unfolded an authentic Buried Treasure Map!",
+  "message.currents_of_trade.bottle_found_chart": "§b⚓ [Message in a Bottle] Found an ancient pre-bound Nautical Chart!",
+  "message.currents_of_trade.bottle_found_relic": "§e⚓ [Message in a Bottle] A lost relic tumbled out: %s!",
+
+  "tooltip.currents_of_trade.captains_pipe.effect": "§eRight-click to puff: §aCures Seasickness §7& grants §aLuck I §7(60s).",
+
+  "advancement.currents_of_trade.guiding_light.title": "Guiding Light",
+  "advancement.currents_of_trade.guiding_light.desc": "Craft a Lighthouse Lantern to guide vessels with a coastal tailwind.",
+  "advancement.currents_of_trade.deep_sea_dredger.title": "Deep Sea Dredger",
+  "advancement.currents_of_trade.deep_sea_dredger.desc": "Obtain a Salvage Dredge to haul sunken cargo and relics from the seabed.",
+  "advancement.currents_of_trade.silk_road_navigator.title": "Maritime Silk Road",
+  "advancement.currents_of_trade.silk_road_navigator.desc": "Dispatch a trade ship along an active inter-regional Arbitrage Route.",
+  "advancement.currents_of_trade.royal_dockyard.title": "Royal Dockyard",
+  "advancement.currents_of_trade.royal_dockyard.desc": "Upgrade a harbor all the way to Level 5 — Royal Dockyard."
 }
 
 

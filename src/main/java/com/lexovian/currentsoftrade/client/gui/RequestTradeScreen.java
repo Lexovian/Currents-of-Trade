@@ -192,17 +192,21 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             int surcharge = this.menu.getCargoSurcharge();
 
             Component destText = Component.literal("§2§l" + this.font.plainSubstrByWidth(destHarbor, 95));
-            guiGraphics.drawString(this.font, destText, 88, 24, 0x1B4D3E, false);
+            guiGraphics.drawString(this.font, destText, 88, 20, 0x1B4D3E, false);
 
             Component distText = Component.literal("§8Dist: §0" + dist + "m");
-            guiGraphics.drawString(this.font, distText, 88, 35, 0x404040, false);
+            guiGraphics.drawString(this.font, distText, 88, 30, 0x404040, false);
 
             if (this.menu.isTooExpensive()) {
-                guiGraphics.drawString(this.font, Component.literal("§cToo Far (> 64)"), 88, 46, 0xAA0000, false);
+                guiGraphics.drawString(this.font, Component.literal("§cToo Far (> 64)"), 88, 40, 0xAA0000, false);
             } else {
                 String surchargeStr = surcharge > 0 ? " §8(+§e" + surcharge + "§8)" : "";
                 Component feeText = Component.literal("§8Fee: §6" + fee + " Dbl" + surchargeStr);
-                guiGraphics.drawString(this.font, feeText, 88, 46, 0x8B5A00, false);
+                guiGraphics.drawString(this.font, feeText, 88, 40, 0x8B5A00, false);
+            }
+
+            if (this.menu.isArbitrageRoute()) {
+                guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.arbitrage_badge"), 88, 49, 0x1E824C, false);
             }
         } else {
             guiGraphics.drawString(this.font, Component.literal("§7No Chart"), 88, 28, 0x777777, false);
@@ -218,7 +222,8 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             }
             Component offerHeader = Component.translatable("gui.currents_of_trade.harbor_offer");
             String counter = " §8(" + (selectedIdx + 1) + "/" + trades.size() + ")";
-            guiGraphics.drawString(this.font, offerHeader.getString() + counter, 18, 56, 0x333333, false);
+            String arbitrageMarker = this.menu.isArbitrageRoute() ? " §6✦" : "";
+            guiGraphics.drawString(this.font, offerHeader.getString() + counter + arbitrageMarker, 18, 56, 0x333333, false);
         } else {
             guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.harbor_offer"), 18, 56, 0x333333, false);
         }
@@ -294,6 +299,13 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
         if (stagedCount > 0) {
             String statusText = "§2§l\u2714 " + Component.translatable("gui.currents_of_trade.staged_count", stagedCount, stagedItems).getString();
             guiGraphics.drawString(this.font, statusText, this.leftPos + 22, this.topPos + 107, 0x2E7D32, false);
+        }
+
+        if (this.menu.isArbitrageRoute() && isHovering(88, 48, 95, 9, mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, List.of(
+                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_title"),
+                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_desc")
+            ), java.util.Optional.empty(), mouseX, mouseY);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);

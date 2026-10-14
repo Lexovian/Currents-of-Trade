@@ -176,6 +176,7 @@ public class SaltPouchItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, java.util.List<Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salt_pouch_use"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salt_pouch_effect"));
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.salt_pouch.market"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

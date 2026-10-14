@@ -5,6 +5,7 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
+import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -14,6 +15,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -49,6 +51,16 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     public AnchorPointBlockEntity(BlockPos pos, BlockState state) {
         super(CurrentsofTrade.ANCHOR_POINT_BE.get(), pos, state);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (this.level instanceof ServerLevel) {
+            if (this.harborTrades.isEmpty()) {
+                seedRegionalTradesIfEmpty();
+            }
+        }
     }
 
     // --- Harbor Naming ---
@@ -118,6 +130,34 @@ public class AnchorPointBlockEntity extends BlockEntity {
         }
     }
 
+    public MaritimeTradeRegion getTradeRegion() {
+        return MaritimeTradeRegion.fromLevelAndPos(this.level, this.worldPosition);
+    }
+
+    public void seedRegionalTradesIfEmpty() {
+        if (this.harborTrades.isEmpty() && this.level instanceof ServerLevel) {
+            MaritimeTradeRegion region = getTradeRegion();
+            List<HarborTradeOffer> defaults = region.generateDefaultHarborTrades(this.tradeLevel);
+            int cap = getMaxTradeOffers();
+            for (HarborTradeOffer offer : defaults) {
+                if (this.harborTrades.size() < cap) {
+                    this.harborTrades.add(offer);
+                }
+            }
+            setChanged();
+            syncToSavedData();
+        }
+    }
+
+    private boolean containsSimilarTrade(HarborTradeOffer check) {
+        for (HarborTradeOffer existing : this.harborTrades) {
+            if (ItemStack.isSameItemSameComponents(existing.getResult(), check.getResult())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // --- Getters / Setters ---
 
     public int getTradeLevel() {
@@ -126,7 +166,18 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     public void setTradeLevel(int tradeLevel) {
         this.tradeLevel = Math.max(1, Math.min(MAX_HARBOR_LEVEL, tradeLevel));
+        if (this.level instanceof ServerLevel) {
+            MaritimeTradeRegion region = getTradeRegion();
+            List<HarborTradeOffer> defaults = region.generateDefaultHarborTrades(this.tradeLevel);
+            int cap = getMaxTradeOffers();
+            for (HarborTradeOffer offer : defaults) {
+                if (this.harborTrades.size() < cap && !containsSimilarTrade(offer)) {
+                    this.harborTrades.add(offer);
+                }
+            }
+        }
         setChanged();
+        syncToSavedData();
     }
 
     /**
@@ -203,7 +254,18 @@ public class AnchorPointBlockEntity extends BlockEntity {
         if (cost == null || !cost.canAfford(player)) return;
         cost.consume(player);
         this.tradeLevel++;
+        if (this.level instanceof ServerLevel) {
+            MaritimeTradeRegion region = getTradeRegion();
+            List<HarborTradeOffer> defaults = region.generateDefaultHarborTrades(this.tradeLevel);
+            int cap = getMaxTradeOffers();
+            for (HarborTradeOffer offer : defaults) {
+                if (this.harborTrades.size() < cap && !containsSimilarTrade(offer)) {
+                    this.harborTrades.add(offer);
+                }
+            }
+        }
         setChanged();
+        syncToSavedData();
         if (this.level instanceof ServerLevel serverLevel) {
             HarborSavedData.get(serverLevel).setHarborLevel(this.worldPosition, this.tradeLevel);
             // Upgrade celebration sound & particles
@@ -216,6 +278,15 @@ public class AnchorPointBlockEntity extends BlockEntity {
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.BELL_BLOCK, net.minecraft.sounds.SoundSource.BLOCKS, 1.5F, 0.9F);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING, px, py, pz, 35, 0.4, 0.4, 0.4, 0.15);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK, px, py, pz, 20, 0.3, 0.5, 0.3, 0.1);
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
+                    net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
+                            .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "royal_dockyard"));
+                    if (adv != null) {
+                        for (String criterion : adv.value().criteria().keySet()) {
+                            serverPlayer.getAdvancements().award(adv, criterion);
+                        }
+                    }
+                }
             } else {
                 // Tier progress celebration
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, net.minecraft.sounds.SoundSource.BLOCKS, 0.9F, 1.2F);
@@ -284,8 +355,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
         BlockPos center = this.getBlockPos();
         BlockPos waterStart = null;
 
-        // Find any adjacent water block within search box (radius 8 to reach water from inside dock huts/offices)
-        for (BlockPos check : BlockPos.betweenClosed(center.offset(-8, -4, -8), center.offset(8, 2, 8))) {
+        // Find any adjacent water block within search box (radius 10, depth -7 to reach pier water from inside rigid coastal dock offices)
+        for (BlockPos check : BlockPos.betweenClosed(center.offset(-10, -7, -10), center.offset(10, 2, 10))) {
             if (this.level.getFluidState(check).is(FluidTags.WATER)) {
                 waterStart = check.immutable();
                 break;

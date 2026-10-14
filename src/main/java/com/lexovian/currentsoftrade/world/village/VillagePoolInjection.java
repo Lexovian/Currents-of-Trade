@@ -99,8 +99,8 @@ public class VillagePoolInjection {
 
         Registry<StructureTemplatePool> poolRegistry = server.registryAccess().registryOrThrow(Registries.TEMPLATE_POOL);
         Holder<StructureProcessorList> processorList = Holder.direct(new StructureProcessorList(List.of(new CoastalWaterCheckProcessor())));
-        StructurePoolElement dockHousePiece = StructurePoolElement.legacy(DOCK_STRUCTURE, processorList).apply(StructureTemplatePool.Projection.TERRAIN_MATCHING);
-        StructurePoolElement dockStreetPiece = StructurePoolElement.legacy(DOCK_STREET_STRUCTURE, processorList).apply(StructureTemplatePool.Projection.TERRAIN_MATCHING);
+        StructurePoolElement dockHousePiece = StructurePoolElement.legacy(DOCK_STRUCTURE, processorList).apply(StructureTemplatePool.Projection.RIGID);
+        StructurePoolElement dockStreetPiece = StructurePoolElement.legacy(DOCK_STREET_STRUCTURE, processorList).apply(StructureTemplatePool.Projection.RIGID);
 
         int houseWeight = (com.lexovian.currentsoftrade.Config.VILLAGE_DOCK_SPAWN_WEIGHT != null)
                 ? com.lexovian.currentsoftrade.Config.VILLAGE_DOCK_SPAWN_WEIGHT.get() : DOCK_WEIGHT_HOUSES;

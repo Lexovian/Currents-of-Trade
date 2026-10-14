@@ -96,6 +96,11 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:ammonite_fossil",
           "weight": 15
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:captains_tricorne",
+          "weight": 8
         }
       ]
     }

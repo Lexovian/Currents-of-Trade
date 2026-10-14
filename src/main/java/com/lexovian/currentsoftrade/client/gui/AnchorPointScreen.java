@@ -4,6 +4,7 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.network.ModPayloads;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
+import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -264,6 +265,23 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
         int textX = this.leftPos + (this.imageWidth - this.font.width(levelText)) / 2;
         int textY = this.topPos + (level >= 5 ? 97 : 124);
         guiGraphics.drawString(this.font, levelText, textX, textY, 0xFFD700, false);
+
+        if (this.minecraft != null && this.minecraft.level != null) {
+            MaritimeTradeRegion region = MaritimeTradeRegion.fromLevelAndPos(this.minecraft.level, this.menu.getBlockPos());
+            Component regionText = Component.translatable("gui.currents_of_trade.harbor_region", region.getDisplayName());
+            int regX = this.leftPos + (this.imageWidth - this.font.width(regionText)) / 2;
+            int regY = textY + 11;
+            guiGraphics.drawString(this.font, regionText, regX, regY, region.getColor(), false);
+
+            if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
+                    && mouseY >= regY && mouseY <= regY + 9) {
+                guiGraphics.renderTooltip(this.font, List.of(
+                        region.getDisplayName(),
+                        region.getExportDescription(),
+                        region.getImportDescription()
+                ), java.util.Optional.empty(), mouseX, mouseY);
+            }
+        }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }

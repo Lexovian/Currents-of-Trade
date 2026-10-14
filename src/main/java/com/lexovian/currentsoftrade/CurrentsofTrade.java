@@ -109,6 +109,23 @@ public class CurrentsofTrade {
                     BlockEntityType.Builder.of(AnchorPointBlockEntity::new, ANCHOR_POINT.get()).build(null)
             );
 
+    public static final DeferredBlock<com.lexovian.currentsoftrade.block.LighthouseBlock> LIGHTHOUSE = BLOCKS.registerBlock(
+            "lighthouse",
+            com.lexovian.currentsoftrade.block.LighthouseBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.COPPER)
+                    .lightLevel(state -> 15)
+                    .noOcclusion()
+    );
+    public static final DeferredItem<BlockItem> LIGHTHOUSE_ITEM = ITEMS.registerSimpleBlockItem("lighthouse", LIGHTHOUSE);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.lexovian.currentsoftrade.block.entity.LighthouseBlockEntity>> LIGHTHOUSE_BE =
+            BLOCK_ENTITIES.register("lighthouse", () ->
+                    BlockEntityType.Builder.of(com.lexovian.currentsoftrade.block.entity.LighthouseBlockEntity::new, LIGHTHOUSE.get()).build(null)
+            );
+
     // --- Core Navigation & Vessels ---
     public static final DeferredItem<NauticalChartItem> NAUTICAL_CHART =
             ITEMS.registerItem("nautical_chart", NauticalChartItem::new, new Item.Properties().stacksTo(1));
@@ -188,6 +205,14 @@ public class CurrentsofTrade {
     public static final DeferredItem<CaptainsPipeItem> CAPTAINS_PIPE =
             ITEMS.registerItem("captains_pipe", CaptainsPipeItem::new, new Item.Properties().stacksTo(1));
 
+    /** Prestigious naval tricorne hat granting +20% sailing speed and 10% harbor fee discounts. */
+    public static final DeferredItem<com.lexovian.currentsoftrade.item.CaptainsTricorneItem> CAPTAINS_TRICORNE =
+            ITEMS.registerItem("captains_tricorne", com.lexovian.currentsoftrade.item.CaptainsTricorneItem::new, new Item.Properties());
+
+    /** Weighted iron dredge used to scrape ocean depths and haul up lost cargo and relics. */
+    public static final DeferredItem<com.lexovian.currentsoftrade.item.SalvageDredgeItem> SALVAGE_DREDGE =
+            ITEMS.registerItem("salvage_dredge", com.lexovian.currentsoftrade.item.SalvageDredgeItem::new, new Item.Properties());
+
     // --- Menu Types ---
     public static final DeferredHolder<MenuType<?>, MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(AnchorPointMenu::new));
@@ -262,6 +287,9 @@ public class CurrentsofTrade {
                             .icon(() -> ANCHOR_POINT_ITEM.get().getDefaultInstance())
                             .displayItems((parameters, output) -> {
                                 output.accept(ANCHOR_POINT_ITEM.get());
+                                output.accept(LIGHTHOUSE_ITEM.get());
+                                output.accept(CAPTAINS_TRICORNE.get());
+                                output.accept(SALVAGE_DREDGE.get());
                                 output.accept(NAUTICAL_CHART.get());
                                 output.accept(ROUTE_JOURNAL.get());
                                 output.accept(DOUBLOON.get());
@@ -318,10 +346,16 @@ public class CurrentsofTrade {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS || event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(ANCHOR_POINT_ITEM);
+            event.accept(LIGHTHOUSE_ITEM);
+        }
+        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(CAPTAINS_TRICORNE);
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(NAUTICAL_CHART);
             event.accept(ROUTE_JOURNAL);
+            event.accept(CAPTAINS_TRICORNE);
+            event.accept(SALVAGE_DREDGE);
             event.accept(BRASS_ASTROLABE);
             event.accept(STORM_GLASS);
             event.accept(CAPTAINS_PIPE);

@@ -60,6 +60,7 @@ public class AnchorPointBlock extends Block implements EntityBlock {
                 } catch (Throwable t) {
                     CurrentsofTrade.LOGGER.error("Failed to initialize harbor name for anchor point at {}", pos, t);
                 }
+                anchor.seedRegionalTradesIfEmpty();
 
                 AnchorPointBlockEntity.HarborStatus status = anchor.getHarborStatus();
                 if (status != AnchorPointBlockEntity.HarborStatus.VALID) {

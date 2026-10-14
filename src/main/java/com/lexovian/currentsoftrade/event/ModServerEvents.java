@@ -14,6 +14,7 @@ public class ModServerEvents {
 
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        com.lexovian.currentsoftrade.world.village.CoastalWaterCheckProcessor.clearCache();
         VillagePoolInjection.inject(event.getServer());
     }
 

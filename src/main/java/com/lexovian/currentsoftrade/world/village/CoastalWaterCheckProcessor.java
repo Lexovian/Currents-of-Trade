@@ -44,6 +44,12 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
         }
     }
 
+    public static void clearCache() {
+        synchronized (PLACED_DOCKS) {
+            PLACED_DOCKS.clear();
+        }
+    }
+
     public CoastalWaterCheckProcessor() {}
 
     @Override
@@ -106,11 +112,18 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
             int rX = -fZ;
             int rZ = fX;
 
-            // Verify natural water in front of the dock
+            // Reject if the pier deck itself is submerged underwater
+            if (serverLevel.hasChunk(pierWorldPos.getX() >> 4, pierWorldPos.getZ() >> 4)
+                    && (serverLevel.getFluidState(pierWorldPos.above()).is(FluidTags.WATER)
+                    || serverLevel.getBlockState(pierWorldPos.above()).is(Blocks.WATER))) {
+                return List.of();
+            }
+
+            // Verify natural water in front of the dock (allows coastal banks up to 5 blocks above water surface with RIGID projection)
             int waterBlocks = 0;
             for (int f = 0; f <= 5; f++) {
                 for (int s = -2; s <= 2; s++) {
-                    for (int dy = -2; dy <= 0; dy++) {
+                    for (int dy = -5; dy <= 0; dy++) {
                         BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
                         if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
                             continue;
@@ -134,8 +147,24 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
             LOGGER.info("[Currents of Trade] Successfully placed village dock facing water at {} (water blocks: {})",
                     pierWorldPos, waterBlocks);
 
-            // Extend pilings and perimeter foundations down to the seabed
-            List<StructureTemplate.StructureBlockInfo> result = new ArrayList<>(processedBlockInfos);
+            // Populate chests/barrels with maritime loot tables and extend pilings/foundations down to the seabed
+            List<StructureTemplate.StructureBlockInfo> result = new ArrayList<>(processedBlockInfos.size() + 64);
+            for (StructureTemplate.StructureBlockInfo info : processedBlockInfos) {
+                if (info.state().is(Blocks.CHEST) || info.state().is(Blocks.BARREL)) {
+                    net.minecraft.nbt.CompoundTag tag = info.nbt() != null ? info.nbt().copy() : new net.minecraft.nbt.CompoundTag();
+                    if (!tag.contains("LootTable", net.minecraft.nbt.Tag.TAG_STRING)) {
+                        String lootTable = info.state().is(Blocks.CHEST)
+                                ? "currents_of_trade:chests/village_dock"
+                                : "minecraft:chests/village/village_fisher";
+                        tag.putString("LootTable", lootTable);
+                        tag.putLong("LootTableSeed", serverLevel.getRandom().nextLong());
+                        result.add(new StructureTemplate.StructureBlockInfo(info.pos(), info.state(), tag));
+                        continue;
+                    }
+                }
+                result.add(info);
+            }
+
             if (originalBlockInfos != null && originalBlockInfos.size() == processedBlockInfos.size()) {
                 for (int i = 0; i < originalBlockInfos.size(); i++) {
                     StructureTemplate.StructureBlockInfo orig = originalBlockInfos.get(i);
@@ -158,7 +187,6 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
                                 if (current.is(Blocks.WATER) || serverLevel.getFluidState(down).is(FluidTags.WATER) || current.isAir() || current.is(Blocks.SEAGRASS) || current.is(Blocks.TALL_SEAGRASS) || current.is(Blocks.KELP) || current.is(Blocks.KELP_PLANT)) {
                                     StructureTemplate.StructureBlockInfo added = new StructureTemplate.StructureBlockInfo(down.immutable(), extensionState, null);
                                     result.add(added);
-                                    serverLevel.setBlock(down, extensionState, 2);
                                     down.move(net.minecraft.core.Direction.DOWN);
                                 } else {
                                     break;

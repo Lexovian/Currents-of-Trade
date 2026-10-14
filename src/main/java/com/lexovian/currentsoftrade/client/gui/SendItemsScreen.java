@@ -144,7 +144,7 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.slot_fee"), 64, 24, 0x555555, false);
 
         ItemStack chart = this.menu.getChartStack();
-        boolean hasBoundChart = !chart.isEmpty() && chart.getItem() instanceof NauticalChartItem && NauticalChartItem.isBound(chart);
+        boolean hasBoundChart = this.menu.hasValidChart();
 
         // Destination details placed cleanly to the right of the slots (x=88..188)
         if (hasBoundChart) {

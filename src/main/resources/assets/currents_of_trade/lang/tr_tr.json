@@ -153,6 +153,10 @@
   "message.currents_of_trade.cargo_failed": "§c[Lojistik]§r Kargo gönderilemiyor! Hedef haritayı, Dublon navlun ücretini ve kargo eşyalarını kontrol edin.",
   "message.currents_of_trade.cargo_route_blocked": "§c⚓ [Lojistik]§r %s limanına giden deniz rotası kapalı! Sefer iptal edildi ve kargo %s limanına geri döndü.",
 
+  "currents_of_trade.configuration.title": "Currents of Trade Ayarları",
+  "currents_of_trade.configuration.section.currents_of_trade.common.toml": "Currents of Trade Ayarları",
+  "currents_of_trade.configuration.section.currents_of_trade.common.toml.title": "Currents of Trade Ayarları",
+
   "item.currents_of_trade.trade_ledger": "Ticaret Mukavelesi",
   "tooltip.currents_of_trade.ledger_bound": "§6Mühürlü Ticaret Mukavelesi:",
   "tooltip.currents_of_trade.ledger_how_to_submit": "§8Limana eklemek için bir Anchor Point'e sağ tıklayın.",
@@ -254,6 +258,73 @@
   "message.currents_of_trade.storm_glass_rain": "§9🌧 [Fırtına Camı] Kristaller bulanıklaşıp yükseliyor. Yağışlı ve dalgalı deniz bekleniyor.",
   "message.currents_of_trade.storm_glass_rain_incoming": "§9🌧 [Fırtına Camı] Kristaller hızla tırmanıyor! 2 dakika içinde yağış ve dalgalı deniz yaklaşıyor!",
   "message.currents_of_trade.storm_glass_clear": "§b☀ [Fırtına Camı] Sıvı tamamen berrak ve sakin. Açık deniz seyri için ideal rüzgarlar var.",
-  "tooltip.currents_of_trade.storm_glass_use_hint": "§8Barometrik hava durumunu tahmin etmek için sağ tıklayın."
+  "tooltip.currents_of_trade.storm_glass_use_hint": "§8Barometrik hava durumunu tahmin etmek için sağ tıklayın.",
+
+  "region.currents_of_trade.arid": "Kurak Ticaret Kıyısı",
+  "region.currents_of_trade.arid.exports": "§7Yerel İhraç: §eİpek Balya, Baharat Torbası, Deniz Tuzu",
+  "region.currents_of_trade.arid.imports": "§7Yüksek Talep: §bKehribar Şişesi, Soğuk Su Balığı (+%100 Değer)",
+
+  "region.currents_of_trade.cold": "Buzul Diyarı & Tayga",
+  "region.currents_of_trade.cold.exports": "§7Yerel İhraç: §bKehribar Şişesi, Fosil, Somon & Morina",
+  "region.currents_of_trade.cold.imports": "§7Yüksek Talep: §6Çay Kalıbı, Vanilya, Baharat (+%100 Değer)",
+
+  "region.currents_of_trade.tropical": "Tropik Adalar & Yağmur Ormanı",
+  "region.currents_of_trade.tropical.exports": "§7Yerel İhraç: §aKokulu Sandal Ağacı, Vanilya Demeti",
+  "region.currents_of_trade.tropical.imports": "§7Yüksek Talep: §bZarif Porselen, Lüks İpek (+%100 Değer)",
+
+  "region.currents_of_trade.temperate": "Ilıman Deniz Ticaret Merkezi",
+  "region.currents_of_trade.temperate.exports": "§7Yerel İhraç: §eZarif Porselen, Çay Kalıbı, Parlak İnci",
+  "region.currents_of_trade.temperate.imports": "§7Yüksek Talep: §aSandal Ağacı, Baharat, Kuzey Kehribarı (+%60-100 Değer)",
+
+  "tooltip.currents_of_trade.commodity.silk_bale.market": "§6✦ Deniz Ticareti: §eKurak Liman İhracı §8| §bYüksek Talep: Soğuk & Tropik Limanlar (+%100)",
+  "tooltip.currents_of_trade.commodity.spice_sack.market": "§6✦ Deniz Ticareti: §eKurak Liman İhracı §8| §bYüksek Talep: Soğuk & Ilıman Limanlar (+%100)",
+  "tooltip.currents_of_trade.commodity.salt_pouch.market": "§6✦ Deniz Ticareti: §eKıyı & Kurak Liman İhracı §8| §bYüksek Talep: İç Limanlar",
+  "tooltip.currents_of_trade.commodity.amber_vial.market": "§6✦ Deniz Ticareti: §bBuzul Liman İhracı §8| §eYüksek Talep: Çöl & Kurak Limanlar (+%100)",
+  "tooltip.currents_of_trade.commodity.tea_brick.market": "§6✦ Deniz Ticareti: §eIlıman Liman İhracı §8| §bYüksek Talep: Soğuk & Buzul Limanlar (+%100)",
+  "tooltip.currents_of_trade.commodity.fine_porcelain.market": "§6✦ Deniz Ticareti: §eIlıman Liman İhracı §8| §aYüksek Talep: Tropik & Orman Limanları (+%100)",
+  "tooltip.currents_of_trade.commodity.sandalwood.market": "§6✦ Deniz Ticareti: §aTropik Liman İhracı §8| §eYüksek Talep: Ilıman & Çöl Limanları (+%100)",
+  "tooltip.currents_of_trade.commodity.vanilla_bundle.market": "§6✦ Deniz Ticareti: §aTropik Liman İhracı §8| §bYüksek Talep: Soğuk & Buzul Limanlar (+%100)",
+  "tooltip.currents_of_trade.commodity.ammonite_fossil.market": "§6✦ Deniz Ticareti: §bBuzul Liman İhracı §8| §eYüksek Talep: Bilgin Limanları",
+
+  "tooltip.currents_of_trade.chart_region": "§7Ticaret Havzası: %s",
+  "gui.currents_of_trade.harbor_region": "⚓ Havza: %s",
+  "gui.currents_of_trade.arbitrage_badge": "§a✦ İpek Yolu Aktif",
+  "tooltip.currents_of_trade.arbitrage_active_title": "§6✦ Aktif Deniz Arbitraj Rotası",
+  "tooltip.currents_of_trade.arbitrage_active_desc": "§7Hedef liman bu malı ihraç ediyor, ana limanda ise yüksek talep var. -%50 kargo navlun indirimi!",
+  "message.currents_of_trade.arbitrage_route_activated": "§6[Arbitraj]§r §e%s§a limanına Deniz İpek Yolu seferi başlatıldı! -%%50 kargo navlun indirimi uygulandı.",
+
+  "block.currents_of_trade.lighthouse": "Deniz Feneri",
+  "item.currents_of_trade.lighthouse": "Deniz Feneri",
+  "message.currents_of_trade.lighthouse_tailwind": "§b⛵ [Elverişli Rüzgar] Kıyı deniz feneri yelkenlerinize güç veriyor! (+%25 Seyir Hızı)",
+  "tooltip.currents_of_trade.lighthouse.desc": "§7Kıyı sularında dönen rehber bir seyir ışığı yayar.",
+  "tooltip.currents_of_trade.lighthouse.tailwind": "§b✦ 128 blok içerisindeki gemilere +%25 Seyir Hızı kazandırır.",
+
+  "item.currents_of_trade.captains_tricorne": "Kaptan Şapkası",
+  "tooltip.currents_of_trade.captains_tricorne.desc": "§7Usta denizciler tarafından giyilen prestijli kaptan şapkası.",
+  "tooltip.currents_of_trade.captains_tricorne.speed_bonus": "§e✦ +%20 Sloop Yelken Hızı",
+  "tooltip.currents_of_trade.captains_tricorne.discount_bonus": "§b✦ Liman Seferleri ve Kargo Gönderiminde %10 Dublon İndirimi",
+
+  "item.currents_of_trade.salvage_dredge": "Deniz Tarama Kancası",
+  "tooltip.currents_of_trade.salvage_dredge.desc": "§7Batık kargoları ve deniz kalıntılarını çekmek için suya indirilir.",
+  "tooltip.currents_of_trade.salvage_dredge.lore": "§8Bir teknede veya iskeledeyken suya sağ tıklayın.",
+  "message.currents_of_trade.dredge_requires_water": "§c⚓ [Tarama Kancası] Açık suya atılmalıdır!",
+  "message.currents_of_trade.dredge_success": "§6⚓ [Tarama Kancası] Derinlerden %s çıkarıldı!",
+  "item.currents_of_trade.sunken_treasure_map": "Batık Seyir Haritası",
+
+  "tooltip.currents_of_trade.message_in_a_bottle.treasure_hint": "§8Gömülü hazine haritaları, antik rota koordinatları veya kayıp yadigarlar içerebilir.",
+  "message.currents_of_trade.bottle_found_map": "§6⚓ [Şişede Mesaj] İçinden gerçek bir Gömülü Hazine Haritası çıktı!",
+  "message.currents_of_trade.bottle_found_chart": "§b⚓ [Şişede Mesaj] Antik bir Deniz Haritası bulundu!",
+  "message.currents_of_trade.bottle_found_relic": "§e⚓ [Şişede Mesaj] İçinden kayıp bir yadigar döküldü: %s!",
+
+  "tooltip.currents_of_trade.captains_pipe.effect": "§eSağ tıkla tüttür: §aDeniz Tutmasını Giderir §7ve §aŞans I §7(60sn) verir.",
+
+  "advancement.currents_of_trade.guiding_light.title": "Yol Gösteren Işık",
+  "advancement.currents_of_trade.guiding_light.desc": "Kıyı sularında gemilere rüzgar desteği sağlayan bir Deniz Feneri üretin.",
+  "advancement.currents_of_trade.deep_sea_dredger.title": "Derin Deniz Taramacısı",
+  "advancement.currents_of_trade.deep_sea_dredger.desc": "Deniz tabanından batık yükleri ve kalıntıları çekmek için bir Deniz Tarama Kancası edinin.",
+  "advancement.currents_of_trade.silk_road_navigator.title": "Deniz İpek Yolu",
+  "advancement.currents_of_trade.silk_road_navigator.desc": "Aktif bir bölgeler arası Arbitraj Rotası üzerinden ticaret gemisi gönderin.",
+  "advancement.currents_of_trade.royal_dockyard.title": "Kraliyet Tersanesi",
+  "advancement.currents_of_trade.royal_dockyard.desc": "Bir limanı 5. Seviye olan Kraliyet Tersanesi kademesine yükseltin."
 }
 

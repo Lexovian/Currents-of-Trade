@@ -8,6 +8,7 @@ import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
+import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -56,17 +57,17 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
     // Client-side constructor
     public RequestTradeMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, new SimpleContainerData(5));
+        this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, new SimpleContainerData(6));
     }
 
     // Server-side constructor
     public RequestTradeMenu(int containerId, Inventory playerInventory, ContainerLevelAccess access, BlockPos currentPos) {
-        this(containerId, playerInventory, access, currentPos, new SimpleContainerData(5));
+        this(containerId, playerInventory, access, currentPos, new SimpleContainerData(6));
     }
 
     public RequestTradeMenu(int containerId, Inventory playerInventory, ContainerLevelAccess access, BlockPos currentPos, ContainerData data) {
         super(CurrentsofTrade.REQUEST_TRADE_MENU.get(), containerId);
-        checkContainerDataCount(data, 5);
+        checkContainerDataCount(data, 6);
 
         this.tradeContainer = new SimpleContainer(4);
         this.data = data;
@@ -156,6 +157,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
             this.data.set(2, this.stagedTradeCount);
             this.data.set(3, this.stagedItemCount);
             this.data.set(4, this.cargoSurcharge);
+            this.data.set(5, isArbitrageRouteInternal() ? 1 : 0);
         }
         super.broadcastChanges();
     }
@@ -178,7 +180,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
     public boolean hasValidChart() {
         ItemStack chart = getChartStack();
-        return !chart.isEmpty() && chart.getItem() instanceof NauticalChartItem && NauticalChartItem.isBound(chart);
+        return !chart.isEmpty() && (chart.getItem() instanceof NauticalChartItem || chart.getItem() instanceof RouteJournalItem) && NauticalChartItem.isBound(chart);
     }
 
     public BlockPos getTargetPos() {
@@ -227,7 +229,11 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         double dist = getDistance();
         if (dist <= 0) return 0;
         // Half travel price: 1 Doubloon per 200 blocks
-        return Math.max(1, (int) Math.ceil(dist / 200.0));
+        int fee = Math.max(1, (int) Math.ceil(dist / 200.0));
+        if (this.player != null && this.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get())) {
+            fee = Math.max(1, (int) Math.floor(fee * 0.9));
+        }
+        return fee;
     }
 
     public int getCargoSurcharge() {
@@ -434,10 +440,33 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         }
         this.stagedItemCount = totalItems;
         // Shipping surcharge: +1 Doubloon per 3 item stacks
-        this.cargoSurcharge = totalStacks > 0 ? (int) Math.ceil(totalStacks / 3.0) : 0;
+        int surcharge = totalStacks > 0 ? (int) Math.ceil(totalStacks / 3.0) : 0;
+        if (isArbitrageRouteInternal()) {
+            // Maritime Arbitrage Route: 50% discount on shipping fees!
+            surcharge = Math.max(0, surcharge / 2);
+        }
+        this.cargoSurcharge = surcharge;
         this.data.set(2, this.stagedTradeCount);
         this.data.set(3, this.stagedItemCount);
         this.data.set(4, this.cargoSurcharge);
+        this.data.set(5, isArbitrageRouteInternal() ? 1 : 0);
+    }
+
+    public boolean isArbitrageRouteInternal() {
+        if (!hasValidChart()) return false;
+        BlockPos target = getTargetPos();
+        if (target == null) return false;
+        HarborTradeOffer trade = getSelectedTrade();
+        if (trade == null) return false;
+
+        MaritimeTradeRegion targetRegion = MaritimeTradeRegion.fromLevelAndPos(this.level, target);
+        MaritimeTradeRegion originRegion = MaritimeTradeRegion.fromLevelAndPos(this.level, this.currentPos);
+
+        return MaritimeTradeRegion.isArbitrageRoute(originRegion, targetRegion, trade.getResult().getItem());
+    }
+
+    public boolean isArbitrageRoute() {
+        return this.data.get(5) == 1;
     }
 
     private void mergeIntoList(List<ItemStack> list, ItemStack toAdd) {
@@ -487,7 +516,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
         // Locate water surface near the departure dock
         BlockPos waterStart = null;
-        for (BlockPos check : BlockPos.betweenClosed(origin.offset(-4, -3, -4), origin.offset(4, 1, 4))) {
+        for (BlockPos check : BlockPos.betweenClosed(origin.offset(-8, -7, -8), origin.offset(8, 2, 8))) {
             if (this.level.getFluidState(check).is(FluidTags.WATER)) {
                 waterStart = check.immutable();
                 break;
@@ -548,6 +577,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
         int countTrades = this.stagedTradeCount;
         int countItems = this.stagedItemCount;
+        boolean isArbitrage = isArbitrageRouteInternal();
 
         // Clear staged lists so removed() won't refund them!
         this.stagedPayments.clear();
@@ -567,6 +597,21 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                 Component.translatable("message.currents_of_trade.trade_departed_batch", destHarbor, countTrades, countItems),
                 false
         );
+        if (isArbitrage) {
+            player.displayClientMessage(
+                    Component.translatable("message.currents_of_trade.arbitrage_route_activated", destHarbor),
+                    false
+            );
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
+                net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
+                        .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "silk_road_navigator"));
+                if (adv != null) {
+                    for (String criterion : adv.value().criteria().keySet()) {
+                        serverPlayer.getAdvancements().award(adv, criterion);
+                    }
+                }
+            }
+        }
 
         this.broadcastChanges();
         return true;
@@ -615,7 +660,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                 }
             } else {
                 // From Player Inventory to Trade Container
-                if (stackInSlot.getItem() instanceof NauticalChartItem) {
+                if (stackInSlot.getItem() instanceof NauticalChartItem || stackInSlot.getItem() instanceof RouteJournalItem) {
                     if (!this.moveItemStackTo(stackInSlot, SLOT_CHART, SLOT_CHART + 1, false)) {
                         return ItemStack.EMPTY;
                     }

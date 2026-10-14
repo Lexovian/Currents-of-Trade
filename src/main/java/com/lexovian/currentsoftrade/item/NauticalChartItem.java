@@ -4,6 +4,7 @@ import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
+import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
@@ -72,6 +73,9 @@ public class NauticalChartItem extends Item {
             // Write harbor coordinates, name and trade snapshot into the chart's NBT
             ItemStack stack = context.getItemInHand();
             final String finalName = harborName;
+            final MaritimeTradeRegion region = be instanceof AnchorPointBlockEntity aBe
+                    ? aBe.getTradeRegion()
+                    : MaritimeTradeRegion.fromLevelAndPos(level, pos);
             final List<HarborTradeOffer> trades =
                     be instanceof AnchorPointBlockEntity aBe ? aBe.getHarborTrades() : List.of();
 
@@ -80,6 +84,7 @@ public class NauticalChartItem extends Item {
                 tag.putInt("TargetY", pos.getY());
                 tag.putInt("TargetZ", pos.getZ());
                 tag.putString("HarborName", finalName);
+                tag.putString("RegionId", region.getId());
                 tag.putBoolean("Bound", true);
 
                 ListTag tradesList = new ListTag();
@@ -118,6 +123,12 @@ public class NauticalChartItem extends Item {
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_destination", tag.getString("HarborName")));
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_coordinates",
                     tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ")));
+
+            String regionId = tag.getString("RegionId");
+            MaritimeTradeRegion region = MaritimeTradeRegion.byId(regionId);
+            tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_region", region.getDisplayName()));
+            tooltipComponents.add(region.getExportDescription());
+            tooltipComponents.add(region.getImportDescription());
         } else {
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_unbound"));
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_how_to_bind"));

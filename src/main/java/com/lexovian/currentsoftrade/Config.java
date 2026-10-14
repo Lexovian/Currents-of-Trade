@@ -29,6 +29,7 @@ public class Config {
     public static final ModConfigSpec.IntValue SPICE_SACK_DURATION_TICKS;
     public static final ModConfigSpec.IntValue AMBER_VIAL_REGEN_DURATION_TICKS;
     public static final ModConfigSpec.IntValue AMBER_VIAL_NAUSEA_DURATION_TICKS;
+    public static final ModConfigSpec.IntValue CAPTAINS_PIPE_LUCK_DURATION_TICKS;
 
     static {
         BUILDER.comment("Harbor and voyage mechanics configuration").push("harbor");
@@ -92,6 +93,10 @@ public class Config {
         AMBER_VIAL_NAUSEA_DURATION_TICKS = BUILDER
                 .comment("Duration in game ticks for seasickness Nausea caused by the Amber Vial (default: 160 ticks / 8 seconds)")
                 .defineInRange("amberVialNauseaDurationTicks", 160, 0, 6000);
+
+        CAPTAINS_PIPE_LUCK_DURATION_TICKS = BUILDER
+                .comment("Duration in game ticks for Luck I granted by puffing the Captain's Pipe (default: 1200 ticks / 60 seconds)")
+                .defineInRange("captainsPipeLuckDurationTicks", 1200, 20, 24000);
 
         BUILDER.pop();
     }

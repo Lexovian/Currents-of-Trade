@@ -227,7 +227,7 @@ public class SendItemsMenu extends AbstractContainerMenu {
 
     public int getDistance() {
         ItemStack chart = getChartStack();
-        if (chart.getItem() instanceof NauticalChartItem) {
+        if (chart.getItem() instanceof NauticalChartItem || chart.getItem() instanceof RouteJournalItem) {
             BlockPos target = NauticalChartItem.getTargetPos(chart);
             if (target != null) {
                 BlockPos origin = getOriginPos();
@@ -243,6 +243,9 @@ public class SendItemsMenu extends AbstractContainerMenu {
         int dist = getDistance();
         if (dist <= 0) return 0;
         int fee = (int) Math.ceil(dist / 100.0);
+        if (this.player != null && this.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get())) {
+            fee = Math.max(1, (int) Math.floor(fee * 0.9));
+        }
         return Math.max(1, fee);
     }
 
@@ -266,7 +269,7 @@ public class SendItemsMenu extends AbstractContainerMenu {
 
     public boolean hasValidChart() {
         ItemStack chart = getChartStack();
-        return !chart.isEmpty() && chart.getItem() instanceof NauticalChartItem && NauticalChartItem.isBound(chart);
+        return !chart.isEmpty() && (chart.getItem() instanceof NauticalChartItem || chart.getItem() instanceof RouteJournalItem) && NauticalChartItem.isBound(chart);
     }
 
     public boolean hasCargo() {
@@ -387,7 +390,7 @@ public class SendItemsMenu extends AbstractContainerMenu {
                 }
             } else {
                 // Move from player inventory into menu
-                if (currentStack.getItem() instanceof NauticalChartItem) {
+                if (currentStack.getItem() instanceof NauticalChartItem || currentStack.getItem() instanceof RouteJournalItem) {
                     if (!this.moveItemStackTo(currentStack, 0, 1, false)) {
                         return ItemStack.EMPTY;
                     }

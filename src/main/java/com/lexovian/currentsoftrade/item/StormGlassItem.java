@@ -114,6 +114,8 @@ public class StormGlassItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
+        tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass.desc"));
+        tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass.lore"));
         tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass_use_hint"));
         super.appendHoverText(stack, context, tooltip, tooltipFlag);
     }
