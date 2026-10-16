@@ -9,7 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.entity.PartEntity;
+import net.minecraftforge.entity.PartEntity;
 
 /**
  * Universal multi-part sub-entity representing stern (aft) or prow (bow) sections of large ships.
@@ -72,7 +72,7 @@ public class ShipPart<T extends Entity> extends PartEntity<T> {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
+    protected void defineSynchedData() {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {}

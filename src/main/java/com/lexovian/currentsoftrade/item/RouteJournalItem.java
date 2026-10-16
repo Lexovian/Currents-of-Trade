@@ -4,7 +4,6 @@ import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -18,7 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -158,7 +157,7 @@ public class RouteJournalItem extends Item {
     public static void syncActiveHarborTrades(ItemStack stack, BlockPos targetPos, net.minecraft.server.level.ServerLevel serverLevel) {
         List<com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer> liveTrades =
                 com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getTrades(targetPos);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+        CustomData.update(stack, tag -> {
             ListTag list = new ListTag();
             for (com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer offer : liveTrades) {
                 list.add(offer.toTag(serverLevel.registryAccess()));
@@ -170,7 +169,7 @@ public class RouteJournalItem extends Item {
     // --- Tooltip ---
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltip, TooltipFlag tooltipFlag) {
         List<RouteEntry> routes = getRoutes(stack);
         if (routes.isEmpty()) {
             tooltip.add(Component.translatable("tooltip.currents_of_trade.journal_empty_desc"));
@@ -193,7 +192,7 @@ public class RouteJournalItem extends Item {
 
     public static List<RouteEntry> getRoutes(ItemStack stack) {
         List<RouteEntry> result = new ArrayList<>();
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = CustomData.getOrNull(stack);
         if (customData == null) return result;
 
         CompoundTag tag = customData.copyTag();
@@ -212,7 +211,7 @@ public class RouteJournalItem extends Item {
     }
 
     public static void addRoute(ItemStack stack, RouteEntry entry) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = CustomData.get(stack);
         CompoundTag tag = customData.copyTag();
 
         ListTag list = tag.contains(TAG_ROUTES, Tag.TAG_LIST) ? tag.getList(TAG_ROUTES, Tag.TAG_COMPOUND) : new ListTag();
@@ -229,20 +228,20 @@ public class RouteJournalItem extends Item {
         if (!tag.contains(TAG_SELECTED_INDEX)) {
             tag.putInt(TAG_SELECTED_INDEX, 0);
         }
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        CustomData.set(stack, CustomData.of(tag));
     }
 
     public static int getSelectedIndex(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = CustomData.getOrNull(stack);
         if (customData == null) return 0;
         return customData.copyTag().getInt(TAG_SELECTED_INDEX);
     }
 
     public static void setSelectedIndex(ItemStack stack, int index) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = CustomData.get(stack);
         CompoundTag tag = customData.copyTag();
         tag.putInt(TAG_SELECTED_INDEX, index);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        CustomData.set(stack, CustomData.of(tag));
     }
 
     @Nullable

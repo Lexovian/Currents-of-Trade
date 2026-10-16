@@ -1,5 +1,6 @@
 package com.lexovian.currentsoftrade.world.harbor;
 
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -35,21 +36,21 @@ public class HarborTradeOffer {
     public CompoundTag toTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         if (!costA.isEmpty()) {
-            tag.put("CostA", costA.save(registries));
+            tag.put("CostA", CustomData.saveStack(costA, registries));
         }
         if (!costB.isEmpty()) {
-            tag.put("CostB", costB.save(registries));
+            tag.put("CostB", CustomData.saveStack(costB, registries));
         }
         if (!result.isEmpty()) {
-            tag.put("Result", result.save(registries));
+            tag.put("Result", CustomData.saveStack(result, registries));
         }
         return tag;
     }
 
     public static HarborTradeOffer fromTag(CompoundTag tag, HolderLookup.Provider registries) {
-        ItemStack a = tag.contains("CostA") ? ItemStack.parse(registries, tag.getCompound("CostA")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
-        ItemStack b = tag.contains("CostB") ? ItemStack.parse(registries, tag.getCompound("CostB")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
-        ItemStack res = tag.contains("Result") ? ItemStack.parse(registries, tag.getCompound("Result")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
+        ItemStack a = tag.contains("CostA") ? CustomData.parseStack(registries, tag.getCompound("CostA")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
+        ItemStack b = tag.contains("CostB") ? CustomData.parseStack(registries, tag.getCompound("CostB")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
+        ItemStack res = tag.contains("Result") ? CustomData.parseStack(registries, tag.getCompound("Result")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         return new HarborTradeOffer(a, b, res);
     }
 }

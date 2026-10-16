@@ -4,7 +4,7 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -23,7 +23,7 @@ public class AnchorPointMenu extends AbstractContainerMenu {
 
     // --- Constructors & Factory ---
 
-    public AnchorPointMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
+    public AnchorPointMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
         this(containerId, playerInventory, buf.readBlockPos(), buf.readVarInt());
     }
 

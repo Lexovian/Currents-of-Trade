@@ -16,7 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.entity.PartEntity;
+import net.minecraftforge.entity.PartEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -105,9 +105,9 @@ public class SloopEntity extends Boat {
     }
 
     @Override
-    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(IS_MERCHANT_SHIP, false);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(IS_MERCHANT_SHIP, false);
     }
 
     @Override
@@ -151,14 +151,14 @@ public class SloopEntity extends Boat {
     }
 
     @Override
-    public void destroy(Item dropItem) {
+    protected void destroy(net.minecraft.world.damagesource.DamageSource source) {
         if (this.isMerchantShip()) {
             // Eject passengers and silently discard without dropping any item
             this.ejectPassengers();
             this.discard();
             return;
         }
-        super.destroy(dropItem);
+        super.destroy(source);
     }
 
     @Override

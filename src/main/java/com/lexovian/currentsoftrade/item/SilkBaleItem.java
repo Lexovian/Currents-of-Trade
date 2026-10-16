@@ -13,7 +13,7 @@ public class SilkBaleItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.silk_bale_value"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.silk_bale_hint"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.silk_bale.market"));

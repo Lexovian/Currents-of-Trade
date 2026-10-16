@@ -14,7 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
@@ -23,7 +22,7 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
     // --- Constants & Widgets ---
 
     private static final ResourceLocation GUI_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/anchor_point_gui.png");
+            new ResourceLocation(CurrentsofTrade.MODID, "textures/gui/anchor_point_gui.png");
 
     private static final String STAR_FILLED = "★";
     private static final String STAR_EMPTY  = "☆";
@@ -134,7 +133,7 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
             String newName = this.nameEditBox.getValue().trim();
             if (!newName.isEmpty() && !newName.equals(this.lastSavedName)) {
                 this.lastSavedName = newName;
-                PacketDistributor.sendToServer(new ModPayloads.RenameHarborPayload(this.menu.getBlockPos(), newName));
+                com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.RenameHarborPayload(this.menu.getBlockPos(), newName));
             }
         }
     }
@@ -228,19 +227,19 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
     // --- Action Handlers ---
 
     private void onTravelClicked() {
-        PacketDistributor.sendToServer(new ModPayloads.OpenTravelPayload(this.menu.getBlockPos()));
+        com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenTravelPayload(this.menu.getBlockPos()));
     }
 
     private void onSendItemsClicked() {
-        PacketDistributor.sendToServer(new ModPayloads.OpenSendItemsPayload(this.menu.getBlockPos()));
+        com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenSendItemsPayload(this.menu.getBlockPos()));
     }
 
     private void onRequestTradeClicked() {
-        PacketDistributor.sendToServer(new ModPayloads.OpenRequestTradePayload(this.menu.getBlockPos()));
+        com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenRequestTradePayload(this.menu.getBlockPos()));
     }
 
     private void onUpgradeClicked() {
-        PacketDistributor.sendToServer(new ModPayloads.UpgradeHarborPayload(this.menu.getBlockPos()));
+        com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.UpgradeHarborPayload(this.menu.getBlockPos()));
     }
 
     // --- Rendering ---

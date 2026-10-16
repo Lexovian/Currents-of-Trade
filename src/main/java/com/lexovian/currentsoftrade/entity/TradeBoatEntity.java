@@ -1,5 +1,6 @@
 package com.lexovian.currentsoftrade.entity;
 
+import com.lexovian.currentsoftrade.compat.CustomData;
 import com.lexovian.currentsoftrade.Config;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
@@ -48,9 +49,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -79,7 +81,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     // Cargo hold
     private NonNullList<ItemStack> itemStacks = NonNullList.withSize(CARGO_SLOTS, ItemStack.EMPTY);
-    @Nullable private ResourceKey<LootTable> lootTable;
+    @Nullable private ResourceLocation lootTable;
     private long lootTableSeed;
     protected boolean cargoDelivered = false;
     protected int emptyTicks = 0;
@@ -140,9 +142,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     }
 
     @Override
-    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(IS_WANDERING_TRADER_SHIP, false);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(IS_WANDERING_TRADER_SHIP, false);
     }
 
     public boolean isWanderingTraderShip() {
@@ -167,7 +169,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     }
 
     @Override
-    public net.neoforged.neoforge.entity.PartEntity<?>[] getParts() {
+    public net.minecraftforge.entity.PartEntity<?>[] getParts() {
         return this.subEntities;
     }
 
@@ -361,8 +363,8 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     @Override public void setChanged() {}
     @Override public boolean stillValid(Player player) { return this.isChestVehicleStillValid(player); }
     @Override public void clearContent() { this.clearChestVehicleContent(); }
-    @Nullable @Override public ResourceKey<LootTable> getLootTable() { return this.lootTable; }
-    @Override public void setLootTable(@Nullable ResourceKey<LootTable> lootTable) { this.lootTable = lootTable; }
+    @Nullable @Override public ResourceLocation getLootTable() { return this.lootTable; }
+    @Override public void setLootTable(@Nullable ResourceLocation lootTable) { this.lootTable = lootTable; }
     @Override public long getLootTableSeed() { return this.lootTableSeed; }
     @Override public void setLootTableSeed(long seed) { this.lootTableSeed = seed; }
 
@@ -952,9 +954,13 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
 
             // A. NeoForge IItemHandler capability (handles double chests, barrels, hoppers, modded containers)
-            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, dir.getOpposite());
-            if (handler == null) {
-                handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, null);
+            IItemHandler handler = null;
+            BlockEntity capBe = level.getBlockEntity(neighborPos);
+            if (capBe != null) {
+                handler = capBe.getCapability(ForgeCapabilities.ITEM_HANDLER, dir.getOpposite()).resolve().orElse(null);
+                if (handler == null) {
+                    handler = capBe.getCapability(ForgeCapabilities.ITEM_HANDLER, null).resolve().orElse(null);
+                }
             }
 
             if (handler != null) {
@@ -1014,7 +1020,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             if (stack.isEmpty()) break;
             ItemStack existing = container.getItem(slot);
-            if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, stack) && container.canPlaceItem(slot, stack)) {
+            if (!existing.isEmpty() && ItemStack.isSameItemSameTags(existing, stack) && container.canPlaceItem(slot, stack)) {
                 int max = Math.min(container.getMaxStackSize(), existing.getMaxStackSize());
                 int fit = Math.min(stack.getCount(), max - existing.getCount());
                 if (fit > 0) {
@@ -1199,7 +1205,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
-        this.addChestVehicleSaveData(tag, this.registryAccess());
+        this.addChestVehicleSaveData(tag);
 
         if (this.targetPos != null) {
             tag.putInt("TargetX", this.targetPos.getX());
@@ -1225,7 +1231,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (!this.tradeRewards.isEmpty()) {
             ListTag rewardList = new ListTag();
             for (ItemStack reward : this.tradeRewards) {
-                rewardList.add(reward.save(this.registryAccess()));
+                rewardList.add(reward.save(new CompoundTag()));
             }
             tag.put("TradeRewards", rewardList);
         }
@@ -1241,7 +1247,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             this.cruiseSpeed = tag.getDouble("CruiseSpeed");
         }
 
-        this.readChestVehicleSaveData(tag, this.registryAccess());
+        this.readChestVehicleSaveData(tag);
 
         if (tag.contains("TargetX")) {
             this.targetPos = new BlockPos(tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ"));
@@ -1270,7 +1276,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (tag.contains("TradeRewards", Tag.TAG_LIST)) {
             ListTag rewardList = tag.getList("TradeRewards", Tag.TAG_COMPOUND);
             for (int i = 0; i < rewardList.size(); i++) {
-                ItemStack.parse(this.registryAccess(), rewardList.getCompound(i))
+                CustomData.parseStack(null, rewardList.getCompound(i))
                         .ifPresent(this.tradeRewards::add);
             }
         }

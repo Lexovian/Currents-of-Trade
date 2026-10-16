@@ -131,7 +131,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                 BlockPos targetPos = NauticalChartItem.getTargetPos(chart);
                 if (targetPos != null) {
                     List<HarborTradeOffer> liveTrades = HarborSavedData.get(serverLevel).getTrades(targetPos);
-                    net.minecraft.world.item.component.CustomData.update(net.minecraft.core.component.DataComponents.CUSTOM_DATA, chart, tag -> {
+                    com.lexovian.currentsoftrade.compat.CustomData.update(chart, tag -> {
                         net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
                         for (HarborTradeOffer offer : liveTrades) {
                             list.add(offer.toTag(serverLevel.registryAccess()));
@@ -288,10 +288,10 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         if (inSlot.isEmpty()) return false;
         if (!ItemStack.isSameItem(inSlot, required)) return false;
         if (inSlot.getCount() < required.getCount()) return false;
-        if (required.isComponentsPatchEmpty()) {
+        if (!required.hasTag()) {
             return true;
         }
-        return ItemStack.isSameItemSameComponents(inSlot, required);
+        return ItemStack.isSameItemSameTags(inSlot, required);
     }
 
     private boolean checkSlotHasItem(int slotIndex, ItemStack required) {
@@ -472,7 +472,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     private void mergeIntoList(List<ItemStack> list, ItemStack toAdd) {
         if (toAdd.isEmpty()) return;
         for (ItemStack existing : list) {
-            if (ItemStack.isSameItemSameComponents(existing, toAdd)) {
+            if (ItemStack.isSameItemSameTags(existing, toAdd)) {
                 int space = existing.getMaxStackSize() - existing.getCount();
                 int transfer = Math.min(space, toAdd.getCount());
                 existing.grow(transfer);
@@ -603,10 +603,10 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                     false
             );
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
-                net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
-                        .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "silk_road_navigator"));
+                net.minecraft.advancements.Advancement adv = serverPlayer.getServer().getAdvancements()
+                        .getAdvancement(new net.minecraft.resources.ResourceLocation(CurrentsofTrade.MODID, "silk_road_navigator"));
                 if (adv != null) {
-                    for (String criterion : adv.value().criteria().keySet()) {
+                    for (String criterion : adv.getCriteria().keySet()) {
                         serverPlayer.getAdvancements().award(adv, criterion);
                     }
                 }

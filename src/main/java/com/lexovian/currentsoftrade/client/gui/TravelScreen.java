@@ -12,12 +12,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public class TravelScreen extends AbstractContainerScreen<TravelMenu> {
 
     private static final ResourceLocation GUI_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/travel_gui.png");
+            new ResourceLocation(CurrentsofTrade.MODID, "textures/gui/travel_gui.png");
 
     private Button travelButton;
     private Button backButton;
@@ -38,7 +37,7 @@ public class TravelScreen extends AbstractContainerScreen<TravelMenu> {
 
         // Compact Back button placed cleanly at the top-left, ending at y=21
         this.backButton = Button.builder(Component.translatable("gui.currents_of_trade.back"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
         }).bounds(this.leftPos + 7, this.topPos + 6, 36, 15).build();
 
         int travelBtnWidth = 120;
@@ -46,7 +45,7 @@ public class TravelScreen extends AbstractContainerScreen<TravelMenu> {
         int travelBtnX = this.leftPos + (this.imageWidth - travelBtnWidth) / 2;
 
         this.travelButton = Button.builder(Component.translatable("gui.currents_of_trade.travel_btn"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.ExecuteTravelPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.ExecuteTravelPayload(this.menu.getCurrentPos()));
         }).bounds(travelBtnX, this.topPos + 84, travelBtnWidth, travelBtnHeight).build();
 
         this.addRenderableWidget(this.backButton);

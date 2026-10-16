@@ -7,7 +7,6 @@ import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -20,7 +19,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -79,7 +78,7 @@ public class NauticalChartItem extends Item {
             final List<HarborTradeOffer> trades =
                     be instanceof AnchorPointBlockEntity aBe ? aBe.getHarborTrades() : List.of();
 
-            CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            CustomData.update(stack, tag -> {
                 tag.putInt("TargetX", pos.getX());
                 tag.putInt("TargetY", pos.getY());
                 tag.putInt("TargetZ", pos.getZ());
@@ -116,8 +115,8 @@ public class NauticalChartItem extends Item {
     // Tooltip
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        CompoundTag tag = CustomData.get(stack).copyTag();
 
         if (tag.getBoolean("Bound")) {
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_destination", tag.getString("HarborName")));
@@ -144,7 +143,7 @@ public class NauticalChartItem extends Item {
         if (stack.getItem() instanceof RouteJournalItem) {
             return RouteJournalItem.getSelectedTargetPos(stack);
         }
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = CustomData.get(stack).copyTag();
         if (tag.getBoolean("Bound")) {
             return new BlockPos(tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ"));
         }
@@ -156,7 +155,7 @@ public class NauticalChartItem extends Item {
         if (stack.getItem() instanceof RouteJournalItem) {
             return RouteJournalItem.getSelectedTargetName(stack);
         }
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = CustomData.get(stack).copyTag();
         return tag.getBoolean("Bound") ? tag.getString("HarborName") : null;
     }
 
@@ -195,7 +194,7 @@ public class NauticalChartItem extends Item {
             if (!liveTrades.isEmpty()) return liveTrades;
         }
 
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = CustomData.get(stack).copyTag();
         if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
             ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
             List<HarborTradeOffer> list = new ArrayList<>();

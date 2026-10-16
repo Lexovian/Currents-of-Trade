@@ -1,8 +1,7 @@
 ### Gradle ###
-.gradle
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/**/build/
 
 ### IntelliJ IDEA ###
 .idea/
@@ -10,7 +9,6 @@ build/
 *.iml
 *.ipr
 out/
-!**/src/**/out/
 
 .run/
 
@@ -20,11 +18,8 @@ out/
 .eclipse/
 .factorypath
 .project
-.settings
-.springBeans
-.sts4-cache
+.settings/
 bin/
-!**/src/**/bin/
 
 ### VS Code ###
 .vscode/
@@ -34,14 +29,9 @@ bin/
 
 ### Minecraft Modding ###
 run/
-!**/src/**/run/
+run-data/
 **/src/generated/**/.cache/
-repo/
-!**/src/**/repo/
 
-### Notes & Temp Dev Assets ###
-MOD_OZET.txt
-TEMPLATE_LICENSE.txt
-story_photo.jpg
-logo_anchor_transparent.png
+### Temp Dev Assets ###
 scratch/
+compile.ps1

@@ -1,6 +1,5 @@
 package com.lexovian.currentsoftrade.item;
 
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -13,7 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ServerLevelData;
 
@@ -65,11 +64,11 @@ public class StormGlassItem extends Item {
 
     public static int updateForecastState(ItemStack stack, ServerLevel serverLevel) {
         int state = calculateWeatherState(serverLevel);
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = CustomData.get(stack);
         CompoundTag tag = customData.copyTag();
         if (!tag.contains(TAG_WEATHER_STATE) || tag.getInt(TAG_WEATHER_STATE) != state) {
             tag.putInt(TAG_WEATHER_STATE, state);
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            CustomData.set(stack, CustomData.of(tag));
         }
         return state;
     }
@@ -113,7 +112,7 @@ public class StormGlassItem extends Item {
     // --- Tooltip ---
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltip, TooltipFlag tooltipFlag) {
         tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass.desc"));
         tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass.lore"));
         tooltip.add(Component.translatable("tooltip.currents_of_trade.storm_glass_use_hint"));

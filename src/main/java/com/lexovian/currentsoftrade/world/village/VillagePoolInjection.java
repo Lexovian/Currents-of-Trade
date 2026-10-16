@@ -54,7 +54,7 @@ public class VillagePoolInjection {
         } catch (NoSuchFieldException e) {
             // Obfuscated / fallback names if ever needed
             for (Field f : StructureTemplatePool.class.getDeclaredFields()) {
-                if (List.class.isAssignableFrom(f.getType()) && f.getGenericType().getTypeName().contains("Pair")) {
+                if (!java.lang.reflect.Modifier.isStatic(f.getModifiers()) && List.class.isAssignableFrom(f.getType()) && f.getGenericType().getTypeName().contains("Pair")) {
                     rawTemplatesField = f;
                     rawTemplatesField.setAccessible(true);
                     break;
@@ -67,7 +67,7 @@ public class VillagePoolInjection {
             templatesField.setAccessible(true);
         } catch (NoSuchFieldException e) {
             for (Field f : StructureTemplatePool.class.getDeclaredFields()) {
-                if (ObjectArrayList.class.isAssignableFrom(f.getType())) {
+                if (!java.lang.reflect.Modifier.isStatic(f.getModifiers()) && ObjectArrayList.class.isAssignableFrom(f.getType())) {
                     templatesField = f;
                     templatesField.setAccessible(true);
                     break;
@@ -80,7 +80,7 @@ public class VillagePoolInjection {
             maxSizeField.setAccessible(true);
         } catch (NoSuchFieldException e) {
             for (Field f : StructureTemplatePool.class.getDeclaredFields()) {
-                if (f.getType() == int.class) {
+                if (!java.lang.reflect.Modifier.isStatic(f.getModifiers()) && f.getType() == int.class) {
                     maxSizeField = f;
                     maxSizeField.setAccessible(true);
                     break;
@@ -108,7 +108,7 @@ public class VillagePoolInjection {
 
         int injectedCount = 0;
         for (String poolName : TARGET_VILLAGE_HOUSES_POOLS) {
-            StructureTemplatePool pool = poolRegistry.get(ResourceLocation.parse(poolName));
+            StructureTemplatePool pool = poolRegistry.get(new ResourceLocation(poolName));
             if (pool != null) {
                 if (injectPieceIntoPool(pool, dockHousePiece, DOCK_STRUCTURE, houseWeight)) {
                     injectedCount++;
@@ -117,7 +117,7 @@ public class VillagePoolInjection {
         }
 
         for (String poolName : TARGET_VILLAGE_TERMINATOR_POOLS) {
-            StructureTemplatePool pool = poolRegistry.get(ResourceLocation.parse(poolName));
+            StructureTemplatePool pool = poolRegistry.get(new ResourceLocation(poolName));
             if (pool != null) {
                 if (injectPieceIntoPool(pool, dockStreetPiece, DOCK_STREET_STRUCTURE, terminatorWeight)) {
                     injectedCount++;

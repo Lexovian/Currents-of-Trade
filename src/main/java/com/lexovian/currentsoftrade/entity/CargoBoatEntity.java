@@ -50,9 +50,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
     // --- Synched Data & Steering ---
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(IS_PLAYER_CONTROLLED, false);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(IS_PLAYER_CONTROLLED, false);
     }
 
     public boolean isPlayerControlled() {

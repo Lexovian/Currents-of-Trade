@@ -87,7 +87,7 @@ public class TradeBoatItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context,
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("item.currents_of_trade.trade_boat.desc"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);

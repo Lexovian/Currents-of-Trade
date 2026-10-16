@@ -1,0 +1,37 @@
+modLoader="javafml" #mandatory
+loaderVersion="${loader_version_range}" #mandatory
+license="${mod_license}"
+#issueTrackerURL="https://github.com/Lexovian/currents-of-trade/issues" #optional
+
+[[mods]] #mandatory
+modId="${mod_id}" #mandatory
+version="${mod_version}" #mandatory
+displayName="${mod_name}" #mandatory
+displayURL="https://www.curseforge.com/minecraft/mc-mods/currents-of-trade" #optional
+logoFile="logo.png" #optional
+authors="${mod_authors}"
+description='''
+Expand your horizons with oceanic commerce! Currents of Trade introduces seafaring trade routes, harbor economics, and maritime ventures to Minecraft.
+
+Features:
+• Anchor Points & Harbors: Establish coastal trading ports and link distant harbors across the world.
+• Autonomous Cargo & Trade Ships: Send resources or dispatch trade orders across oceans with smart island circumnavigation.
+• Sloop Sailing: Pilot your own multi-part vessel with realistic buoyancy and dynamic seafaring physics.
+• Harbormaster Profession & Village Docks: Discover naturally generating coastal docks and trade with skilled Harbormasters.
+• Maritime Commodities & Currencies: Trade Doubloons, Silk, Fine Porcelain, Tea, Amber Vials, Spices, and more!
+• Wandering Sailors & Sunken Relics: Uncover messages in bottles, treasure charts, and rare nautical curiosities.
+'''
+
+[[dependencies.${mod_id}]]
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"

@@ -13,7 +13,7 @@ public class FinePorcelainItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.fine_porcelain_desc"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.fine_porcelain_hint"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.fine_porcelain.market"));

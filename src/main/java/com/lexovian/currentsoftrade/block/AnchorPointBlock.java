@@ -4,7 +4,6 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +12,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -27,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 public class AnchorPointBlock extends Block implements EntityBlock {
@@ -52,7 +51,7 @@ public class AnchorPointBlock extends Block implements EntityBlock {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof AnchorPointBlockEntity anchor) {
                 try {
-                    if (stack.has(DataComponents.CUSTOM_NAME)) {
+                    if (stack.hasCustomHoverName()) {
                         anchor.setHarborName(stack.getHoverName().getString());
                     } else {
                         anchor.setHarborName(AnchorPointBlockEntity.generateDynamicHarborName(level, pos));
@@ -82,8 +81,10 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     // --- Interaction ---
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-        if (stack.is(Items.NAME_TAG) && stack.has(DataComponents.CUSTOM_NAME)) {
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (stack.is(Items.NAME_TAG) && stack.hasCustomHoverName()) {
             if (!level.isClientSide) {
                 BlockEntity be = level.getBlockEntity(pos);
                 if (be instanceof AnchorPointBlockEntity anchor) {
@@ -96,20 +97,19 @@ public class AnchorPointBlock extends Block implements EntityBlock {
                     player.displayClientMessage(Component.translatable("message.currents_of_trade.harbor_renamed", newName), true);
                 }
             }
-            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.sidedSuccess(level.isClientSide);
         }
-        return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        // 1.21 only runs the "without item" interaction for the main hand.
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
+        }
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             int harborLevel = 1;
             if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
                 harborLevel = anchor.getTradeLevel();
             }
             final int finalLevel = harborLevel;
-            serverPlayer.openMenu(new SimpleMenuProvider(
+            NetworkHooks.openScreen(serverPlayer, new SimpleMenuProvider(
                     (containerId, playerInventory, p) -> new AnchorPointMenu(containerId, playerInventory, ContainerLevelAccess.create(level, pos), pos),
                     Component.translatable("gui.currents_of_trade.anchor_point")
             ), buf -> {

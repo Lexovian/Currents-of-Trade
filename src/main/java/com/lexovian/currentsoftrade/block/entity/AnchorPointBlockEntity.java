@@ -151,7 +151,7 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     private boolean containsSimilarTrade(HarborTradeOffer check) {
         for (HarborTradeOffer existing : this.harborTrades) {
-            if (ItemStack.isSameItemSameComponents(existing.getResult(), check.getResult())) {
+            if (ItemStack.isSameItemSameTags(existing.getResult(), check.getResult())) {
                 return true;
             }
         }
@@ -279,10 +279,10 @@ public class AnchorPointBlockEntity extends BlockEntity {
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING, px, py, pz, 35, 0.4, 0.4, 0.4, 0.15);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK, px, py, pz, 20, 0.3, 0.5, 0.3, 0.1);
                 if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
-                    net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
-                            .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "royal_dockyard"));
+                    net.minecraft.advancements.Advancement adv = serverPlayer.getServer().getAdvancements()
+                            .getAdvancement(new net.minecraft.resources.ResourceLocation(CurrentsofTrade.MODID, "royal_dockyard"));
                     if (adv != null) {
-                        for (String criterion : adv.value().criteria().keySet()) {
+                        for (String criterion : adv.getCriteria().keySet()) {
                             serverPlayer.getAdvancements().award(adv, criterion);
                         }
                     }
@@ -440,8 +440,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
     // --- NBT Persistence ---
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        final HolderLookup.Provider registries = this.level != null ? this.level.registryAccess() : null;
         tag.putInt("TradeLevel", this.tradeLevel);
         tag.putString("HarborName", this.harborName);
         tag.putLong("LastTravelTime", this.lastTravelTime);
@@ -454,8 +455,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        final HolderLookup.Provider registries = this.level != null ? this.level.registryAccess() : null;
         if (tag.contains("TradeLevel"))    this.tradeLevel     = tag.getInt("TradeLevel");
         if (tag.contains("HarborName"))    this.harborName     = tag.getString("HarborName");
         if (tag.contains("LastTravelTime")) this.lastTravelTime = tag.getLong("LastTravelTime");
@@ -473,9 +475,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
     // --- Client Sync ---
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = super.getUpdateTag(registries);
-        saveAdditional(tag, registries);
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        saveAdditional(tag);
         return tag;
     }
 

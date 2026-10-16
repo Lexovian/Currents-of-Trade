@@ -18,7 +18,6 @@ import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
@@ -71,44 +70,44 @@ public class WanderingSailorEntity extends WanderingTrader {
 
         // ── Fixed trades: always shown, every sailor, every visit ────────────────
         // Currency exchange — xp=0 prevents XP-exploit loop, trades still fully functional
-        offers.add(new MerchantOffer(new ItemCost(Items.EMERALD, 2),                      new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), 10, 0, 0.0F));
-        offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.EMERALD, 2),                  10, 0, 0.0F));
+        offers.add(new MerchantOffer(new ItemStack(Items.EMERALD, 2),                      new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), 10, 0, 0.0F));
+        offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.EMERALD, 2),                  10, 0, 0.0F));
         // Small vanilla food provision (secondary role — keeps sailor flavour)
-        offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.COOKED_SALMON, 2),             8,  1, 0.05F));
+        offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.COOKED_SALMON, 2),             8,  1, 0.05F));
         // Reverse: sailor buys cooked fish from the player
-        offers.add(new MerchantOffer(new ItemCost(Items.COOKED_COD, 8),                   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  8,  3, 0.05F));
+        offers.add(new MerchantOffer(new ItemStack(Items.COOKED_COD, 8),                   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  8,  3, 0.05F));
 
         // ── Pool A: Market Cargo — common mod goods + 1 vanilla food option ─────
         // Sailor shows 5 randomly chosen offers from this pool of 10.
         List<MerchantOffer> poolA = new ArrayList<>();
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 2),         8, 2,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),         6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),          6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),     6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1),5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
-        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 2),         8, 2,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),         6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),          6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),     6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1),5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
         // Reverse: sailor buys nautilus shells
-        poolA.add(new MerchantOffer(new ItemCost(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),           4, 10, 0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),           4, 10, 0.05F));
         // Small vanilla food option — intentionally placed last so it has lower draw chance
-        poolA.add(new MerchantOffer(new ItemCost(Items.EMERALD, 1),                   new ItemStack(Items.COOKED_SALMON, 3),                      6, 1,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(Items.EMERALD, 1),                   new ItemStack(Items.COOKED_SALMON, 3),                      6, 1,  0.05F));
 
         // ── Pool B: Sailor's Rarities — rare & premium mod items ─────────────────
         // Sailor shows 4 randomly chosen offers from this pool of 10.
         List<MerchantOffer> poolB = new ArrayList<>();
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
         // Reverse: sailor buys ammonite fossils
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));
         // Premium/rare — low maxUses, high value
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 10), Optional.of(new ItemCost(Items.EMERALD, 4)),  new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1),  2, 25, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 26), Optional.of(new ItemCost(Items.EMERALD, 6)),  new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1),       1, 30, 0.05F));
-        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 18), Optional.of(new ItemCost(Items.EMERALD, 8)),  new ItemStack(Items.HEART_OF_THE_SEA, 1),                 1, 30, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10), new ItemStack(Items.EMERALD, 4),  new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1),  2, 25, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 26), new ItemStack(Items.EMERALD, 6),  new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1),       1, 30, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 18), new ItemStack(Items.EMERALD, 8),  new ItemStack(Items.HEART_OF_THE_SEA, 1),                 1, 30, 0.05F));
 
         // ── Shuffle both pools with a seed derived from this entity's ID ──────────
         // Same sailor → same combo each session; different sailors → different combos.

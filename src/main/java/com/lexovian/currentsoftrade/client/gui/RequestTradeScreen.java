@@ -13,14 +13,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
 public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu> {
 
     private static final ResourceLocation GUI_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
+            new ResourceLocation(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
 
     private Button backButton;
     private Button prevTradeButton;
@@ -45,7 +44,7 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
 
         // Compact Back button at top-left
         this.backButton = Button.builder(Component.translatable("gui.currents_of_trade.back"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
         }).bounds(this.leftPos + 7, this.topPos + 6, 36, 15).build();
 
         // Prev trade button '<'
@@ -55,7 +54,7 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
                 int current = this.menu.getSelectedTradeIndex();
                 int next = (current - 1 + trades.size()) % trades.size();
                 this.menu.setSelectedTradeIndex(next);
-                PacketDistributor.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
+                com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
             }
         }).bounds(this.leftPos + 18, this.topPos + 66, 16, 18).build();
 
@@ -66,20 +65,20 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
                 int current = this.menu.getSelectedTradeIndex();
                 int next = (current + 1) % trades.size();
                 this.menu.setSelectedTradeIndex(next);
-                PacketDistributor.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
+                com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
             }
         }).bounds(this.leftPos + 162, this.topPos + 66, 16, 18).build();
 
         // Add trade to batch order button
         this.addTradeButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_add_trade"), b -> {
             boolean maxAll = hasShiftDown();
-            PacketDistributor.sendToServer(new ModPayloads.AddTradeToOrderPayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex(), maxAll));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.AddTradeToOrderPayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex(), maxAll));
         }).tooltip(Tooltip.create(Component.translatable("tooltip.currents_of_trade.add_trade_hint")))
           .bounds(this.leftPos + 68, this.topPos + 86, 56, 18).build();
 
         // Reset / Clear staged order button
         this.clearOrderButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_clear_order"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.ResetTradeOrderPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.ResetTradeOrderPayload(this.menu.getCurrentPos()));
         }).bounds(this.leftPos + 128, this.topPos + 86, 50, 18).build();
 
         // Centered Order trade ship button inside the dedicated 24px button band
@@ -89,7 +88,7 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
         int orderBtnY = this.topPos + 110;
 
         this.orderButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_order_ship"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.ExecuteRequestTradePayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.ExecuteRequestTradePayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex()));
         }).bounds(orderBtnX, orderBtnY, orderBtnWidth, orderBtnHeight).build();
 
         this.addRenderableWidget(this.backButton);

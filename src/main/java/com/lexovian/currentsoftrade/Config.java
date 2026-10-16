@@ -1,6 +1,6 @@
 package com.lexovian.currentsoftrade;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
  * Configuration for Currents of Trade.
@@ -8,28 +8,28 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  */
 public class Config {
 
-    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
     // --- Harbor & Voyage ---
-    public static final ModConfigSpec.IntValue MAX_VOYAGE_DISTANCE;
-    public static final ModConfigSpec.IntValue VOYAGE_COOLDOWN_SECONDS;
-    public static final ModConfigSpec.IntValue MIN_HARBOR_WATER_BLOCKS;
-    public static final ModConfigSpec.IntValue MAX_HARBOR_TRADES;
+    public static final ForgeConfigSpec.IntValue MAX_VOYAGE_DISTANCE;
+    public static final ForgeConfigSpec.IntValue VOYAGE_COOLDOWN_SECONDS;
+    public static final ForgeConfigSpec.IntValue MIN_HARBOR_WATER_BLOCKS;
+    public static final ForgeConfigSpec.IntValue MAX_HARBOR_TRADES;
 
     // --- Ships & Navigation ---
-    public static final ModConfigSpec.DoubleValue FAST_TRAVEL_BOAT_SPEED;
-    public static final ModConfigSpec.DoubleValue CARGO_BOAT_SPEED;
+    public static final ForgeConfigSpec.DoubleValue FAST_TRAVEL_BOAT_SPEED;
+    public static final ForgeConfigSpec.DoubleValue CARGO_BOAT_SPEED;
 
     // --- World Spawning & Generation ---
-    public static final ModConfigSpec.IntValue WANDERING_SAILOR_CHECK_INTERVAL;
-    public static final ModConfigSpec.DoubleValue WANDERING_SAILOR_SPAWN_CHANCE;
-    public static final ModConfigSpec.IntValue VILLAGE_DOCK_SPAWN_WEIGHT;
+    public static final ForgeConfigSpec.IntValue WANDERING_SAILOR_CHECK_INTERVAL;
+    public static final ForgeConfigSpec.DoubleValue WANDERING_SAILOR_SPAWN_CHANCE;
+    public static final ForgeConfigSpec.IntValue VILLAGE_DOCK_SPAWN_WEIGHT;
 
     // --- Provisions & Consumables ---
-    public static final ModConfigSpec.IntValue SPICE_SACK_DURATION_TICKS;
-    public static final ModConfigSpec.IntValue AMBER_VIAL_REGEN_DURATION_TICKS;
-    public static final ModConfigSpec.IntValue AMBER_VIAL_NAUSEA_DURATION_TICKS;
-    public static final ModConfigSpec.IntValue CAPTAINS_PIPE_LUCK_DURATION_TICKS;
+    public static final ForgeConfigSpec.IntValue SPICE_SACK_DURATION_TICKS;
+    public static final ForgeConfigSpec.IntValue AMBER_VIAL_REGEN_DURATION_TICKS;
+    public static final ForgeConfigSpec.IntValue AMBER_VIAL_NAUSEA_DURATION_TICKS;
+    public static final ForgeConfigSpec.IntValue CAPTAINS_PIPE_LUCK_DURATION_TICKS;
 
     static {
         BUILDER.comment("Harbor and voyage mechanics configuration").push("harbor");
@@ -101,5 +101,5 @@ public class Config {
         BUILDER.pop();
     }
 
-    public static final ModConfigSpec SPEC = BUILDER.build();
+    public static final ForgeConfigSpec SPEC = BUILDER.build();
 }

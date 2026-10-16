@@ -19,9 +19,9 @@ import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import net.minecraft.world.phys.AABB;
 
 public class SloopRenderer extends EntityRenderer<Boat> {
-    private static final ResourceLocation SLOOP_TEXTURE = ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/sloop.png");
-    private static final ResourceLocation CARGO_TEXTURE = ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/cargo_boat.png");
-    private static final ResourceLocation TRADE_TEXTURE = ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/trade_boat.png");
+    private static final ResourceLocation SLOOP_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/sloop.png");
+    private static final ResourceLocation CARGO_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/cargo_boat.png");
+    private static final ResourceLocation TRADE_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/trade_boat.png");
 
     private final SloopModel model;
 
@@ -80,7 +80,7 @@ public class SloopRenderer extends EntityRenderer<Boat> {
         this.model.setupAnim(entity, 0.0F, 0.0F, ageInTicks, 0.0F, 0.0F);
 
         VertexConsumer vertexConsumer = buffer.getBuffer(this.model.renderType(this.getTextureLocation(entity)));
-        this.model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
+        this.model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
 
         poseStack.popPose();
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);

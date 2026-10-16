@@ -19,7 +19,7 @@ import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
+import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -83,7 +83,7 @@ public class SalvageDredgeItem extends Item {
 
             // Cooldown & durability damage
             player.getCooldowns().addCooldown(this, 50); // 2.5s
-            stack.hurtAndBreak(1, player, player.getEquipmentSlotForItem(stack));
+            stack.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(hand));
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
@@ -153,15 +153,15 @@ public class SalvageDredgeItem extends Item {
             BlockPos target = treasurePos != null ? treasurePos : origin;
             ItemStack mapStack = MapItem.create(serverLevel, target.getX(), target.getZ(), (byte) 1, true, true);
             MapItem.renderBiomePreviewMap(serverLevel, mapStack);
-            MapItemSavedData.addTargetDecoration(mapStack, target, "+", MapDecorationTypes.RED_X);
-            mapStack.set(net.minecraft.core.component.DataComponents.ITEM_NAME, Component.translatable("item.currents_of_trade.sunken_treasure_map"));
+            MapItemSavedData.addTargetDecoration(mapStack, target, "+", net.minecraft.world.level.saveddata.maps.MapDecoration.Type.RED_X);
+            mapStack.setHoverName(Component.translatable("item.currents_of_trade.sunken_treasure_map"));
             return mapStack;
         }
         return new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salvage_dredge.desc"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salvage_dredge.lore"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);

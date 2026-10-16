@@ -37,7 +37,7 @@ public class SpiceSackItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+    public int getUseDuration(ItemStack stack) {
         return 32;
     }
 
@@ -56,7 +56,7 @@ public class SpiceSackItem extends Item {
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F,
                     level.random.nextFloat() * 0.1F + 0.9F);
-            if (!player.hasInfiniteMaterials()) {
+            if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
             }
         }
@@ -64,7 +64,7 @@ public class SpiceSackItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.spice_sack_effect"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.spice_sack_hint"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.spice_sack.market"));

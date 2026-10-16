@@ -2,10 +2,10 @@
 
 # ⚓ Currents of Trade
 
-**A vanilla-friendly maritime trading, navigation & harbor logistics mod for Minecraft 1.21.1 (NeoForge).**
+**A vanilla-friendly maritime trading, navigation & harbor logistics mod for Minecraft 1.20.1 (Forge).**
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-brightgreen.svg)](https://minecraft.net/)
-[![NeoForge](https://img.shields.io/badge/NeoForge-21.1.250-orange.svg)](https://neoforged.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-brightgreen.svg)](https://minecraft.net/)
+[![Forge](https://img.shields.io/badge/Forge-47.1.0+-orange.svg)](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 
@@ -77,8 +77,8 @@ Automate inter-base logistics across limitless ocean distances:
 
 ## 🛠️ Installation & Requirements
 
-1. Make sure you have **[Minecraft 1.21.1](https://minecraft.net/)** installed.
-2. Install **[NeoForge 21.1.250+](https://neoforged.net/)**.
+1. Make sure you have **[Minecraft 1.20.1](https://minecraft.net/)** installed.
+2. Install **[Forge 47.1.0+](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html)** (compatible with any 1.20.1 Forge build).
 3. Download the latest `currents_of_trade-x.x.x.jar` from [Releases](../../releases).
 4. Place the `.jar` file into your `.minecraft/mods` folder.
 

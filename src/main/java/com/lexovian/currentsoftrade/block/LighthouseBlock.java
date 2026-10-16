@@ -91,7 +91,7 @@ public class LighthouseBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void appendHoverText(net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.Item.TooltipContext context, java.util.List<net.minecraft.network.chat.Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
+    public void appendHoverText(net.minecraft.world.item.ItemStack stack, @Nullable BlockGetter context, java.util.List<net.minecraft.network.chat.Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
         tooltipComponents.add(net.minecraft.network.chat.Component.translatable("tooltip.currents_of_trade.lighthouse.desc"));
         tooltipComponents.add(net.minecraft.network.chat.Component.translatable("tooltip.currents_of_trade.lighthouse.tailwind"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);

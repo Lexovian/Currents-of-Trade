@@ -30,7 +30,8 @@ public class HarborSavedData extends SavedData {
     public static HarborSavedData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
         return overworld.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(HarborSavedData::new, HarborSavedData::load),
+                tag -> HarborSavedData.load(tag, overworld.registryAccess()),
+                HarborSavedData::new,
                 DATA_NAME
         );
     }
@@ -109,7 +110,8 @@ public class HarborSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
+        final HolderLookup.Provider registries = null; // unused in 1.20.1 (plain NBT item serialization)
         ListTag harborsList = new ListTag();
         Set<BlockPos> allPositions = new HashSet<>();
         allPositions.addAll(harborTradesMap.keySet());

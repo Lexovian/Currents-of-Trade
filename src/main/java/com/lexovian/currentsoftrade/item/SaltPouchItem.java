@@ -1,6 +1,5 @@
 package com.lexovian.currentsoftrade.item;
 
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -9,12 +8,13 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.food.FoodData;
 import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.level.Level;
 
 /**
@@ -27,38 +27,40 @@ public class SaltPouchItem extends Item {
         super(properties.stacksTo(64));
     }
 
+    /** Bonus nutrition granted by salt (matches the 1.21 FOOD component boost). */
+    public static final int SALT_NUTRITION_BONUS = 2;
+    /** Bonus saturation points granted by salt (matches the 1.21 FOOD component boost). */
+    public static final float SALT_SATURATION_BONUS = 2.0F;
+
     /**
      * Applies salt to a food item, boosting nutrition (+2) and saturation (+2.0f).
+     *
+     * <p>1.20.1 note: food values are per-item, so the stack is only marked as salted here and the
+     * bonus is granted on consumption via {@link #applySaltedBonus(LivingEntity, ItemStack)}.</p>
      */
     public static boolean applySalt(ItemStack foodStack, Level level, Player player) {
-        if (foodStack.isEmpty() || !foodStack.has(DataComponents.FOOD) || isSalted(foodStack)) {
+        if (foodStack.isEmpty() || !foodStack.isEdible() || isSalted(foodStack)) {
             return false;
         }
 
-        FoodProperties original = foodStack.get(DataComponents.FOOD);
-        if (original != null) {
-            int boostedNutrition = original.nutrition() + 2;
-            float boostedSaturation = original.saturation() + 2.0F;
-            FoodProperties boosted = new FoodProperties(
-                    boostedNutrition,
-                    boostedSaturation,
-                    original.canAlwaysEat(),
-                    original.eatSeconds(),
-                    original.usingConvertsTo(),
-                    original.effects()
-            );
-            foodStack.set(DataComponents.FOOD, boosted);
-        }
-
-        CustomData.update(DataComponents.CUSTOM_DATA, foodStack, tag -> tag.putBoolean("Salted", true));
+        CustomData.update(foodStack, tag -> tag.putBoolean("Salted", true));
         return true;
     }
 
+    /** Grants the salted-food bonus after a salted food has been eaten. */
+    public static void applySaltedBonus(LivingEntity entity, ItemStack eatenStack) {
+        if (entity instanceof Player player && isSalted(eatenStack)) {
+            FoodData food = player.getFoodData();
+            // eat(n, m) adds n nutrition and n * m * 2 saturation -> 2 * 0.5 * 2 = 2.0 saturation
+            food.eat(SALT_NUTRITION_BONUS, SALT_SATURATION_BONUS / (2.0F * SALT_NUTRITION_BONUS));
+        }
+    }
+
     public static boolean isSalted(ItemStack stack) {
-        if (stack.isEmpty() || !stack.has(DataComponents.FOOD)) {
+        if (stack.isEmpty() || !stack.isEdible()) {
             return false;
         }
-        CustomData existing = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData existing = CustomData.getOrNull(stack);
         return existing != null && existing.copyTag().getBoolean("Salted");
     }
 
@@ -69,7 +71,7 @@ public class SaltPouchItem extends Item {
                 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
         ItemStack targetStack = player.getItemInHand(other);
 
-        if (targetStack.isEmpty() || !targetStack.has(DataComponents.FOOD)) {
+        if (targetStack.isEmpty() || !targetStack.isEdible()) {
             if (level.isClientSide) {
                 player.displayClientMessage(
                         Component.translatable("message.currents_of_trade.salt_no_food"), true);
@@ -90,7 +92,7 @@ public class SaltPouchItem extends Item {
         if (!level.isClientSide) {
             applySalt(targetStack, level, player);
 
-            if (!player.hasInfiniteMaterials()) {
+            if (!player.getAbilities().instabuild) {
                 saltStack.shrink(1);
             }
 
@@ -115,7 +117,7 @@ public class SaltPouchItem extends Item {
         }
 
         ItemStack targetStack = slot.getItem();
-        if (targetStack.isEmpty() || !targetStack.has(DataComponents.FOOD) || isSalted(targetStack)) {
+        if (targetStack.isEmpty() || !targetStack.isEdible() || isSalted(targetStack)) {
             return false;
         }
 
@@ -123,7 +125,7 @@ public class SaltPouchItem extends Item {
         applySalt(targetStack, player.level(), player);
         slot.setChanged();
 
-        if (!player.hasInfiniteMaterials()) {
+        if (!player.getAbilities().instabuild) {
             saltStack.shrink(1);
         }
 
@@ -147,14 +149,14 @@ public class SaltPouchItem extends Item {
             return false;
         }
 
-        if (other.isEmpty() || !other.has(DataComponents.FOOD) || isSalted(other)) {
+        if (other.isEmpty() || !other.isEdible() || isSalted(other)) {
             return false;
         }
 
         Component foodName = other.getHoverName().copy();
         applySalt(other, player.level(), player);
 
-        if (!player.hasInfiniteMaterials()) {
+        if (!player.getAbilities().instabuild) {
             saltStack.shrink(1);
             slot.setChanged();
         }
@@ -173,7 +175,7 @@ public class SaltPouchItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, java.util.List<Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, java.util.List<Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salt_pouch_use"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.salt_pouch_effect"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.salt_pouch.market"));

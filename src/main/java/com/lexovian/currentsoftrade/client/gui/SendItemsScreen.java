@@ -12,14 +12,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
 
     // --- Constants & Widgets ---
 
     private static final ResourceLocation GUI_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
+            new ResourceLocation(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
 
     private Button sendCargoButton;
     private Button backButton;
@@ -43,7 +42,7 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         super.init();
 
         this.backButton = Button.builder(Component.translatable("gui.currents_of_trade.back"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
         }).bounds(this.leftPos + 7, this.topPos + 6, 36, 15).build();
 
         int sendBtnWidth = 120;
@@ -51,7 +50,7 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         int sendBtnX = this.leftPos + (this.imageWidth - sendBtnWidth) / 2;
 
         this.sendCargoButton = Button.builder(Component.translatable("gui.currents_of_trade.send_cargo_btn"), b -> {
-            PacketDistributor.sendToServer(new ModPayloads.ExecuteSendCargoPayload(this.menu.getCurrentPos()));
+            com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.ExecuteSendCargoPayload(this.menu.getCurrentPos()));
         }).bounds(sendBtnX, this.topPos + 109, sendBtnWidth, sendBtnHeight).build();
 
         this.prevPageBtn = Button.builder(Component.literal("◀"), b -> {

@@ -13,7 +13,7 @@ public class BrassAstrolabeItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.brass_astrolabe_desc"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.brass_astrolabe_hint"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);

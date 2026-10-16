@@ -2,7 +2,6 @@ package com.lexovian.currentsoftrade.item;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -17,9 +16,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
+import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
 import java.util.List;
@@ -86,7 +85,7 @@ public class MessageInABottleItem extends Item {
                 }
             }
 
-            if (!player.hasInfiniteMaterials()) {
+            if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
                 ItemStack emptyBottle = new ItemStack(Items.GLASS_BOTTLE);
                 if (stack.isEmpty()) {
@@ -112,8 +111,8 @@ public class MessageInABottleItem extends Item {
         BlockPos target = treasurePos != null ? treasurePos : origin;
         ItemStack mapStack = MapItem.create(serverLevel, target.getX(), target.getZ(), (byte) 1, true, true);
         MapItem.renderBiomePreviewMap(serverLevel, mapStack);
-        MapItemSavedData.addTargetDecoration(mapStack, target, "+", MapDecorationTypes.RED_X);
-        mapStack.set(DataComponents.ITEM_NAME, Component.translatable("filled_map.buried_treasure"));
+        MapItemSavedData.addTargetDecoration(mapStack, target, "+", net.minecraft.world.level.saveddata.maps.MapDecoration.Type.RED_X);
+        mapStack.setHoverName(Component.translatable("filled_map.buried_treasure"));
         return mapStack;
     }
 
@@ -143,7 +142,7 @@ public class MessageInABottleItem extends Item {
         final String regionId = com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion.fromBiome(serverLevel.getBiome(targetPos)).getId();
         final String harborName = "Ancient Atoll " + Math.abs(targetPos.getX() % 100);
 
-        CustomData.update(DataComponents.CUSTOM_DATA, chart, tag -> {
+        CustomData.update(chart, tag -> {
             tag.putInt("TargetX", targetPos.getX());
             tag.putInt("TargetY", targetPos.getY());
             tag.putInt("TargetZ", targetPos.getZ());
@@ -156,7 +155,7 @@ public class MessageInABottleItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.message_in_a_bottle.desc"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.message_in_a_bottle.lore"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.message_in_a_bottle.use_hint"));

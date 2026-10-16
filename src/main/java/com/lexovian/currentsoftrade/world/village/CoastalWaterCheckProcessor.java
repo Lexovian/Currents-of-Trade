@@ -1,7 +1,7 @@
 package com.lexovian.currentsoftrade.world.village;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class CoastalWaterCheckProcessor extends StructureProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CoastalWaterCheckProcessor.class);
-    public static final MapCodec<CoastalWaterCheckProcessor> CODEC = MapCodec.unit(CoastalWaterCheckProcessor::new);
+    public static final Codec<CoastalWaterCheckProcessor> CODEC = Codec.unit(CoastalWaterCheckProcessor::new);
 
     private static final int MIN_WATER_BLOCKS = 6;
     private static final int MIN_DISTANCE_BETWEEN_DOCKS = 70;

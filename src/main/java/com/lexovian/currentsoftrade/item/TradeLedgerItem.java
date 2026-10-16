@@ -5,7 +5,6 @@ import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,7 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import com.lexovian.currentsoftrade.compat.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
@@ -37,7 +36,7 @@ public class TradeLedgerItem extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = CustomData.get(stack);
         return customData.copyTag().getBoolean("Bound");
     }
 
@@ -59,7 +58,7 @@ public class TradeLedgerItem extends Item {
                 return InteractionResult.SUCCESS;
             }
 
-            CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            CustomData customData = CustomData.get(stack);
             CompoundTag currentTag = customData.copyTag();
             int selectedIndex = currentTag.getInt("SelectedIndex");
 
@@ -67,7 +66,7 @@ public class TradeLedgerItem extends Item {
                 // Shift + Right-Click cycles through villager's available offers
                 selectedIndex = (selectedIndex + 1) % offers.size();
                 final int finalIdx = selectedIndex;
-                CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+                CustomData.update(stack, tag -> {
                     tag.putInt("SelectedIndex", finalIdx);
                 });
 
@@ -93,7 +92,7 @@ public class TradeLedgerItem extends Item {
             MerchantOffer chosenOffer = offers.get(selectedIndex);
             HarborTradeOffer harborOffer = new HarborTradeOffer(chosenOffer);
 
-            CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            CustomData.update(stack, tag -> {
                 tag.put("RecordedTrade", harborOffer.toTag(level.registryAccess()));
                 tag.putBoolean("Bound", true);
                 tag.putString("VillagerName", villager.getDisplayName().getString());
@@ -136,7 +135,7 @@ public class TradeLedgerItem extends Item {
             }
             if (!level.isClientSide) {
                 ItemStack stack = context.getItemInHand();
-                CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+                CustomData customData = CustomData.get(stack);
                 CompoundTag tag = customData.copyTag();
 
                 if (!tag.getBoolean("Bound") || !tag.contains("RecordedTrade")) {
@@ -159,7 +158,7 @@ public class TradeLedgerItem extends Item {
                         }
 
                         // Clear the ledger so it can record another trade
-                        stack.remove(DataComponents.CUSTOM_DATA);
+                        CustomData.remove(stack);
                         if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
                             serverPlayer.inventoryMenu.broadcastChanges();
                         }
@@ -178,10 +177,10 @@ public class TradeLedgerItem extends Item {
         return super.useOn(context);
     }
 
-    @net.neoforged.fml.common.EventBusSubscriber(modid = CurrentsofTrade.MODID)
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = CurrentsofTrade.MODID)
     public static class Events {
-        @net.neoforged.bus.api.SubscribeEvent
-        public static void onEntityInteract(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void onEntityInteract(net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
             if (event.getTarget() instanceof AbstractVillager villager) {
                 ItemStack stack = event.getItemStack();
                 if (stack.getItem() instanceof TradeLedgerItem ledger) {
@@ -194,13 +193,13 @@ public class TradeLedgerItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        CustomData customData = CustomData.get(stack);
         CompoundTag tag = customData.copyTag();
 
         if (tag.getBoolean("Bound") && tag.contains("RecordedTrade")) {
-            if (context.registries() != null) {
-                HarborTradeOffer offer = HarborTradeOffer.fromTag(tag.getCompound("RecordedTrade"), context.registries());
+            {
+                HarborTradeOffer offer = HarborTradeOffer.fromTag(tag.getCompound("RecordedTrade"), context != null ? context.registryAccess() : null);
                 String costA = offer.getCostA().getCount() + "x " + offer.getCostA().getHoverName().getString();
                 String costB = !offer.getCostB().isEmpty() ? (" + " + offer.getCostB().getCount() + "x " + offer.getCostB().getHoverName().getString()) : "";
                 String res = offer.getResult().getCount() + "x " + offer.getResult().getHoverName().getString();

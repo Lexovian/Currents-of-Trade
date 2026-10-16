@@ -38,7 +38,7 @@ public class AmberVialItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+    public int getUseDuration(ItemStack stack) {
         return 32;
     }
 
@@ -61,7 +61,7 @@ public class AmberVialItem extends Item {
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.WANDERING_TRADER_DRINK_POTION, SoundSource.PLAYERS, 0.8F, 1.0F);
 
-            if (!player.hasInfiniteMaterials()) {
+            if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
                 ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
                 if (stack.isEmpty()) return bottle;
@@ -72,7 +72,7 @@ public class AmberVialItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.amber_vial_effect"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.amber_vial_warning"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.commodity.amber_vial.market"));

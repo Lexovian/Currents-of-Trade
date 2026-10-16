@@ -38,7 +38,7 @@ public class CaptainsTricorneItem extends Item implements Equipable {
     }
 
     @Override
-    public Holder<SoundEvent> getEquipSound() {
+    public SoundEvent getEquipSound() {
         return SoundEvents.ARMOR_EQUIP_LEATHER;
     }
 
@@ -48,7 +48,7 @@ public class CaptainsTricorneItem extends Item implements Equipable {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.captains_tricorne.desc"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.captains_tricorne.speed_bonus"));
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.captains_tricorne.discount_bonus"));
