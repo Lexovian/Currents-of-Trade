@@ -71,13 +71,17 @@ public class SalvageDredgeItem extends Item {
                 sl.sendParticles(ParticleTypes.BUBBLE_POP, targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5, 12, 0.2, 0.3, 0.2, 0.05);
             }
 
+            int lootCount = loot.getCount();
+            String lootBaseName = loot.getHoverName().getString();
+            String lootDisplay = lootCount > 1 ? (lootCount + "x " + lootBaseName) : lootBaseName;
+
             // Award item to player
             if (!player.getInventory().add(loot)) {
                 player.drop(loot, false);
             }
 
             player.displayClientMessage(
-                    Component.translatable("message.currents_of_trade.dredge_success", loot.getHoverName().getString()),
+                    Component.translatable("message.currents_of_trade.dredge_success", lootDisplay),
                     true
             );
 
@@ -98,35 +102,40 @@ public class SalvageDredgeItem extends Item {
 
         // 15% Deep Ocean Relics & Rare Treasures (23% with Luck)
         if (roll < 0.15F) {
-            int sub = rng.nextInt(6);
+            int sub = rng.nextInt(8);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1);
                 case 1 -> new ItemStack(Items.NAUTILUS_SHELL, 1);
                 case 2 -> new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1);
                 case 3 -> new ItemStack(Items.PRISMARINE_CRYSTALS, 2 + rng.nextInt(3));
                 case 4 -> createSunkenMap(level, pos);
+                case 5 -> new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1);
+                case 6 -> new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1);
                 default -> rng.nextFloat() < 0.2F ? new ItemStack(Items.HEART_OF_THE_SEA, 1) : new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3);
             };
         }
 
         // 25% Coins, Currencies & Relics
         if (roll < 0.40F) {
-            int sub = rng.nextInt(4);
+            int sub = rng.nextInt(5);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1 + rng.nextInt(3));
                 case 1 -> new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1);
                 case 2 -> new ItemStack(Items.GOLD_NUGGET, 3 + rng.nextInt(5));
+                case 3 -> new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1);
                 default -> new ItemStack(Items.IRON_NUGGET, 4 + rng.nextInt(6));
             };
         }
 
         // 30% Trade Commodities
         if (roll < 0.70F) {
-            int sub = rng.nextInt(4);
+            int sub = rng.nextInt(6);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 1 + rng.nextInt(2));
                 case 1 -> new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 1);
                 case 2 -> new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1);
+                case 3 -> new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 1);
+                case 4 -> new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1);
                 default -> new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 1);
             };
         }

@@ -16,6 +16,7 @@ public class ModServerEvents {
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         com.lexovian.currentsoftrade.world.village.CoastalWaterCheckProcessor.clearCache();
+        com.lexovian.currentsoftrade.block.entity.LighthouseBlockEntity.clearCache();
         VillagePoolInjection.inject(event.getServer());
     }
 
@@ -24,6 +25,14 @@ public class ModServerEvents {
     public static void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase == TickEvent.Phase.END && event.level instanceof ServerLevel serverLevel) {
             WanderingSailorSpawner.serverTick(serverLevel);
+        }
+    }
+
+    /** Any block change (place, break, bucket, fluid spread, piston) invalidates the ship nav cache of that chunk. */
+    @SubscribeEvent
+    public static void onNeighborNotify(net.minecraftforge.event.level.BlockEvent.NeighborNotifyEvent event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            com.lexovian.currentsoftrade.entity.TradeBoatEntity.invalidateChunkNavAt(serverLevel, event.getPos());
         }
     }
 

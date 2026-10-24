@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:sloop"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.flagship_armada.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.flagship_armada.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:fair_winds",
+  "criteria": {
+    "customized_sloop": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}
+

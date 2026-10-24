@@ -15,6 +15,7 @@ public class Config {
     public static final ForgeConfigSpec.IntValue VOYAGE_COOLDOWN_SECONDS;
     public static final ForgeConfigSpec.IntValue MIN_HARBOR_WATER_BLOCKS;
     public static final ForgeConfigSpec.IntValue MAX_HARBOR_TRADES;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ANCHOR_TRAVEL;
 
     // --- Ships & Navigation ---
     public static final ForgeConfigSpec.DoubleValue FAST_TRAVEL_BOAT_SPEED;
@@ -49,6 +50,10 @@ public class Config {
         MAX_HARBOR_TRADES = BUILDER
                 .comment("Maximum number of trade offers an Anchor Point harbor can store (default: 12)")
                 .defineInRange("maxHarborTrades", 12, 1, 64);
+
+        ENABLE_ANCHOR_TRAVEL = BUILDER
+                .comment("Whether players can use the 'Travel' fast-travel ship feature at Anchor Points. Set to false to restrict Anchor Points to automated Cargo/Trade logistics only (default: true)")
+                .define("enableAnchorTravel", true);
 
         BUILDER.pop();
 

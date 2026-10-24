@@ -39,6 +39,10 @@ public class LighthouseBlockEntity extends BlockEntity {
         super(CurrentsofTrade.LIGHTHOUSE_BE.get(), pos, blockState);
     }
 
+    public static void clearCache() {
+        LAST_NOTIFICATION_TIME.clear();
+    }
+
     public static void tick(Level level, BlockPos pos, BlockState state, LighthouseBlockEntity blockEntity) {
         if (level.isClientSide()) {
             return;

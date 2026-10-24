@@ -51,7 +51,7 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
 
         this.sendCargoButton = Button.builder(Component.translatable("gui.currents_of_trade.send_cargo_btn"), b -> {
             com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(new ModPayloads.ExecuteSendCargoPayload(this.menu.getCurrentPos()));
-        }).bounds(sendBtnX, this.topPos + 109, sendBtnWidth, sendBtnHeight).build();
+        }).bounds(sendBtnX, this.topPos + 111, sendBtnWidth, sendBtnHeight).build();
 
         this.prevPageBtn = Button.builder(Component.literal("◀"), b -> {
             this.menu.prevPage();
@@ -138,34 +138,36 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
         // Window title
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x404040, false);
 
-        // Slot headers directly above Chart and Fee slots (plenty of room between them)
-        guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.slot_chart"), 20, 24, 0x555555, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.slot_fee"), 64, 24, 0x555555, false);
+        // Slot headers centered directly above Chart (x=23..41) and Fee (x=63..81) slots
+        Component chartLabel = Component.translatable("gui.currents_of_trade.slot_chart");
+        Component feeLabel = Component.translatable("gui.currents_of_trade.slot_fee");
+        guiGraphics.drawString(this.font, chartLabel, 32 - this.font.width(chartLabel) / 2, 24, 0x555555, false);
+        guiGraphics.drawString(this.font, feeLabel, 72 - this.font.width(feeLabel) / 2, 24, 0x555555, false);
 
         ItemStack chart = this.menu.getChartStack();
         boolean hasBoundChart = this.menu.hasValidChart();
 
-        // Destination details placed cleanly to the right of the slots (x=88..188)
+        // Destination details placed cleanly to the right of the slots (x=88..188), clear of page buttons at y=54
         if (hasBoundChart) {
             String destHarbor = NauticalChartItem.getTargetHarbor(chart);
             int dist = this.menu.getDistance();
             int fee = this.menu.getRequiredFee();
 
             Component destText = Component.literal("§2§l" + this.font.plainSubstrByWidth(destHarbor, 95));
-            guiGraphics.drawString(this.font, destText, 88, 24, 0x1B4D3E, false);
+            guiGraphics.drawString(this.font, destText, 88, 21, 0x1B4D3E, false);
 
             Component distText = Component.literal("§8Dist: §0" + dist + "m");
-            guiGraphics.drawString(this.font, distText, 88, 35, 0x404040, false);
+            guiGraphics.drawString(this.font, distText, 88, 31, 0x404040, false);
 
             if (this.menu.isTooExpensive()) {
-                guiGraphics.drawString(this.font, Component.literal("§cToo Far (> 64)"), 88, 46, 0xAA0000, false);
+                guiGraphics.drawString(this.font, Component.literal("§cToo Far (> 64)"), 88, 41, 0xAA0000, false);
             } else {
                 Component feeText = Component.literal("§8Fee: §6" + fee + " Dbl");
-                guiGraphics.drawString(this.font, feeText, 88, 46, 0x8B5A00, false);
+                guiGraphics.drawString(this.font, feeText, 88, 41, 0x8B5A00, false);
             }
         } else {
-            guiGraphics.drawString(this.font, Component.literal("§7No Chart"), 88, 30, 0x777777, false);
-            guiGraphics.drawString(this.font, Component.literal("§8Insert chart"), 88, 42, 0x999999, false);
+            guiGraphics.drawString(this.font, Component.literal("§7No Chart"), 88, 28, 0x777777, false);
+            guiGraphics.drawString(this.font, Component.literal("§8Insert chart"), 88, 40, 0x999999, false);
         }
 
         // Cargo section title (displays dynamic slot count and page)

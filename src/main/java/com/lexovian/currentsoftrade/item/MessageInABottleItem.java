@@ -68,11 +68,13 @@ public class MessageInABottleItem extends Item {
                 player.displayClientMessage(Component.translatable("message.currents_of_trade.bottle_found_chart"), true);
             } else if (roll < 0.70F) {
                 // 25% Sunken Doubloons & Rare Curiosities
-                int relicRoll = rng.nextInt(4);
+                int relicRoll = rng.nextInt(6);
                 discovery = switch (relicRoll) {
                     case 0 -> new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2 + rng.nextInt(4));
                     case 1 -> new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1);
                     case 2 -> new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1);
+                    case 3 -> new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1);
+                    case 4 -> new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1);
                     default -> new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1);
                 };
                 level.playSound(null, player.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7F, 1.2F);

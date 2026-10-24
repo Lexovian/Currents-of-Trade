@@ -1,0 +1,31 @@
+{
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:storm_glass"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.weather_prophet.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.weather_prophet.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:guiding_light",
+  "criteria": {
+    "has_storm_glass": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": ["currents_of_trade:storm_glass"]
+          }
+        ]
+      }
+    }
+  }
+}
+

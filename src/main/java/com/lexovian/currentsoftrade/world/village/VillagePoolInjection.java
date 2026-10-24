@@ -29,7 +29,6 @@ public class VillagePoolInjection {
             "minecraft:village/plains/houses",
             "minecraft:village/savanna/houses",
             "minecraft:village/taiga/houses",
-            "minecraft:village/snowy/houses",
             "minecraft:village/desert/houses"
     };
 
@@ -37,7 +36,6 @@ public class VillagePoolInjection {
             "minecraft:village/plains/terminators",
             "minecraft:village/savanna/terminators",
             "minecraft:village/taiga/terminators",
-            "minecraft:village/snowy/terminators",
             "minecraft:village/desert/terminators"
     };
 

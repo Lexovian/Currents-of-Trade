@@ -29,10 +29,10 @@ import java.util.Set;
  *
  * <p>Classifies game biomes into 4 major commercial climates for the maritime silk road:
  * <ul>
- *   <li><b>ARID</b> — Desert, Badlands, Savanna. Exports Silk & Spices; high demand for Amber & Cold Seafood.</li>
- *   <li><b>COLD</b> — Snowy, Frozen Ocean, Taiga. Exports Amber & Fossils; high demand for Tea, Vanilla & Spices.</li>
- *   <li><b>TROPICAL</b> — Jungle, Bamboo, Mangrove. Exports Sandalwood & Vanilla; high demand for Fine Porcelain & Silk.</li>
- *   <li><b>TEMPERATE</b> — Plains, Forests, Coastal Waters. Exports Fine Porcelain & Tea; high demand for Sandalwood & Spices.</li>
+ *   <li><b>ARID</b> — Desert, Badlands, Savanna. Exports Silk, Spices, Saffron & Damascus Steel; high demand for Amber, Jade, Sea Ivory & Cacao.</li>
+ *   <li><b>COLD</b> — Snowy, Frozen Ocean, Taiga. Exports Amber, Fossils & Sea Ivory; high demand for Tea, Vanilla, Spices, Saffron, Cacao & Damascus Steel.</li>
+ *   <li><b>TROPICAL</b> — Jungle, Bamboo, Mangrove. Exports Sandalwood, Vanilla, Jade & Cacao; high demand for Fine Porcelain, Silk, Damascus Steel & Sea Ivory.</li>
+ *   <li><b>TEMPERATE</b> — Plains, Forests, Coastal Waters. Exports Fine Porcelain, Tea, Pearls & Damascus Steel; high demand for Sandalwood, Spices, Saffron & Jade.</li>
  * </ul>
  */
 public enum MaritimeTradeRegion {
@@ -166,18 +166,24 @@ public enum MaritimeTradeRegion {
         return switch (this) {
             case ARID -> item == CurrentsofTrade.SILK_BALE.get()
                     || item == CurrentsofTrade.SPICE_SACK.get()
-                    || item == CurrentsofTrade.SALT_POUCH.get();
+                    || item == CurrentsofTrade.SALT_POUCH.get()
+                    || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.DAMASCUS_STEEL.get();
 
             case COLD -> item == CurrentsofTrade.AMBER_VIAL.get()
                     || item == CurrentsofTrade.AMMONITE_FOSSIL.get()
+                    || item == CurrentsofTrade.NARWHAL_IVORY.get()
                     || item == Items.COD || item == Items.SALMON;
 
             case TROPICAL -> item == CurrentsofTrade.SANDALWOOD.get()
-                    || item == CurrentsofTrade.VANILLA_BUNDLE.get();
+                    || item == CurrentsofTrade.VANILLA_BUNDLE.get()
+                    || item == CurrentsofTrade.JADE_FIGURINE.get()
+                    || item == CurrentsofTrade.CACAO_ELIXIR.get();
 
             case TEMPERATE -> item == CurrentsofTrade.FINE_PORCELAIN.get()
                     || item == CurrentsofTrade.TEA_BRICK.get()
-                    || item == CurrentsofTrade.LUMINOUS_PEARL.get();
+                    || item == CurrentsofTrade.LUMINOUS_PEARL.get()
+                    || item == CurrentsofTrade.DAMASCUS_STEEL.get();
         };
     }
 
@@ -187,21 +193,31 @@ public enum MaritimeTradeRegion {
     public boolean isHighDemand(Item item) {
         return switch (this) {
             case ARID -> item == CurrentsofTrade.AMBER_VIAL.get()
+                    || item == CurrentsofTrade.JADE_FIGURINE.get()
+                    || item == CurrentsofTrade.NARWHAL_IVORY.get()
+                    || item == CurrentsofTrade.CACAO_ELIXIR.get()
                     || item == Items.COD || item == Items.SALMON
                     || item == Items.COOKED_COD || item == Items.COOKED_SALMON
                     || item == Items.ICE || item == Items.PACKED_ICE || item == Items.BLUE_ICE;
 
             case COLD -> item == CurrentsofTrade.TEA_BRICK.get()
                     || item == CurrentsofTrade.VANILLA_BUNDLE.get()
-                    || item == CurrentsofTrade.SPICE_SACK.get();
+                    || item == CurrentsofTrade.SPICE_SACK.get()
+                    || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.CACAO_ELIXIR.get()
+                    || item == CurrentsofTrade.DAMASCUS_STEEL.get();
 
             case TROPICAL -> item == CurrentsofTrade.FINE_PORCELAIN.get()
                     || item == CurrentsofTrade.SILK_BALE.get()
-                    || item == CurrentsofTrade.TEA_BRICK.get();
+                    || item == CurrentsofTrade.TEA_BRICK.get()
+                    || item == CurrentsofTrade.DAMASCUS_STEEL.get()
+                    || item == CurrentsofTrade.NARWHAL_IVORY.get();
 
             case TEMPERATE -> item == CurrentsofTrade.SANDALWOOD.get()
                     || item == CurrentsofTrade.SPICE_SACK.get()
-                    || item == CurrentsofTrade.AMBER_VIAL.get();
+                    || item == CurrentsofTrade.AMBER_VIAL.get()
+                    || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.JADE_FIGURINE.get();
         };
     }
 
@@ -234,12 +250,20 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Silk export (cheap)
+                    // Lv 3: Silk & Saffron export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Amber import (high reward: 10 Doubloons!)
+                    // Lv 4: Amber & Cacao Elixir import + Damascus Steel export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
+                }
+                if (level >= 5) {
+                    // Lv 5 (Royal Dockyard): Sea Ivory & Jade Figurine imports (14 Doubloons!)
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
 
@@ -249,17 +273,24 @@ public enum MaritimeTradeRegion {
                 offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(Items.COOKED_COD, 4)));
 
                 if (level >= 2) {
-                    // Lv 2: Tea Brick import (2x payout: 6 Doubloons!)
+                    // Lv 2: Tea Brick & Vanilla import
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Amber export (cheap: 3 Doubloons)
+                    // Lv 3: Amber export & Saffron / Cacao Elixir imports
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Fossil export (cheap: 3 Doubloons)
+                    // Lv 4: Fossil & Spiral Sea Ivory export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1)));
+                }
+                if (level >= 5) {
+                    // Lv 5 (Royal Dockyard): Damascus Steel import (14 Doubloons!)
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
 
@@ -269,17 +300,24 @@ public enum MaritimeTradeRegion {
                 offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(Items.BAMBOO, 16)));
 
                 if (level >= 2) {
-                    // Lv 2: Vanilla export (cheap: 1 Doubloon for 2)
+                    // Lv 2: Vanilla & Spiced Cacao Elixir export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Sandalwood export (cheap: 2 Doubloons) & Porcelain import (high reward: 12 Doubloons!)
+                    // Lv 3: Sandalwood export & Porcelain import
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Silk import (high reward: 12 Doubloons!)
+                    // Lv 4: Silk import & Carved Jade Figurine export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1)));
+                }
+                if (level >= 5) {
+                    // Lv 5 (Royal Dockyard): Damascus Steel & Sea Ivory imports (14 Doubloons!)
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
 
@@ -293,13 +331,19 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Fine Porcelain export (cheap: 4 Doubloons) & Sandalwood import (high reward: 8 Doubloons!)
+                    // Lv 3: Fine Porcelain export + Sandalwood & Saffron imports
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Amber import (high reward: 8 Doubloons!)
+                    // Lv 4: Amber import & Damascus Steel export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
+                }
+                if (level >= 5) {
+                    // Lv 5 (Royal Dockyard): Carved Jade Figurine import (14 Doubloons!)
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
         }

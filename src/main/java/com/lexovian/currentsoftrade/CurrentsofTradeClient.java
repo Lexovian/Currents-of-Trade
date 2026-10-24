@@ -78,4 +78,53 @@ public class CurrentsofTradeClient {
         event.registerEntityRenderer(CurrentsofTrade.CARGO_BOAT.get(), SloopRenderer::new);
         event.registerEntityRenderer(CurrentsofTrade.WANDERING_SAILOR.get(), WanderingTraderRenderer::new);
     }
+
+    @EventBusSubscriber(modid = CurrentsofTrade.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static class ClientForgeEvents {
+        @SubscribeEvent
+        public static void onScreenInit(net.minecraftforge.client.event.ScreenEvent.Init.Post event) {
+            if (!(event.getScreen() instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen containerScreen)) {
+                return;
+            }
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc.player == null || mc.level == null) return;
+
+            net.minecraft.world.entity.Entity targetShip = null;
+            if (mc.player.getVehicle() instanceof com.lexovian.currentsoftrade.entity.SloopEntity
+                    || mc.player.getVehicle() instanceof com.lexovian.currentsoftrade.entity.TradeBoatEntity) {
+                targetShip = mc.player.getVehicle();
+            } else if (mc.crosshairPickEntity instanceof com.lexovian.currentsoftrade.entity.SloopEntity
+                    || mc.crosshairPickEntity instanceof com.lexovian.currentsoftrade.entity.TradeBoatEntity) {
+                targetShip = mc.crosshairPickEntity;
+            } else if (mc.crosshairPickEntity instanceof com.lexovian.currentsoftrade.entity.ShipPart<?> part) {
+                targetShip = part.getParent();
+            }
+
+            if (targetShip == null) return;
+
+            net.minecraft.core.BlockPos center = targetShip.blockPosition();
+            boolean nearHarbor = false;
+            for (net.minecraft.core.BlockPos check : net.minecraft.core.BlockPos.betweenClosed(
+                    center.offset(-16, -6, -16), center.offset(16, 6, 16))) {
+                if (mc.level.getBlockEntity(check) instanceof com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity) {
+                    nearHarbor = true;
+                    break;
+                }
+            }
+            if (!nearHarbor) return;
+
+            final int shipId = targetShip.getId();
+            int btnX = containerScreen.getGuiLeft() + containerScreen.getXSize() - 58;
+            int btnY = Math.max(2, containerScreen.getGuiTop() - 16);
+            net.minecraft.client.gui.components.Button unloadBtn = net.minecraft.client.gui.components.Button.builder(
+                    net.minecraft.network.chat.Component.translatable("gui.currents_of_trade.btn_unload_ship"),
+                    b -> com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(
+                            new com.lexovian.currentsoftrade.network.ModPayloads.UnloadShipToHarborPayload(shipId))
+            ).tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    net.minecraft.network.chat.Component.translatable("tooltip.currents_of_trade.unload_ship_hint")
+            )).bounds(btnX, btnY, 58, 15).build();
+
+            event.addListener(unloadBtn);
+        }
+    }
 }

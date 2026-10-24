@@ -116,6 +116,7 @@ public class HarborSavedData extends SavedData {
         Set<BlockPos> allPositions = new HashSet<>();
         allPositions.addAll(harborTradesMap.keySet());
         allPositions.addAll(harborNamesMap.keySet());
+        allPositions.addAll(harborLevelsMap.keySet());
 
         for (BlockPos pos : allPositions) {
             CompoundTag harborTag = new CompoundTag();

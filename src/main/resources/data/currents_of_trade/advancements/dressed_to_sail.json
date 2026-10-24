@@ -1,0 +1,45 @@
+{
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:captains_tricorne"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.dressed_to_sail.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.dressed_to_sail.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:fair_winds",
+  "criteria": {
+    "has_tricorne": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": ["currents_of_trade:captains_tricorne"]
+          }
+        ]
+      }
+    },
+    "has_pipe": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": ["currents_of_trade:captains_pipe"]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    ["has_tricorne"],
+    ["has_pipe"]
+  ]
+}
+

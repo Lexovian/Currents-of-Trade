@@ -63,6 +63,9 @@ public class ShipPart<T extends Entity> extends PartEntity<T> {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
+        if (com.lexovian.currentsoftrade.item.NauticalChartItem.tryUseAboard(player, hand, this.getParent())) {
+            return InteractionResult.sidedSuccess(player.level().isClientSide);
+        }
         return this.getParent().interact(player, hand);
     }
 

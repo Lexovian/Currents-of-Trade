@@ -72,25 +72,30 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
         this.addRenderableWidget(this.saveNameButton);
 
         int btnWidth = 160;
-        int btnHeight = 20;
+        int btnHeight = 18;
         int btnX = this.leftPos + (this.imageWidth - btnWidth) / 2;
 
         this.travelButton = Button.builder(Component.translatable("gui.currents_of_trade.anchor_point.travel"), b ->
                 onTravelClicked()
-        ).bounds(btnX, this.topPos + 25, btnWidth, btnHeight).build();
+        ).bounds(btnX, this.topPos + 23, btnWidth, btnHeight).build();
+        if (com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL != null
+                && !com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL.get()) {
+            this.travelButton.active = false;
+            this.travelButton.setTooltip(Tooltip.create(Component.translatable("tooltip.currents_of_trade.travel_disabled_config")));
+        }
 
         this.sendItemsButton = Button.builder(Component.translatable("gui.currents_of_trade.anchor_point.send_items"), b ->
                 onSendItemsClicked()
-        ).bounds(btnX, this.topPos + 48, btnWidth, btnHeight).build();
+        ).bounds(btnX, this.topPos + 43, btnWidth, btnHeight).build();
 
         this.requestTradeButton = Button.builder(Component.translatable("gui.currents_of_trade.anchor_point.request_trade"), b ->
                 onRequestTradeClicked()
-        ).bounds(btnX, this.topPos + 71, btnWidth, btnHeight).build();
+        ).bounds(btnX, this.topPos + 63, btnWidth, btnHeight).build();
 
-        int upgradeY = this.topPos + 96;
+        int upgradeY = this.topPos + 83;
         this.upgradeButton = Button.builder(Component.translatable("gui.currents_of_trade.upgrade_harbor"), b ->
                 onUpgradeClicked()
-        ).bounds(btnX, upgradeY, btnWidth, 22).build();
+        ).bounds(btnX, upgradeY, btnWidth, 18).build();
 
         this.addRenderableWidget(this.travelButton);
         this.addRenderableWidget(this.sendItemsButton);
@@ -210,16 +215,16 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
             int btnWidth = 160;
             int btnX = this.leftPos + (this.imageWidth - btnWidth) / 2;
             if (this.travelButton != null) {
-                this.travelButton.setPosition(btnX, this.topPos + 25);
+                this.travelButton.setPosition(btnX, this.topPos + 23);
             }
             if (this.sendItemsButton != null) {
-                this.sendItemsButton.setPosition(btnX, this.topPos + 48);
+                this.sendItemsButton.setPosition(btnX, this.topPos + 43);
             }
             if (this.requestTradeButton != null) {
-                this.requestTradeButton.setPosition(btnX, this.topPos + 71);
+                this.requestTradeButton.setPosition(btnX, this.topPos + 63);
             }
             if (this.upgradeButton != null) {
-                this.upgradeButton.setPosition(btnX, this.topPos + 96);
+                this.upgradeButton.setPosition(btnX, this.topPos + 83);
             }
         }
     }
@@ -262,15 +267,15 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
         String stars = buildStars(level);
         MutableComponent levelText = Component.literal("⚓ Lv." + level + " — " + getLevelName(level) + "  " + stars);
         int textX = this.leftPos + (this.imageWidth - this.font.width(levelText)) / 2;
-        int textY = this.topPos + (level >= 5 ? 97 : 124);
-        guiGraphics.drawString(this.font, levelText, textX, textY, 0xFFD700, false);
+        int textY = this.topPos + (level >= 5 ? 85 : 105);
+        guiGraphics.drawString(this.font, levelText, textX, textY, 0xFFD700, true);
 
         if (this.minecraft != null && this.minecraft.level != null) {
             MaritimeTradeRegion region = MaritimeTradeRegion.fromLevelAndPos(this.minecraft.level, this.menu.getBlockPos());
             Component regionText = Component.translatable("gui.currents_of_trade.harbor_region", region.getDisplayName());
             int regX = this.leftPos + (this.imageWidth - this.font.width(regionText)) / 2;
-            int regY = textY + 11;
-            guiGraphics.drawString(this.font, regionText, regX, regY, region.getColor(), false);
+            int regY = textY + 12;
+            guiGraphics.drawString(this.font, regionText, regX, regY, region.getColor(), true);
 
             if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
                     && mouseY >= regY && mouseY <= regY + 9) {

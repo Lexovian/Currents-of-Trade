@@ -112,14 +112,39 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
             int rX = -fZ;
             int rZ = fX;
 
-            // Reject if the pier deck itself is submerged underwater
-            if (serverLevel.hasChunk(pierWorldPos.getX() >> 4, pierWorldPos.getZ() >> 4)
-                    && (serverLevel.getFluidState(pierWorldPos.above()).is(FluidTags.WATER)
-                    || serverLevel.getBlockState(pierWorldPos.above()).is(Blocks.WATER))) {
+            // Reject if the pier deck itself is submerged underwater or encased in ice
+            if (serverLevel.hasChunk(pierWorldPos.getX() >> 4, pierWorldPos.getZ() >> 4)) {
+                if (serverLevel.getFluidState(pierWorldPos.above()).is(FluidTags.WATER)
+                        || serverLevel.getBlockState(pierWorldPos.above()).is(Blocks.WATER)
+                        || serverLevel.getBlockState(pierWorldPos).is(net.minecraft.tags.BlockTags.ICE)
+                        || serverLevel.getBiome(pierWorldPos).value().coldEnoughToSnow(pierWorldPos)) {
+                    return List.of();
+                }
+            }
+
+            BlockPos waterAheadPos = pierWorldPos.offset(fX * 4, 0, fZ * 4);
+            if (serverLevel.hasChunk(waterAheadPos.getX() >> 4, waterAheadPos.getZ() >> 4)
+                    && serverLevel.getBiome(waterAheadPos).value().coldEnoughToSnow(waterAheadPos)) {
                 return List.of();
             }
 
-            // Verify natural water in front of the dock (allows coastal banks up to 5 blocks above water surface with RIGID projection)
+            // Reject if any ice is present around or in front of the dock, and count only open-surface liquid water
+            for (int f = -2; f <= 6; f++) {
+                for (int s = -3; s <= 3; s++) {
+                    for (int dy = -5; dy <= 1; dy++) {
+                        BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
+                        if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
+                            continue;
+                        }
+                        if (serverLevel.getBlockState(check).is(net.minecraft.tags.BlockTags.ICE)) {
+                            LOGGER.info("[Currents of Trade] Rejecting dock placement on frozen water/ice at {}", pierWorldPos);
+                            return List.of();
+                        }
+                    }
+                }
+            }
+
+            // Verify natural unfrozen surface water in front of the dock
             int waterBlocks = 0;
             for (int f = 0; f <= 5; f++) {
                 for (int s = -2; s <= 2; s++) {
@@ -129,7 +154,12 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
                             continue;
                         }
                         if (serverLevel.getFluidState(check).is(FluidTags.WATER) || serverLevel.getBlockState(check).is(Blocks.WATER)) {
-                            waterBlocks++;
+                            BlockPos above = check.above();
+                            net.minecraft.world.level.block.state.BlockState aboveState = serverLevel.getBlockState(above);
+                            // Only count water if the block above is air or liquid water (never under an ice sheet or solid ceiling)
+                            if (aboveState.isAir() || aboveState.is(Blocks.WATER) || serverLevel.getFluidState(above).is(FluidTags.WATER)) {
+                                waterBlocks++;
+                            }
                         }
                     }
                 }

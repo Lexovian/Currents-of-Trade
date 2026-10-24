@@ -3,6 +3,7 @@ package com.lexovian.currentsoftrade.world.inventory;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.entity.CargoBoatEntity;
+import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
@@ -310,12 +311,38 @@ public class SendItemsMenu extends AbstractContainerMenu {
         ItemStack chart = getChartStack();
         BlockPos target = NauticalChartItem.getTargetPos(chart);
         String destHarbor = NauticalChartItem.getTargetHarbor(chart);
+        if (target == null) return false;
         int fee = getRequiredFee();
         BlockPos origin = getOriginPos();
 
+        // Locate the deepest/most-centered water surface near the departure dock (avoids hugging the shoreline)
+        BlockPos waterStart = TradeBoatEntity.findBestHarborWaterSpawn(level, origin);
+        if (waterStart == null) {
+            player.displayClientMessage(Component.translatable("message.currents_of_trade.anchor_not_near_water"), true);
+            return false;
+        }
+
+        if (!TradeBoatEntity.verifyPortWaterConnection(level, waterStart, NauticalChartItem.getWaypoints(chart), target)) {
+            player.displayClientMessage(Component.translatable("message.currents_of_trade.no_water_connection", destHarbor), true);
+            return false;
+        }
+
+        int topWaterY = waterStart.getY();
+
         this.travelContainer.removeItem(1, fee);
 
-        CargoBoatEntity cargoBoat = new CargoBoatEntity(level, origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() + 0.5);
+        double spawnX = waterStart.getX() + 0.5;
+        double spawnY = topWaterY + 0.85;
+        double spawnZ = waterStart.getZ() + 0.5;
+        double dx = (target.getX() + 0.5) - spawnX;
+        double dz = (target.getZ() + 0.5) - spawnZ;
+        float initialYaw = (float) (net.minecraft.util.Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+
+        CargoBoatEntity cargoBoat = new CargoBoatEntity(level, spawnX, spawnY, spawnZ);
+        cargoBoat.setYRot(initialYaw);
+        cargoBoat.setYHeadRot(initialYaw);
+        cargoBoat.yRotO = initialYaw;
+        cargoBoat.setRouteWaypoints(NauticalChartItem.getWaypoints(chart));
         cargoBoat.setVoyageTarget(target, destHarbor);
         cargoBoat.setSender(this.player);
 
