@@ -22,6 +22,11 @@ import com.lexovian.currentsoftrade.item.TeaBrickItem;
 import com.lexovian.currentsoftrade.item.SandalwoodItem;
 import com.lexovian.currentsoftrade.item.VanillaBundleItem;
 import com.lexovian.currentsoftrade.item.AmmoniteFossilItem;
+import com.lexovian.currentsoftrade.item.SaffronBundleItem;
+import com.lexovian.currentsoftrade.item.JadeFigurineItem;
+import com.lexovian.currentsoftrade.item.CacaoElixirItem;
+import com.lexovian.currentsoftrade.item.NarwhalIvoryItem;
+import com.lexovian.currentsoftrade.item.DamascusSteelItem;
 import com.lexovian.currentsoftrade.item.MessageInABottleItem;
 import com.lexovian.currentsoftrade.item.StormGlassItem;
 import com.lexovian.currentsoftrade.item.CaptainsPipeItem;
@@ -213,6 +218,26 @@ public class CurrentsofTrade {
     public static final DeferredItem<com.lexovian.currentsoftrade.item.SalvageDredgeItem> SALVAGE_DREDGE =
             ITEMS.registerItem("salvage_dredge", com.lexovian.currentsoftrade.item.SalvageDredgeItem::new, new Item.Properties());
 
+    /** Precious desert crocus threads — eating grants Fire Resistance I (45s) and Absorption I (30s). */
+    public static final DeferredItem<SaffronBundleItem> SAFFRON_BUNDLE =
+            ITEMS.registerItem("saffron_bundle", SaffronBundleItem::new, new Item.Properties().stacksTo(16));
+
+    /** Carved jade sea-serpent statuette — right-click channels Luck I & Dolphin's Grace I (30s). */
+    public static final DeferredItem<JadeFigurineItem> JADE_FIGURINE =
+            ITEMS.registerItem("jade_figurine", JadeFigurineItem::new, new Item.Properties().stacksTo(16));
+
+    /** Spiced jungle cacao brew — drinking grants Dolphin's Grace I & Strength I and clears Weakness/Mining Fatigue. */
+    public static final DeferredItem<CacaoElixirItem> CACAO_ELIXIR =
+            ITEMS.registerItem("cacao_elixir", CacaoElixirItem::new, new Item.Properties().stacksTo(16));
+
+    /** Spiraled arctic sea tusk prized across tropical and desert ports. */
+    public static final DeferredItem<NarwhalIvoryItem> NARWHAL_IVORY =
+            ITEMS.registerItem("narwhal_ivory", NarwhalIvoryItem::new, new Item.Properties().stacksTo(16));
+
+    /** Watered crucible steel ingot — right-click with damaged item in offhand to restore 25% durability. */
+    public static final DeferredItem<DamascusSteelItem> DAMASCUS_STEEL =
+            ITEMS.registerItem("damascus_steel", DamascusSteelItem::new, new Item.Properties().stacksTo(16));
+
     // --- Menu Types ---
     public static final DeferredHolder<MenuType<?>, MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(AnchorPointMenu::new));
@@ -300,6 +325,11 @@ public class CurrentsofTrade {
                                 output.accept(VANILLA_BUNDLE.get());
                                 output.accept(LUMINOUS_PEARL.get());
                                 output.accept(AMMONITE_FOSSIL.get());
+                                output.accept(SAFFRON_BUNDLE.get());
+                                output.accept(JADE_FIGURINE.get());
+                                output.accept(CACAO_ELIXIR.get());
+                                output.accept(NARWHAL_IVORY.get());
+                                output.accept(DAMASCUS_STEEL.get());
                                 output.accept(MESSAGE_IN_A_BOTTLE.get());
                                 output.accept(SPICE_SACK.get());
                                 output.accept(AMBER_VIAL.get());
@@ -376,6 +406,11 @@ public class CurrentsofTrade {
             event.accept(SPICE_SACK);
             event.accept(AMBER_VIAL);
             event.accept(SALT_POUCH);
+            event.accept(SAFFRON_BUNDLE);
+            event.accept(JADE_FIGURINE);
+            event.accept(CACAO_ELIXIR);
+            event.accept(NARWHAL_IVORY);
+            event.accept(DAMASCUS_STEEL);
         }
     }
 }

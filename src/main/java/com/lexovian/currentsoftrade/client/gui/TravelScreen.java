@@ -82,9 +82,11 @@ public class TravelScreen extends AbstractContainerScreen<TravelMenu> {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 4210752, false);
         guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 4210752, false);
 
-        // Slot headers - placed at y=24, safely clear of the Back button
-        guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.slot_chart"), 36, 24, 0x404040, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.slot_fee"), 138, 24, 0x404040, false);
+        // Slot headers centered over Slot 0 (x=43..59 -> center 51) and Slot 1 (x=137..153 -> center 145)
+        Component chartLabel = Component.translatable("gui.currents_of_trade.slot_chart");
+        Component feeLabel = Component.translatable("gui.currents_of_trade.slot_fee");
+        guiGraphics.drawString(this.font, chartLabel, 51 - this.font.width(chartLabel) / 2, 24, 0x404040, false);
+        guiGraphics.drawString(this.font, feeLabel, 145 - this.font.width(feeLabel) / 2, 24, 0x404040, false);
 
         // Arrow between slots at y=40
         guiGraphics.drawString(this.font, "\u2794", 94, 40, 0x666666, false);

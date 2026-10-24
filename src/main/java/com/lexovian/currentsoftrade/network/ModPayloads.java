@@ -58,6 +58,11 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
+                    if (com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL != null
+                            && !com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL.get()) {
+                        player.displayClientMessage(Component.translatable("tooltip.currents_of_trade.travel_disabled_config"), true);
+                        return;
+                    }
                     BlockPos targetPos = findAnchorPointNear(player, pos);
                     if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
                         BlockPos serverPos = anchorMenu.getBlockPos();
@@ -445,6 +450,111 @@ public class ModPayloads {
         }
     }
 
+    // --- Repeat Last Trade Order Preset ---
+
+    public record RepeatTradeOrderPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<RepeatTradeOrderPayload> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "repeat_trade_order"));
+        public static final StreamCodec<ByteBuf, RepeatTradeOrderPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, RepeatTradeOrderPayload::pos, RepeatTradeOrderPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        requestMenu.repeatLastTradeOrder(player);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Unload Ship Cargo to Nearby Harbor Depot ---
+
+    public record UnloadShipToHarborPayload(int entityId) implements CustomPacketPayload {
+        public static final Type<UnloadShipToHarborPayload> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "unload_ship_to_harbor"));
+        public static final StreamCodec<ByteBuf, UnloadShipToHarborPayload> STREAM_CODEC =
+                StreamCodec.composite(ByteBufCodecs.VAR_INT, UnloadShipToHarborPayload::entityId, UnloadShipToHarborPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    Level level = player.level();
+                    net.minecraft.world.Container shipContainer = null;
+                    net.minecraft.world.entity.Entity shipEntity = null;
+
+                    if (entityId >= 0) {
+                        net.minecraft.world.entity.Entity e = level.getEntity(entityId);
+                        if (e instanceof net.minecraft.world.Container c && player.distanceToSqr(e) <= 256.0) {
+                            shipContainer = c;
+                            shipEntity = e;
+                        }
+                    }
+                    if (shipContainer == null && player.containerMenu instanceof net.minecraft.world.inventory.ChestMenu chestMenu) {
+                        if (chestMenu.getContainer() instanceof net.minecraft.world.entity.Entity e && player.distanceToSqr(e) <= 256.0) {
+                            shipContainer = chestMenu.getContainer();
+                            shipEntity = e;
+                        }
+                    }
+                    if (shipContainer == null && player.getVehicle() instanceof net.minecraft.world.Container c) {
+                        shipContainer = c;
+                        shipEntity = player.getVehicle();
+                    }
+                    if (shipContainer == null || shipEntity == null) return;
+
+                    BlockPos center = shipEntity.blockPosition();
+                    BlockPos nearestAnchor = null;
+                    double bestDistSq = Double.MAX_VALUE;
+                    for (BlockPos check : BlockPos.betweenClosed(center.offset(-16, -6, -16), center.offset(16, 6, 16))) {
+                        if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+                            double dSq = check.distSqr(center);
+                            if (dSq < bestDistSq) {
+                                bestDistSq = dSq;
+                                nearestAnchor = check.immutable();
+                            }
+                        }
+                    }
+
+                    if (nearestAnchor == null) {
+                        player.displayClientMessage(Component.translatable("message.currents_of_trade.ship_unload_no_harbor"), true);
+                        return;
+                    }
+
+                    String harborName = "Harbor";
+                    if (level.getBlockEntity(nearestAnchor) instanceof AnchorPointBlockEntity anchor) {
+                        harborName = anchor.getHarborName();
+                    }
+
+                    int transferred = com.lexovian.currentsoftrade.entity.TradeBoatEntity.unloadContainerToHarborStorage(
+                            level, nearestAnchor, shipContainer);
+                    if (transferred > 0) {
+                        level.playSound(null, nearestAnchor, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                    nearestAnchor.getX() + 0.5, nearestAnchor.getY() + 1.2, nearestAnchor.getZ() + 0.5,
+                                    10, 0.35, 0.25, 0.35, 0.05);
+                        }
+                        player.displayClientMessage(
+                                Component.translatable("message.currents_of_trade.ship_unloaded_to_harbor", transferred, harborName),
+                                true
+                        );
+                        player.containerMenu.broadcastChanges();
+                    } else {
+                        player.displayClientMessage(
+                                Component.translatable("message.currents_of_trade.ship_unload_no_storage", harborName),
+                                true
+                        );
+                    }
+                }
+            });
+        }
+    }
+
     // --- Payload registration ---
 
     @EventBusSubscriber(modid = CurrentsofTrade.MODID)
@@ -464,6 +574,8 @@ public class ModPayloads {
             registrar.playToServer(ResetTradeOrderPayload.TYPE,     ResetTradeOrderPayload.STREAM_CODEC,     ResetTradeOrderPayload::handle);
             registrar.playToServer(RenameHarborPayload.TYPE,        RenameHarborPayload.STREAM_CODEC,        RenameHarborPayload::handle);
             registrar.playToServer(UpgradeHarborPayload.TYPE,       UpgradeHarborPayload.STREAM_CODEC,       UpgradeHarborPayload::handle);
+            registrar.playToServer(RepeatTradeOrderPayload.TYPE,    RepeatTradeOrderPayload.STREAM_CODEC,    RepeatTradeOrderPayload::handle);
+            registrar.playToServer(UnloadShipToHarborPayload.TYPE,  UnloadShipToHarborPayload.STREAM_CODEC,  UnloadShipToHarborPayload::handle);
         }
     }
 }

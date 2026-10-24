@@ -51,6 +51,8 @@ public class SloopModel extends EntityModel<Boat> {
     private final ModelPart tradePennant;
     private final ModelPart waistSeat;
     private final ModelPart bowSeat;
+    private final ModelPart lantern;
+    private final ModelPart sternLantern;
     private final ModelPart root;
 
     public SloopModel(ModelPart root) {
@@ -69,6 +71,8 @@ public class SloopModel extends EntityModel<Boat> {
         this.tradePennant    = root.getChild("trade_pennant");
         this.waistSeat       = root.getChild("waist_seat");
         this.bowSeat         = root.getChild("bow_seat");
+        this.lantern         = root.getChild("lantern");
+        this.sternLantern    = root.getChild("stern_lantern");
     }
 
     // --- Model Definition ---
@@ -478,20 +482,86 @@ public class SloopModel extends EntityModel<Boat> {
         boolean isTrade = !isCargo && ((entity instanceof com.lexovian.currentsoftrade.entity.TradeBoatEntity trade && !trade.isVoyageShip())
                 || (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity sloop && sloop.isMerchantShip()));
 
-        // Cargo Boat equipment:
+        boolean hasCopperHull = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && s.hasCopperHull());
+        boolean hasBowLantern = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && s.getBowLanternType() > 0);
+        boolean hasBanner     = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && !s.getBannerStack().isEmpty());
+
+        // Cargo Boat & Upgraded Sloop equipment:
         this.cargoCrate.visible   = isCargo;
         this.cargoCrane.visible   = isCargo;
-        this.cargoAnchors.visible = isCargo;
+        this.cargoAnchors.visible = isCargo || hasCopperHull;
         this.cargoFenders.visible = isCargo;
         this.waistSeat.visible    = !isCargo;
         this.bowSeat.visible      = !isCargo;
+        this.lantern.visible      = isCargo || isTrade || hasBowLantern;
 
-        // Trade Ship equipment:
+        // Trade Ship & Flagship equipment:
         this.merchantAwning.visible  = isTrade;
         this.merchantDesk.visible    = isTrade;
         this.tradeFigurehead.visible = isTrade;
         this.crowsNest.visible       = isTrade;
-        this.tradePennant.visible    = isTrade;
+        this.tradePennant.visible    = isTrade || hasBanner;
+    }
+
+    public float getSailXRot() {
+        return this.sail.xRot;
+    }
+
+    public void renderCustomShip(Boat entity, PoseStack poseStack, VertexConsumer buffer,
+                                 int packedLight, int packedOverlay) {
+        if (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity sloop && !sloop.isMerchantShip()) {
+            int sailColorId = sloop.getSailColor();
+            int bowLantern = sloop.getBowLanternType();
+
+            if (sailColorId >= 0 || bowLantern > 0) {
+                boolean prevSailVis = this.sail.visible;
+                boolean prevTopVis = this.sailTop.visible;
+                boolean prevLanternVis = this.lantern.visible;
+                boolean prevSternLanternVis = this.sternLantern.visible;
+
+                if (sailColorId >= 0) {
+                    this.sail.visible = false;
+                    this.sailTop.visible = false;
+                }
+                if (bowLantern > 0) {
+                    this.lantern.visible = false;
+                    this.sternLantern.visible = false;
+                }
+
+                this.root.render(poseStack, buffer, packedLight, packedOverlay, 0xFFFFFFFF);
+
+                if (sailColorId >= 0) {
+                    this.sail.visible = prevSailVis;
+                    this.sailTop.visible = prevTopVis;
+                    int sailTint = computeSailTintColor(sailColorId);
+                    this.sail.render(poseStack, buffer, packedLight, packedOverlay, sailTint);
+                    this.sailTop.render(poseStack, buffer, packedLight, packedOverlay, sailTint);
+                }
+
+                if (bowLantern > 0) {
+                    this.lantern.visible = prevLanternVis;
+                    this.sternLantern.visible = prevSternLanternVis;
+                    int lanternColor = (bowLantern == 2) ? 0xFF88EEFF : 0xFFFFFFFF;
+                    this.lantern.render(poseStack, buffer, 0xF000F0, packedOverlay, lanternColor);
+                    this.sternLantern.render(poseStack, buffer, 0xF000F0, packedOverlay, lanternColor);
+                }
+                return;
+            }
+        }
+        this.root.render(poseStack, buffer, packedLight, packedOverlay, 0xFFFFFFFF);
+    }
+
+    private static int computeSailTintColor(int colorId) {
+        net.minecraft.world.item.DyeColor dye = net.minecraft.world.item.DyeColor.byId(colorId);
+        int rgb = dye.getTextureDiffuseColor();
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        // Blend 80% dye color with 20% warm canvas cream so sail folds & seams stay crisp
+        r = Mth.clamp((int) (r * 0.80F + 255 * 0.20F), 0, 255);
+        g = Mth.clamp((int) (g * 0.80F + 250 * 0.20F), 0, 255);
+        b = Mth.clamp((int) (b * 0.80F + 240 * 0.20F), 0, 255);
+        return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
     @Override

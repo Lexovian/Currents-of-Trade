@@ -228,6 +228,10 @@ public class TravelMenu extends AbstractContainerMenu {
     }
 
     public boolean canTravel() {
+        if (com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL != null
+                && !com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL.get()) {
+            return false;
+        }
         if (!isNearWater()) return false;
         if (getCooldownSeconds() > 0) return false;
         int req = getRequiredDoubloons();
@@ -252,6 +256,22 @@ public class TravelMenu extends AbstractContainerMenu {
             return false;
         }
 
+        // Find the most centered open water surface near the anchor point
+        BlockPos origin = getOriginPos();
+        BlockPos waterSpawn = TradeBoatEntity.findBestHarborWaterSpawn(player.level(), origin);
+        if (waterSpawn == null) {
+            player.displayClientMessage(Component.translatable("message.currents_of_trade.anchor_not_near_water"), true);
+            return false;
+        }
+
+        String destHarbor = NauticalChartItem.getHarborName(chart);
+        if (destHarbor == null) destHarbor = UNKNOWN_PORT;
+
+        if (!TradeBoatEntity.verifyPortWaterConnection(player.level(), waterSpawn, NauticalChartItem.getWaypoints(chart), target)) {
+            player.displayClientMessage(Component.translatable("message.currents_of_trade.no_water_connection", destHarbor), true);
+            return false;
+        }
+
         int req = getRequiredDoubloons();
         this.travelContainer.removeItem(1, req);
 
@@ -263,32 +283,7 @@ public class TravelMenu extends AbstractContainerMenu {
             }
         });
 
-        // Find the highest open water surface adjacent to the anchor point
-        BlockPos origin = getOriginPos();
-        BlockPos waterSpawn = null;
-        int highestWaterY = Integer.MIN_VALUE;
-
-        for (int dx = -8; dx <= 8; dx++) {
-            for (int dz = -8; dz <= 8; dz++) {
-                for (int dy = 2; dy >= -7; dy--) {
-                    BlockPos check = origin.offset(dx, dy, dz);
-                    if (player.level().getFluidState(check).is(FluidTags.WATER)) {
-                        BlockPos above = check.above();
-                        if (!player.level().getFluidState(above).is(FluidTags.WATER)) {
-                            if (check.getY() > highestWaterY) {
-                                highestWaterY = check.getY();
-                                waterSpawn = check.immutable();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (waterSpawn == null) waterSpawn = origin;
-
         // Spawn the travel Sloop on the water surface, facing the destination
-        String destHarbor = NauticalChartItem.getHarborName(chart);
-        if (destHarbor == null) destHarbor = UNKNOWN_PORT;
 
         double spawnX = waterSpawn.getX() + 0.5;
         double spawnY = waterSpawn.getY() + 0.85;
@@ -303,9 +298,13 @@ public class TravelMenu extends AbstractContainerMenu {
         boat.setYHeadRot(initialYaw);
         boat.yRotO = initialYaw;
         boat.setVoyageShip(true);
+        String originName = (player.level().getBlockEntity(origin) instanceof AnchorPointBlockEntity originAnchor)
+                ? originAnchor.getHarborName() : null;
+        boat.setHomeHarbor(origin, originName);
+        boat.setRouteWaypoints(NauticalChartItem.getWaypoints(chart));
         boat.setVoyageTarget(target, destHarbor);
-        boat.setCustomName(Component.literal("Trade Sloop"));
-        boat.setCustomNameVisible(true);
+        boat.setCustomName(Component.translatable("entity.currents_of_trade.sloop"));
+        boat.setCustomNameVisible(false);
         player.level().addFreshEntity(boat);
 
         // Mount the player into the sloop at deck height

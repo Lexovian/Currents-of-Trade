@@ -72,6 +72,7 @@ public class SloopItem extends Item {
             // Spawn the sloop at the water surface (offset up slightly so it floats cleanly)
             SloopEntity sloop = new SloopEntity(level, clickLoc.x, clickLoc.y + 0.1, clickLoc.z);
             sloop.setYRot(player.getYRot());
+            sloop.loadUpgradesFromStack(itemstack);
             // Note: we intentionally skip the noCollision check here -- vanilla boats do the same.
             // The large visual hitbox (4.5 wide) would otherwise block placement near any shoreline.
 
@@ -93,6 +94,28 @@ public class SloopItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("item.currents_of_trade.sloop.desc"));
+        net.minecraft.world.item.component.CustomData customData =
+                stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+        if (customData != null) {
+            net.minecraft.nbt.CompoundTag tag = customData.copyTag();
+            if (tag.contains("SailColor") && tag.getInt("SailColor") >= 0) {
+                net.minecraft.world.item.DyeColor color = net.minecraft.world.item.DyeColor.byId(tag.getInt("SailColor"));
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_sail_color",
+                        Component.translatable("color.minecraft." + color.getName())));
+            }
+            if (tag.contains("BannerItem")) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_banner"));
+            }
+            if (tag.contains("BowLanternType") && tag.getInt("BowLanternType") > 0) {
+                int lType = tag.getInt("BowLanternType");
+                Component lName = Component.translatable(lType == 2 ? "block.minecraft.soul_lantern" : "block.minecraft.lantern");
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_lantern", lName));
+            }
+            if (tag.getBoolean("CopperHull")) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_copper_hull"));
+            }
+        }
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

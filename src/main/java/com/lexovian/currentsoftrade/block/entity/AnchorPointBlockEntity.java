@@ -43,14 +43,50 @@ public class AnchorPointBlockEntity extends BlockEntity {
     public static final int MIN_HARBOR_WATER_BLOCKS = 40;
     public static final int MAX_HARBOR_LEVEL = 5;
 
+    public record TradePresetEntry(HarborTradeOffer offer, int count) {
+        public CompoundTag toTag(HolderLookup.Provider registries) {
+            CompoundTag tag = new CompoundTag();
+            tag.put("Offer", offer.toTag(registries));
+            tag.putInt("Count", count);
+            return tag;
+        }
+
+        public static TradePresetEntry fromTag(CompoundTag tag, HolderLookup.Provider registries) {
+            HarborTradeOffer offer = HarborTradeOffer.fromTag(tag.getCompound("Offer"), registries);
+            int count = Math.max(1, tag.getInt("Count"));
+            return new TradePresetEntry(offer, count);
+        }
+    }
+
     // Harbor state
     private int tradeLevel = 1;
     private String harborName = "";
     private long lastTravelTime = 0;
     private final List<HarborTradeOffer> harborTrades = new ArrayList<>();
+    private final List<TradePresetEntry> savedTradePreset = new ArrayList<>();
 
     public AnchorPointBlockEntity(BlockPos pos, BlockState state) {
         super(CurrentsofTrade.ANCHOR_POINT_BE.get(), pos, state);
+    }
+
+    public List<TradePresetEntry> getSavedTradePreset() {
+        return Collections.unmodifiableList(this.savedTradePreset);
+    }
+
+    public boolean hasSavedTradePreset() {
+        return !this.savedTradePreset.isEmpty();
+    }
+
+    public void setSavedTradePreset(List<TradePresetEntry> preset) {
+        this.savedTradePreset.clear();
+        if (preset != null) {
+            for (TradePresetEntry entry : preset) {
+                if (entry != null && entry.count() > 0 && !entry.offer().getResult().isEmpty()) {
+                    this.savedTradePreset.add(entry);
+                }
+            }
+        }
+        setChanged();
     }
 
     @Override
@@ -121,12 +157,13 @@ public class AnchorPointBlockEntity extends BlockEntity {
         return false;
     }
 
-    /** Pushes current name and trade list into the global HarborSavedData. */
+    /** Pushes current name, level, and trade list into the global HarborSavedData. */
     public void syncToSavedData() {
         if (this.level instanceof ServerLevel serverLevel) {
             HarborSavedData data = HarborSavedData.get(serverLevel);
             data.setTrades(this.getBlockPos(), this.harborTrades);
             data.setHarborName(this.getBlockPos(), this.getHarborName());
+            data.setHarborLevel(this.getBlockPos(), this.tradeLevel);
         }
     }
 
@@ -451,6 +488,14 @@ public class AnchorPointBlockEntity extends BlockEntity {
             tradesList.add(offer.toTag(registries));
         }
         tag.put("HarborTrades", tradesList);
+
+        if (!this.savedTradePreset.isEmpty()) {
+            ListTag presetList = new ListTag();
+            for (TradePresetEntry entry : this.savedTradePreset) {
+                presetList.add(entry.toTag(registries));
+            }
+            tag.put("SavedTradePreset", presetList);
+        }
     }
 
     @Override
@@ -465,6 +510,14 @@ public class AnchorPointBlockEntity extends BlockEntity {
             ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
             for (int i = 0; i < tradesList.size(); i++) {
                 this.harborTrades.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+            }
+        }
+
+        this.savedTradePreset.clear();
+        if (tag.contains("SavedTradePreset", Tag.TAG_LIST)) {
+            ListTag presetList = tag.getList("SavedTradePreset", Tag.TAG_COMPOUND);
+            for (int i = 0; i < presetList.size(); i++) {
+                this.savedTradePreset.add(TradePresetEntry.fromTag(presetList.getCompound(i), registries));
             }
         }
         syncToSavedData();

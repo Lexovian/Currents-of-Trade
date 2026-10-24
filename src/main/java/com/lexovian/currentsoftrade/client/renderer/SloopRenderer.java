@@ -80,7 +80,28 @@ public class SloopRenderer extends EntityRenderer<Boat> {
         this.model.setupAnim(entity, 0.0F, 0.0F, ageInTicks, 0.0F, 0.0F);
 
         VertexConsumer vertexConsumer = buffer.getBuffer(this.model.renderType(this.getTextureLocation(entity)));
-        this.model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
+        this.model.renderCustomShip(entity, poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY);
+
+        // Render 3D Banner Heraldry emblem on the front of the main sail
+        if (entity instanceof SloopEntity sloop && !sloop.getBannerStack().isEmpty()) {
+            poseStack.pushPose();
+            // Pivot at main sail yardarm (0, -48/16, -17/16) and billow with wind
+            poseStack.translate(0.0F, -3.0F, -1.0625F);
+            poseStack.mulPose(Axis.XP.rotation(this.model.getSailXRot()));
+            poseStack.translate(0.0F, 0.62F, -0.095F);
+            poseStack.scale(-0.85F, -0.85F, 0.14F);
+            net.minecraft.client.Minecraft.getInstance().getItemRenderer().renderStatic(
+                    sloop.getBannerStack(),
+                    net.minecraft.world.item.ItemDisplayContext.FIXED,
+                    packedLight,
+                    OverlayTexture.NO_OVERLAY,
+                    poseStack,
+                    buffer,
+                    entity.level(),
+                    entity.getId()
+            );
+            poseStack.popPose();
+        }
 
         poseStack.popPose();
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);

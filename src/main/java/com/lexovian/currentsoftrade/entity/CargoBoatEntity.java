@@ -110,6 +110,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
+        if (com.lexovian.currentsoftrade.item.NauticalChartItem.tryUseAboard(player, hand, this)) {
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
         if (player.isSecondaryUseActive() || this.cargoDelivered) {
             return this.interactWithContainerVehicle(player);
         }

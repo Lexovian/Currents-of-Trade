@@ -35,6 +35,10 @@ public class LighthouseBlockEntity extends BlockEntity {
     public static final double BEACON_RADIUS = 128.0;
     private static final Map<UUID, Long> LAST_NOTIFICATION_TIME = new HashMap<>();
 
+    public static void clearCache() {
+        LAST_NOTIFICATION_TIME.clear();
+    }
+
     public LighthouseBlockEntity(BlockPos pos, BlockState blockState) {
         super(CurrentsofTrade.LIGHTHOUSE_BE.get(), pos, blockState);
     }

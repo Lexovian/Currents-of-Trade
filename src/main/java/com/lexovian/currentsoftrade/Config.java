@@ -11,6 +11,7 @@ public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     // --- Harbor & Voyage ---
+    public static final ModConfigSpec.BooleanValue ENABLE_ANCHOR_TRAVEL;
     public static final ModConfigSpec.IntValue MAX_VOYAGE_DISTANCE;
     public static final ModConfigSpec.IntValue VOYAGE_COOLDOWN_SECONDS;
     public static final ModConfigSpec.IntValue MIN_HARBOR_WATER_BLOCKS;
@@ -33,6 +34,10 @@ public class Config {
 
     static {
         BUILDER.comment("Harbor and voyage mechanics configuration").push("harbor");
+
+        ENABLE_ANCHOR_TRAVEL = BUILDER
+                .comment("Enable the 'Travel' fast-travel ship feature on Anchor Points. Set to false to use Anchor Points purely for cargo & trade logistics (default: true)")
+                .define("enableAnchorTravel", true);
 
         MAX_VOYAGE_DISTANCE = BUILDER
                 .comment("Maximum distance in blocks allowed for single-stage sea voyages (default: 6400 blocks)")

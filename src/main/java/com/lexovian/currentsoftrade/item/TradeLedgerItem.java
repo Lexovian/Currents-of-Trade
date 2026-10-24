@@ -153,7 +153,7 @@ public class TradeLedgerItem extends Item {
                         level.playSound(null, pos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.BLOCKS, 1.0F, 1.0F);
                         if (context.getPlayer() != null) {
                             context.getPlayer().displayClientMessage(
-                                    Component.translatable("message.currents_of_trade.trade_added_to_harbor", anchorEntity.getHarborTrades().size(), AnchorPointBlockEntity.MAX_HARBOR_TRADES),
+                                    Component.translatable("message.currents_of_trade.trade_added_to_harbor", anchorEntity.getHarborTrades().size(), anchorEntity.getMaxTradeOffers()),
                                     false
                             );
                         }
@@ -166,7 +166,7 @@ public class TradeLedgerItem extends Item {
                         return InteractionResult.SUCCESS;
                     } else {
                         if (context.getPlayer() != null) {
-                            context.getPlayer().displayClientMessage(Component.translatable("message.currents_of_trade.harbor_trades_full", AnchorPointBlockEntity.MAX_HARBOR_TRADES), true);
+                            context.getPlayer().displayClientMessage(Component.translatable("message.currents_of_trade.harbor_trades_full", anchorEntity.getMaxTradeOffers()), true);
                         }
                         return InteractionResult.SUCCESS;
                     }
