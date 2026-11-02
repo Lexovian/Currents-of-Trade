@@ -511,5 +511,57 @@ public class ModPayloads {
                 (m, b) -> b.writeBlockPos(m.pos()), b -> new RepeatTradeOrderPayload(b.readBlockPos()), RepeatTradeOrderPayload::handle);
         playToServer(UnloadShipToHarborPayload.class,
                 (m, b) -> b.writeVarInt(m.entityId()), b -> new UnloadShipToHarborPayload(b.readVarInt()), UnloadShipToHarborPayload::handle);
+        playToServer(SelectJournalRoutePayload.class,
+                (m, b) -> { b.writeVarInt(m.handOrdinal()); b.writeVarInt(m.routeIndex()); },
+                b -> new SelectJournalRoutePayload(b.readVarInt(), b.readVarInt()), SelectJournalRoutePayload::handle);
+    }
+
+    // --- Select Route Journal Active Harbor from Nautical Atlas GUI ---
+
+    public record SelectJournalRoutePayload(int handOrdinal, int routeIndex) {
+        public void handle(PayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    net.minecraft.world.InteractionHand hand = (handOrdinal == 1)
+                            ? net.minecraft.world.InteractionHand.OFF_HAND
+                            : net.minecraft.world.InteractionHand.MAIN_HAND;
+                    net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
+                    if (!(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)) {
+                        stack = player.getMainHandItem();
+                        if (!(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)) {
+                            stack = player.getOffhandItem();
+                        }
+                    }
+                    if (stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem) {
+                        java.util.List<com.lexovian.currentsoftrade.item.RouteJournalItem.RouteEntry> routes =
+                                com.lexovian.currentsoftrade.item.RouteJournalItem.getRoutes(stack);
+                        if (routeIndex < 0) {
+                            int deleteIdx = -routeIndex - 1;
+                            if (deleteIdx >= 0 && deleteIdx < routes.size()) {
+                                com.lexovian.currentsoftrade.item.RouteJournalItem.RouteEntry removed = routes.get(deleteIdx);
+                                com.lexovian.currentsoftrade.item.RouteJournalItem.removeRouteByIndex(stack, deleteIdx);
+                                player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", removed.name()), true);
+                                player.inventoryMenu.broadcastChanges();
+                            }
+                        } else if (routeIndex >= 0 && routeIndex < routes.size()) {
+                            com.lexovian.currentsoftrade.item.RouteJournalItem.setSelectedIndex(stack, routeIndex);
+                            com.lexovian.currentsoftrade.item.RouteJournalItem.RouteEntry selected = routes.get(routeIndex);
+                            if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                                com.lexovian.currentsoftrade.item.RouteJournalItem.syncActiveHarborTrades(stack, selected.pos(), serverLevel);
+                            }
+                            player.inventoryMenu.broadcastChanges();
+                            player.displayClientMessage(Component.translatable(
+                                    "message.currents_of_trade.journal_switched",
+                                    selected.name(),
+                                    selected.pos().getX(),
+                                    selected.pos().getZ(),
+                                    routeIndex + 1,
+                                    routes.size()
+                            ), true);
+                        }
+                    }
+                }
+            });
+        }
     }
 }

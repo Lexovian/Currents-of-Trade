@@ -70,6 +70,7 @@ public class CargoBoatItem extends Item {
             CargoBoatEntity cargoBoat = new CargoBoatEntity(level, clickLoc.x, clickLoc.y + 0.1, clickLoc.z);
             cargoBoat.setYRot(player.getYRot());
             cargoBoat.setPlayerControlled(true);
+            cargoBoat.loadUpgradesFromStack(itemstack);
 
             level.addFreshEntity(cargoBoat);
             level.gameEvent(player, GameEvent.ENTITY_PLACE, clickLoc);

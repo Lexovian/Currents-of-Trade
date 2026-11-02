@@ -43,4 +43,16 @@ public class ModServerEvents {
             com.lexovian.currentsoftrade.item.SaltPouchItem.applySaltedBonus(event.getEntity(), event.getItem());
         }
     }
+
+    /**
+     * Allows players aiming at the visual mast/sails above the hull hitbox (or riding/standing on the ship)
+     * to dye sails, mount banners/pennants ("Flama"), lanterns, or copper hull sheathing with Right-Click.
+     */
+    @SubscribeEvent
+    public static void onRightClickItem(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        if (com.lexovian.currentsoftrade.entity.SloopEntity.tryCustomizeNearbyShip(event.getEntity(), event.getHand())) {
+            event.setCancellationResult(net.minecraft.world.InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
+            event.setCanceled(true);
+        }
+    }
 }

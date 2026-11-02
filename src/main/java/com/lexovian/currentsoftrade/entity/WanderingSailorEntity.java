@@ -4,9 +4,13 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -29,6 +33,10 @@ import java.util.List;
 
 public class WanderingSailorEntity extends WanderingTrader {
 
+    public static final int LEAGUE_COUNT = 6;
+    private static final EntityDataAccessor<Integer> DATA_TRADE_LEAGUE =
+            SynchedEntityData.defineId(WanderingSailorEntity.class, EntityDataSerializers.INT);
+
     // Stay time: min 7 minutes (8,400 ticks), max 15 minutes (18,000 ticks)
     public static final int MIN_DESPAWN_DELAY = 8400;
     public static final int MAX_DESPAWN_DELAY = 18000;
@@ -46,14 +54,35 @@ public class WanderingSailorEntity extends WanderingTrader {
         this.mooredBoatUUID = uuid;
     }
 
+    public int getTradeLeague() {
+        return Mth.clamp(this.entityData.get(DATA_TRADE_LEAGUE), 0, LEAGUE_COUNT - 1);
+    }
+
+    public void setTradeLeague(int leagueId) {
+        int clamped = Mth.clamp(leagueId, 0, LEAGUE_COUNT - 1);
+        this.entityData.set(DATA_TRADE_LEAGUE, clamped);
+        this.setCustomName(Component.translatable("entity.currents_of_trade.wandering_sailor.league_" + clamped));
+        if (!this.level().isClientSide) {
+            this.updateTrades();
+        }
+    }
+
     public WanderingSailorEntity(EntityType<? extends WanderingTrader> entityType, Level level) {
         super(entityType, level);
-        this.setCustomName(Component.translatable("entity.currents_of_trade.wandering_sailor"));
+        int initLeague = level != null ? level.random.nextInt(LEAGUE_COUNT) : 0;
+        this.entityData.set(DATA_TRADE_LEAGUE, initLeague);
+        this.setCustomName(Component.translatable("entity.currents_of_trade.wandering_sailor.league_" + initLeague));
         this.setCustomNameVisible(true);
-        if (!level.isClientSide) {
+        if (level != null && !level.isClientSide) {
             this.sailorDespawnDelay = level.random.nextIntBetweenInclusive(MIN_DESPAWN_DELAY, MAX_DESPAWN_DELAY);
             this.setDespawnDelay(this.sailorDespawnDelay);
         }
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_TRADE_LEAGUE, 0);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -71,6 +100,38 @@ public class WanderingSailorEntity extends WanderingTrader {
         // Currency exchange — xp=0 prevents XP-exploit loop, trades still fully functional
         offers.add(new MerchantOffer(new ItemStack(Items.EMERALD, 2),                      new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), 10, 0, 0.0F));
         offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.EMERALD, 2),                  10, 0, 0.0F));
+
+        // ── Maritime Trade League Signature Deals (2 guaranteed specialty offers per league) ──
+        switch (this.getTradeLeague()) {
+            case 0 -> { // Golden Levant Company
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), 8, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),      6, 12, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 6, 8, 0.05F));
+            }
+            case 1 -> { // Boreal Amber Hanse
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),    6, 10, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), 5, 14, 0.05F));
+            }
+            case 2 -> { // Emerald Archipelago Guild
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),   6, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), 6, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 6, 10, 0.05F));
+            }
+            case 3 -> { // Imperial Jade Flotilla
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), 6, 10, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),  5, 14, 0.05F));
+            }
+            case 4 -> { // Crimson Privateer Syndicate
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),      5, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1), 6, 8, 0.05F));
+            }
+            default -> { // Azure Thalassocracy
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1), 4, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),     4, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),    5, 12, 0.05F));
+            }
+        }
+
         // Small vanilla food provision (secondary role — keeps sailor flavour)
         offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.COOKED_SALMON, 2),             8,  1, 0.05F));
         // Reverse: sailor buys cooked fish from the player
@@ -83,6 +144,7 @@ public class WanderingSailorEntity extends WanderingTrader {
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),         6, 5,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),          6, 5,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),     6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 5, 8,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2),     5, 8,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1),       5, 8,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
@@ -100,6 +162,8 @@ public class WanderingSailorEntity extends WanderingTrader {
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),      3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 3, 15, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),      3, 18, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),      3, 18, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),     3, 18, 0.05F));
@@ -199,6 +263,7 @@ public class WanderingSailorEntity extends WanderingTrader {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("SailorDespawnDelay", this.sailorDespawnDelay);
+        tag.putInt("TradeLeague", this.getTradeLeague());
         if (this.mooredBoatUUID != null) {
             tag.putUUID("MooredBoatUUID", this.mooredBoatUUID);
         }
@@ -209,6 +274,9 @@ public class WanderingSailorEntity extends WanderingTrader {
         super.readAdditionalSaveData(tag);
         if (tag.contains("SailorDespawnDelay")) {
             this.sailorDespawnDelay = tag.getInt("SailorDespawnDelay");
+        }
+        if (tag.contains("TradeLeague")) {
+            this.entityData.set(DATA_TRADE_LEAGUE, Mth.clamp(tag.getInt("TradeLeague"), 0, LEAGUE_COUNT - 1));
         }
         if (tag.hasUUID("MooredBoatUUID")) {
             this.mooredBoatUUID = tag.getUUID("MooredBoatUUID");

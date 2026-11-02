@@ -279,10 +279,16 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
 
             if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
                     && mouseY >= regY && mouseY <= regY + 9) {
+                com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer urgent =
+                        region.getUrgentBountyOffer(this.minecraft.level, this.menu.getBlockPos());
+                Component bountyLine = Component.translatable("tooltip.currents_of_trade.harbor_daily_bounty",
+                        urgent.getCostA().getCount() + "x " + urgent.getCostA().getHoverName().getString()
+                                + " -> " + urgent.getResult().getCount() + "x " + urgent.getResult().getHoverName().getString());
                 guiGraphics.renderTooltip(this.font, List.of(
                         region.getDisplayName(),
                         region.getExportDescription(),
-                        region.getImportDescription()
+                        region.getImportDescription(),
+                        bountyLine
                 ), java.util.Optional.empty(), mouseX, mouseY);
             }
         }

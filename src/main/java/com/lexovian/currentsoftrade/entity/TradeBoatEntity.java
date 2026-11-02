@@ -843,7 +843,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             double finalDz = (this.targetPos.getZ() + 0.5) - this.getZ();
             double finalDist = Math.sqrt(finalDx * finalDx + finalDz * finalDz);
 
-            if (finalDist <= 6.0) {
+            double approachDist = (this.portApproachPos != null)
+                    ? this.position().distanceTo(Vec3.atCenterOf(this.portApproachPos))
+                    : 999.0;
+
+            if (finalDist <= 9.5 || (this.reachedPortApproach && (finalDist <= 15.0 || approachDist <= 4.5))) {
                 this.arriveAtDestination(passenger);
                 return;
             }
@@ -876,6 +880,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
             // Safety net for travel ships: never sail around indefinitely without getting anywhere
             if (this.voyageShip && this.noProgressTicks >= VOYAGE_GIVE_UP_TICKS) {
+                double dToDest = this.targetPos != null ? this.position().distanceTo(Vec3.atCenterOf(this.targetPos)) : 999.0;
+                if (dToDest <= 22.0 || this.reachedPortApproach) {
+                    this.arriveAtDestination(passenger);
+                    return;
+                }
                 this.noProgressTicks = 0;
                 this.cancelVoyage();
                 return;
@@ -1028,10 +1037,10 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                     }
 
                     chosenAngle = Mth.atan2(this.detourWaypoint.z - this.getZ(), this.detourWaypoint.x - this.getX());
+                }
 
-                    if (!this.reachedPortApproach && finalDist > 12.0) {
-                        chosenAngle = applyChannelCenteringBias(this.level(), chosenAngle);
-                    }
+                if (!holdForRoute && !this.reachedPortApproach && finalDist > 12.0) {
+                    chosenAngle = applyChannelCenteringBias(this.level(), chosenAngle);
                 }
 
                 double distToLand = getDistanceToLand(this.level(), chosenAngle, 16.0);
@@ -1825,7 +1834,12 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 }
                 return;
             } else {
-                // Travel ships: immediately cancel the voyage and stop instead of wandering every waterway
+                // Travel ships: if near destination or arrived at approach, complete arrival instead of cancelling
+                double dToDest = this.targetPos != null ? this.position().distanceTo(Vec3.atCenterOf(this.targetPos)) : 999.0;
+                if (dToDest <= 22.0 || this.reachedPortApproach) {
+                    this.arriveAtDestination(this.getFirstPassenger());
+                    return;
+                }
                 this.cancelVoyage();
                 return;
             }
@@ -1842,6 +1856,13 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     /** Immediately stops and cancels the voyage when no navigable water route exists to the destination. */
     private void cancelVoyage() {
         Entity passenger = this.getFirstPassenger();
+        if (this.voyageShip && this.targetPos != null) {
+            double dToTarget = this.position().distanceTo(Vec3.atCenterOf(this.targetPos));
+            if (dToTarget <= 22.0 || this.reachedPortApproach) {
+                this.arriveAtDestination(passenger);
+                return;
+            }
+        }
         String blockedName = this.harborName != null ? this.harborName : "?";
         this.routePlanner = null;
         this.plannedGoal = null;
@@ -1977,7 +1998,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             centeredPath = nextPass;
         }
 
-        // Subsample / string-pull along the smoothed centerline (1.65m clearance up to 5 steps ahead ~8-11m apart)
+        // Subsample / string-pull along the smoothed centerline (2.8m clearance up to 5 steps ahead ~8-11m apart)
         List<Vec3> smoothed = new ArrayList<>();
         Vec3 anchor = this.position();
         int idx = 0;
@@ -1985,7 +2006,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             int furthest = idx;
             for (int j = Math.min(centeredPath.size() - 1, idx + 5); j > idx; j--) {
                 Vec3 cand = centeredPath.get(j);
-                if (isSegmentClearLoadedOnly(level, anchor.x, anchor.z, cand.x, cand.z, 1.65)) {
+                if (isSegmentClearLoadedOnly(level, anchor.x, anchor.z, cand.x, cand.z, 2.8)) {
                     furthest = j;
                     break;
                 }
@@ -2949,7 +2970,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         double nx = -tz / len;
         double nz = tx / len;
 
-        double maxProbe = 9.0;
+        double maxProbe = 16.0;
         double dPlus = maxProbe;
         for (double d = 0.5; d <= maxProbe; d += 0.5) {
             if (!isPureWaterLoadedOnly(level, wx + nx * d, wz + nz * d)) {
@@ -2967,7 +2988,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
         // Only shift when at least one riverbank is within probe range
         if (dPlus < maxProbe || dMinus < maxProbe) {
-            double shift = Mth.clamp((dPlus - dMinus) * 0.5, -3.0, 3.0);
+            double shift = Mth.clamp((dPlus - dMinus) * 0.5, -10.0, 10.0);
             double cx = wx + nx * shift;
             double cz = wz + nz * shift;
             if (isPureWaterLoadedOnly(level, cx, cz)) {
@@ -2988,25 +3009,25 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         double nx = -sinA;
         double nz = cosA;
 
-        double maxProbe = 8.0;
+        double maxProbe = 14.0;
         double plusNow = getDistanceToLandFrom(level, this.getX(), this.getZ(), nx, nz, maxProbe);
         double minusNow = getDistanceToLandFrom(level, this.getX(), this.getZ(), -nx, -nz, maxProbe);
 
-        double lookX = this.getX() + cosA * 2.0;
-        double lookZ = this.getZ() + sinA * 2.0;
+        double lookX = this.getX() + cosA * 2.5;
+        double lookZ = this.getZ() + sinA * 2.5;
         double plusAhead = getDistanceToLandFrom(level, lookX, lookZ, nx, nz, maxProbe);
         double minusAhead = getDistanceToLandFrom(level, lookX, lookZ, -nx, -nz, maxProbe);
 
         double effPlus = Math.min(plusNow, plusAhead);
         double effMinus = Math.min(minusNow, minusAhead);
 
-        if (effPlus < 6.5 || effMinus < 6.5) {
+        if (effPlus < 10.0 || effMinus < 10.0) {
             double diff = effPlus - effMinus;
-            if (Math.abs(diff) > 0.35) {
-                double totalWidth = Math.max(2.5, effPlus + effMinus);
-                double biasRad = Mth.clamp((diff / totalWidth) * 0.75, -Math.toRadians(26.0), Math.toRadians(26.0));
+            if (Math.abs(diff) > 0.4) {
+                double totalWidth = Math.max(3.0, effPlus + effMinus);
+                double biasRad = Mth.clamp((diff / totalWidth) * 0.85, -Math.toRadians(32.0), Math.toRadians(32.0));
                 double biasedAngle = angle + biasRad;
-                if (getDistanceToLand(level, biasedAngle, 6.0) >= 3.5) {
+                if (getDistanceToLand(level, biasedAngle, 6.0) >= 3.0) {
                     return biasedAngle;
                 }
             }

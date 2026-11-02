@@ -27,6 +27,9 @@ import com.lexovian.currentsoftrade.item.JadeFigurineItem;
 import com.lexovian.currentsoftrade.item.CacaoElixirItem;
 import com.lexovian.currentsoftrade.item.NarwhalIvoryItem;
 import com.lexovian.currentsoftrade.item.DamascusSteelItem;
+import com.lexovian.currentsoftrade.item.FrankincenseTearsItem;
+import com.lexovian.currentsoftrade.item.TyrianPurpleItem;
+import com.lexovian.currentsoftrade.item.DragonsBloodResinItem;
 import com.lexovian.currentsoftrade.item.MessageInABottleItem;
 import com.lexovian.currentsoftrade.item.StormGlassItem;
 import com.lexovian.currentsoftrade.item.CaptainsPipeItem;
@@ -40,10 +43,12 @@ import com.lexovian.currentsoftrade.item.CargoBoatItem;
 import com.lexovian.currentsoftrade.item.TradeBoatItem;
 import com.lexovian.currentsoftrade.entity.WanderingSailorEntity;
 import com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe;
+import com.lexovian.currentsoftrade.world.village.CoastalDockPoolElement;
 import com.lexovian.currentsoftrade.world.village.CoastalWaterCheckProcessor;
 import com.mojang.serialization.Codec;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -96,10 +101,14 @@ public class CurrentsofTrade {
     public static final DeferredRegister<VillagerProfession> VILLAGER_PROFESSIONS = DeferredRegister.create(ForgeRegistries.VILLAGER_PROFESSIONS, MODID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MODID);
     public static final DeferredRegister<StructureProcessorType<?>> STRUCTURE_PROCESSORS = DeferredRegister.create(Registries.STRUCTURE_PROCESSOR, MODID);
+    public static final DeferredRegister<StructurePoolElementType<?>> STRUCTURE_POOL_ELEMENTS = DeferredRegister.create(Registries.STRUCTURE_POOL_ELEMENT, MODID);
     public static final DeferredRegister<Codec<? extends IGlobalLootModifier>> LOOT_MODIFIERS = DeferredRegister.create(ForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, MODID);
 
     public static final RegistryObject<StructureProcessorType<CoastalWaterCheckProcessor>> COASTAL_WATER_CHECK =
             STRUCTURE_PROCESSORS.register("coastal_water_check", () -> () -> CoastalWaterCheckProcessor.CODEC);
+
+    public static final RegistryObject<StructurePoolElementType<CoastalDockPoolElement>> COASTAL_DOCK_ELEMENT =
+            STRUCTURE_POOL_ELEMENTS.register("coastal_dock_element", () -> () -> CoastalDockPoolElement.CODEC);
 
     public static final RegistryObject<SimpleCraftingRecipeSerializer<TreasureMapCraftingRecipe>> TREASURE_MAP_RECIPE_SERIALIZER =
             RECIPE_SERIALIZERS.register("crafting_special_treasure_map", () -> new SimpleCraftingRecipeSerializer<>(TreasureMapCraftingRecipe::new));
@@ -248,6 +257,18 @@ public class CurrentsofTrade {
     public static final RegistryObject<DamascusSteelItem> DAMASCUS_STEEL =
             ITEMS.register("damascus_steel", () -> new DamascusSteelItem(new Item.Properties().stacksTo(16)));
 
+    /** Golden resin tears from desert cliffs — clears debuffs and grants Resistance I (30s) + Regeneration I (20s). */
+    public static final RegistryObject<FrankincenseTearsItem> FRANKINCENSE_TEARS =
+            ITEMS.register("frankincense_tears", () -> new FrankincenseTearsItem(new Item.Properties().stacksTo(16)));
+
+    /** Royal marine snail dye — dyes sails royal purple or grants Hero of the Village I (60s) + Glowing (30s). */
+    public static final RegistryObject<TyrianPurpleItem> TYRIAN_PURPLE =
+            ITEMS.register("tyrian_purple", () -> new TyrianPurpleItem(new Item.Properties().stacksTo(16)));
+
+    /** Exotic dragon's blood resin — dyes sails blood red or grants Fire Resistance I (60s) + Strength I (30s). */
+    public static final RegistryObject<DragonsBloodResinItem> DRAGONS_BLOOD_RESIN =
+            ITEMS.register("dragons_blood_resin", () -> new DragonsBloodResinItem(new Item.Properties().stacksTo(16)));
+
     // --- Menu Types ---
     public static final RegistryObject<MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> IForgeMenuType.create(AnchorPointMenu::new));
@@ -340,6 +361,9 @@ public class CurrentsofTrade {
                                 output.accept(CACAO_ELIXIR.get());
                                 output.accept(NARWHAL_IVORY.get());
                                 output.accept(DAMASCUS_STEEL.get());
+                                output.accept(FRANKINCENSE_TEARS.get());
+                                output.accept(TYRIAN_PURPLE.get());
+                                output.accept(DRAGONS_BLOOD_RESIN.get());
                                 output.accept(MESSAGE_IN_A_BOTTLE.get());
                                 output.accept(SPICE_SACK.get());
                                 output.accept(AMBER_VIAL.get());
@@ -370,6 +394,7 @@ public class CurrentsofTrade {
         CREATIVE_MODE_TABS.register(modEventBus);
         RECIPE_SERIALIZERS.register(modEventBus);
         STRUCTURE_PROCESSORS.register(modEventBus);
+        STRUCTURE_POOL_ELEMENTS.register(modEventBus);
         LOOT_MODIFIERS.register(modEventBus);
 
         modEventBus.addListener(this::addCreative);

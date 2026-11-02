@@ -18,22 +18,35 @@ import java.util.*;
 /**
  * Processor ensuring village docks only generate when facing natural water bodies (oceans, rivers).
  * - Safe chunk access: checks hasChunk() before reading any block/fluid, preventing WorldGenRegion crashes.
- * - Enforces minimum distance of 70 blocks between docks so villages have at most 1 dock.
- * - Failsafe try-catch ensures world creation can NEVER be crashed by dock generation.
+ * - Multi-chunk consistent: caches both accepted and rejected dock positions so docks spanning chunk
+ *   boundaries are always placed or rejected as a complete unit (with full pilings and loot in all chunks).
+ * - Enforces minimum distance between docks so normal villages get 1 dock and huge coastal villages get at most 2.
  */
 public class CoastalWaterCheckProcessor extends StructureProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CoastalWaterCheckProcessor.class);
     public static final Codec<CoastalWaterCheckProcessor> CODEC = Codec.unit(CoastalWaterCheckProcessor::new);
 
     private static final int MIN_WATER_BLOCKS = 6;
-    private static final int MIN_DISTANCE_BETWEEN_DOCKS = 70;
+    private static final int MIN_DISTANCE_BETWEEN_DOCKS = 85;
+    private static final int VILLAGE_CLUSTER_RADIUS = 180;
+    private static final int MAX_DOCKS_PER_CLUSTER = 2;
 
-    // Bounded cache tracking recently generated dock positions in memory
+    // Bounded cache tracking recently accepted dock positions in memory
     private static final Map<BlockPos, Long> PLACED_DOCKS = Collections.synchronizedMap(
             new LinkedHashMap<>(128, 0.75f, false) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<BlockPos, Long> eldest) {
                     return size() > 500;
+                }
+            }
+    );
+
+    // Bounded cache tracking recently rejected dock positions so multi-chunk docks never place partial slices
+    private static final Map<BlockPos, Long> REJECTED_DOCKS = Collections.synchronizedMap(
+            new LinkedHashMap<>(256, 0.75f, false) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<BlockPos, Long> eldest) {
+                    return size() > 1000;
                 }
             }
     );
@@ -48,6 +61,9 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
         synchronized (PLACED_DOCKS) {
             PLACED_DOCKS.clear();
         }
+        synchronized (REJECTED_DOCKS) {
+            REJECTED_DOCKS.clear();
+        }
     }
 
     public CoastalWaterCheckProcessor() {}
@@ -55,6 +71,29 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
     @Override
     protected StructureProcessorType<?> getType() {
         return CurrentsofTrade.COASTAL_WATER_CHECK.get();
+    }
+
+    private static boolean isColdEnoughToSnowSafe(ServerLevelAccessor level, BlockPos pos) {
+        try {
+            int cx = pos.getX() >> 4;
+            int cz = pos.getZ() >> 4;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (!level.hasChunk(cx + dx, cz + dz)) {
+                        return false;
+                    }
+                }
+            }
+            return level.getBiome(pos).value().coldEnoughToSnow(pos);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static void markRejected(BlockPos pierWorldPos) {
+        synchronized (REJECTED_DOCKS) {
+            REJECTED_DOCKS.put(pierWorldPos, System.currentTimeMillis());
+        }
     }
 
     @Override
@@ -71,113 +110,138 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
         }
 
         try {
-            // Locate entrance and pier tip positions
+            // Deterministic entrance and pier tip world positions across all chunks of the same dock
             BlockPos entranceWorldPos = StructureTemplate.calculateRelativePosition(settings, new BlockPos(5, 1, 0)).offset(offset);
-            BlockPos pierWorldPos = null;
-            if (originalBlockInfos != null) {
-                for (int i = 0; i < originalBlockInfos.size() && i < processedBlockInfos.size(); i++) {
-                    StructureTemplate.StructureBlockInfo orig = originalBlockInfos.get(i);
-                    if (orig.pos().getX() == 5 && orig.pos().getY() == 1 && (orig.pos().getZ() == 13 || orig.pos().getZ() == 14)) {
-                        pierWorldPos = processedBlockInfos.get(i).pos();
-                        break;
-                    }
-                }
-            }
+            BlockPos pierWorldPos = StructureTemplate.calculateRelativePosition(settings, new BlockPos(5, 1, 14)).offset(offset);
 
-            if (pierWorldPos == null) {
-                pierWorldPos = StructureTemplate.calculateRelativePosition(settings, new BlockPos(5, 1, 14)).offset(offset);
-            }
-
-            // Enforce minimum distance between village docks
-            synchronized (PLACED_DOCKS) {
-                for (BlockPos placed : PLACED_DOCKS.keySet()) {
-                    double dSq = placed.distSqr(pierWorldPos);
-                    if (dSq < 25) {
-                        return processedBlockInfos;
-                    }
-                    if (dSq < (MIN_DISTANCE_BETWEEN_DOCKS * MIN_DISTANCE_BETWEEN_DOCKS)) {
-                        LOGGER.info("[Currents of Trade] Rejecting duplicate dock at {}: another dock already placed at {} within {} blocks.",
-                                pierWorldPos, placed, MIN_DISTANCE_BETWEEN_DOCKS);
+            // If an earlier chunk of this exact dock already rejected it, reject this chunk too
+            synchronized (REJECTED_DOCKS) {
+                for (BlockPos rejected : REJECTED_DOCKS.keySet()) {
+                    if (rejected.distSqr(pierWorldPos) < 9) {
                         return List.of();
                     }
                 }
             }
 
-            // Forward vector facing away from village into the water
-            int rawDx = pierWorldPos.getX() - entranceWorldPos.getX();
-            int rawDz = pierWorldPos.getZ() - entranceWorldPos.getZ();
-            int fX = Integer.signum(rawDx);
-            int fZ = Integer.signum(rawDz);
-            if (fX == 0 && fZ == 0) fX = 1;
-            int rX = -fZ;
-            int rZ = fX;
-
-            // Reject if the pier deck itself is submerged underwater or encased in ice
-            if (serverLevel.hasChunk(pierWorldPos.getX() >> 4, pierWorldPos.getZ() >> 4)) {
-                if (serverLevel.getFluidState(pierWorldPos.above()).is(FluidTags.WATER)
-                        || serverLevel.getBlockState(pierWorldPos.above()).is(Blocks.WATER)
-                        || serverLevel.getBlockState(pierWorldPos).is(net.minecraft.tags.BlockTags.ICE)
-                        || serverLevel.getBiome(pierWorldPos).value().coldEnoughToSnow(pierWorldPos)) {
-                    return List.of();
-                }
-            }
-
-            BlockPos waterAheadPos = pierWorldPos.offset(fX * 4, 0, fZ * 4);
-            if (serverLevel.hasChunk(waterAheadPos.getX() >> 4, waterAheadPos.getZ() >> 4)
-                    && serverLevel.getBiome(waterAheadPos).value().coldEnoughToSnow(waterAheadPos)) {
-                return List.of();
-            }
-
-            // Reject if any ice is present around or in front of the dock, and count only open-surface liquid water
-            for (int f = -2; f <= 6; f++) {
-                for (int s = -3; s <= 3; s++) {
-                    for (int dy = -5; dy <= 1; dy++) {
-                        BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
-                        if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
-                            continue;
-                        }
-                        if (serverLevel.getBlockState(check).is(net.minecraft.tags.BlockTags.ICE)) {
-                            LOGGER.info("[Currents of Trade] Rejecting dock placement on frozen water/ice at {}", pierWorldPos);
+            // Check if an earlier chunk of this exact dock already accepted it, or if another nearby dock conflicts
+            boolean alreadyAcceptedSameDock = false;
+            synchronized (PLACED_DOCKS) {
+                int nearbyClusterDocks = 0;
+                for (BlockPos placed : PLACED_DOCKS.keySet()) {
+                    double dSq = placed.distSqr(pierWorldPos);
+                    if (dSq < 25) {
+                        alreadyAcceptedSameDock = true;
+                        break;
+                    }
+                    if (dSq < (MIN_DISTANCE_BETWEEN_DOCKS * MIN_DISTANCE_BETWEEN_DOCKS)) {
+                        LOGGER.info("[Currents of Trade] Rejecting duplicate dock at {}: another dock already placed at {} within {} blocks.",
+                                pierWorldPos, placed, MIN_DISTANCE_BETWEEN_DOCKS);
+                        markRejected(pierWorldPos);
+                        return List.of();
+                    }
+                    if (dSq < (VILLAGE_CLUSTER_RADIUS * VILLAGE_CLUSTER_RADIUS)) {
+                        nearbyClusterDocks++;
+                        if (nearbyClusterDocks >= MAX_DOCKS_PER_CLUSTER) {
+                            LOGGER.info("[Currents of Trade] Rejecting extra dock at {}: large village cluster already has {} docks.",
+                                    pierWorldPos, nearbyClusterDocks);
+                            markRejected(pierWorldPos);
                             return List.of();
                         }
                     }
                 }
             }
 
-            // Verify natural unfrozen surface water in front of the dock
-            int waterBlocks = 0;
-            for (int f = 0; f <= 5; f++) {
-                for (int s = -2; s <= 2; s++) {
-                    for (int dy = -5; dy <= 0; dy++) {
-                        BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
-                        if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
-                            continue;
-                        }
-                        if (serverLevel.getFluidState(check).is(FluidTags.WATER) || serverLevel.getBlockState(check).is(Blocks.WATER)) {
-                            BlockPos above = check.above();
-                            net.minecraft.world.level.block.state.BlockState aboveState = serverLevel.getBlockState(above);
-                            // Only count water if the block above is air or liquid water (never under an ice sheet or solid ceiling)
-                            if (aboveState.isAir() || aboveState.is(Blocks.WATER) || serverLevel.getFluidState(above).is(FluidTags.WATER)) {
-                                waterBlocks++;
+            if (!alreadyAcceptedSameDock) {
+                // Forward vector facing away from village into the water
+                int rawDx = pierWorldPos.getX() - entranceWorldPos.getX();
+                int rawDz = pierWorldPos.getZ() - entranceWorldPos.getZ();
+                int fX = Integer.signum(rawDx);
+                int fZ = Integer.signum(rawDz);
+                if (fX == 0 && fZ == 0) fX = 1;
+                int rX = -fZ;
+                int rZ = fX;
+
+                // Reject if the pier deck itself is submerged underwater or encased in ice
+                if (serverLevel.hasChunk(pierWorldPos.getX() >> 4, pierWorldPos.getZ() >> 4)) {
+                    if (serverLevel.getFluidState(pierWorldPos.above()).is(FluidTags.WATER)
+                            || serverLevel.getBlockState(pierWorldPos.above()).is(Blocks.WATER)
+                            || serverLevel.getBlockState(pierWorldPos).is(net.minecraft.tags.BlockTags.ICE)
+                            || isColdEnoughToSnowSafe(serverLevel, pierWorldPos)) {
+                        markRejected(pierWorldPos);
+                        return List.of();
+                    }
+                }
+
+                BlockPos waterAheadPos = pierWorldPos.offset(fX * 4, 0, fZ * 4);
+                if (isColdEnoughToSnowSafe(serverLevel, waterAheadPos)) {
+                    markRejected(pierWorldPos);
+                    return List.of();
+                }
+
+                // Reject if any ice is present around or in front of the dock
+                for (int f = -2; f <= 6; f++) {
+                    for (int s = -3; s <= 3; s++) {
+                        for (int dy = -4; dy <= 1; dy++) {
+                            BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
+                            if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
+                                continue;
+                            }
+                            if (serverLevel.getBlockState(check).is(net.minecraft.tags.BlockTags.ICE)) {
+                                LOGGER.info("[Currents of Trade] Rejecting dock placement on frozen water/ice at {}", pierWorldPos);
+                                markRejected(pierWorldPos);
+                                return List.of();
                             }
                         }
                     }
                 }
-            }
 
-            if (waterBlocks < MIN_WATER_BLOCKS) {
-                LOGGER.info("[Currents of Trade] Rejecting dock placement: insufficient water in front of pier (found {} water blocks, required {}) at {}",
-                        waterBlocks, MIN_WATER_BLOCKS, pierWorldPos);
-                return List.of();
-            }
+                // Verify natural unfrozen water at sea level in front of the dock (dy = -3..0).
+                // Rejects hilltop/cliff placements (dy <= -4) and requires water right at the pier tip (f = 0..2).
+                int waterBlocks = 0;
+                int pierTipWaterBlocks = 0;
+                for (int f = 0; f <= 5; f++) {
+                    for (int s = -2; s <= 2; s++) {
+                        for (int dy = -3; dy <= 0; dy++) {
+                            BlockPos check = pierWorldPos.offset(fX * f + rX * s, dy, fZ * f + rZ * s);
+                            if (!serverLevel.hasChunk(check.getX() >> 4, check.getZ() >> 4)) {
+                                continue;
+                            }
+                            if (serverLevel.getFluidState(check).is(FluidTags.WATER) || serverLevel.getBlockState(check).is(Blocks.WATER)) {
+                                BlockPos above = check.above();
+                                net.minecraft.world.level.block.state.BlockState aboveState = serverLevel.getBlockState(above);
+                                if (aboveState.isAir()
+                                        || aboveState.is(Blocks.WATER)
+                                        || serverLevel.getFluidState(above).is(FluidTags.WATER)
+                                        || aboveState.is(Blocks.SEAGRASS)
+                                        || aboveState.is(Blocks.TALL_SEAGRASS)
+                                        || aboveState.is(Blocks.KELP)
+                                        || aboveState.is(Blocks.LILY_PAD)) {
+                                    waterBlocks++;
+                                    if (f <= 2 && Math.abs(s) <= 1) {
+                                        pierTipWaterBlocks++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
-            synchronized (PLACED_DOCKS) {
-                PLACED_DOCKS.put(pierWorldPos, System.currentTimeMillis());
+                if (waterBlocks < MIN_WATER_BLOCKS || pierTipWaterBlocks < 2) {
+                    LOGGER.info("[Currents of Trade] Rejecting dock placement: insufficient water at pier tip (found {} water blocks, tipWater={}) at {}",
+                            waterBlocks, pierTipWaterBlocks, pierWorldPos);
+                    markRejected(pierWorldPos);
+                    return List.of();
+                }
+
+                synchronized (PLACED_DOCKS) {
+                    PLACED_DOCKS.put(pierWorldPos, System.currentTimeMillis());
+                }
+                LOGGER.info("[Currents of Trade] Successfully placed village dock facing water at {} (water blocks: {}, tipWater: {})",
+                        pierWorldPos, waterBlocks, pierTipWaterBlocks);
             }
-            LOGGER.info("[Currents of Trade] Successfully placed village dock facing water at {} (water blocks: {})",
-                    pierWorldPos, waterBlocks);
 
             // Populate chests/barrels with maritime loot tables and extend pilings/foundations down to the seabed
+            // (runs for ALL chunks of an accepted dock so multi-chunk docks never miss pilings or loot!)
             List<StructureTemplate.StructureBlockInfo> result = new ArrayList<>(processedBlockInfos.size() + 64);
             for (StructureTemplate.StructureBlockInfo info : processedBlockInfos) {
                 if (info.state().is(Blocks.CHEST) || info.state().is(Blocks.BARREL)) {
@@ -203,7 +267,7 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
                         boolean isPiling = orig.state().is(Blocks.STRIPPED_SPRUCE_LOG);
                         boolean isFoundation = orig.state().is(Blocks.COBBLESTONE) || orig.state().is(Blocks.STONE_BRICKS);
 
-                        if (isPiling || (isFoundation && (orig.pos().getX() <= 2 || orig.pos().getX() >= 8 || orig.pos().getZ() == 0 || orig.pos().getZ() == 7))) {
+                        if (isPiling || isFoundation) {
                             net.minecraft.world.level.block.state.BlockState extensionState = isPiling
                                     ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, net.minecraft.core.Direction.Axis.Y)
                                     : Blocks.COBBLESTONE.defaultBlockState();
@@ -230,8 +294,8 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
             return result;
 
         } catch (Throwable t) {
-            LOGGER.warn("[Currents of Trade] Exception in CoastalWaterCheckProcessor at {}, placing dock safely: {}", pos, t.getMessage());
-            return processedBlockInfos;
+            LOGGER.warn("[Currents of Trade] Exception in CoastalWaterCheckProcessor at {}, rejecting dock safely: {}", pos, t.getMessage());
+            return List.of();
         }
     }
 }

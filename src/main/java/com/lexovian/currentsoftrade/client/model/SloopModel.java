@@ -14,6 +14,8 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.item.BannerItem;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Authentic 3D Sailing Sloop Model
@@ -22,14 +24,6 @@ import net.minecraft.world.entity.vehicle.Boat;
  *   Bow -> Main Deck & Rigged Mast/Sails ->
  *   Elevated Quarterdeck -> Helm Column & Steering Wheel ->
  *   Captain Seat -> Stern Transom & Stern Lantern
- *
- * Features:
- *   - Symmetrical, perfectly mapped Minecraft Vanilla Lanterns (cap, 3x3x3 glass with fire, base, ring)
- *   - Expansive naval sails widened to 42 & 30 width spanning the full ship beam
- *   - Enlarged, prominent 9-spoke captain's steering wheel
- *   - Tiered, raked baroque stern with 3-pane Captain's Cabin windows & arched crest
- *   - Hydrodynamic stepped V-hull bottom with central timber keel
- *   - Upward-angled bowsprit pointing proudly into the sky (-0.22 rad pitch)
  */
 public class SloopModel extends EntityModel<Boat> {
 
@@ -38,6 +32,7 @@ public class SloopModel extends EntityModel<Boat> {
 
     // Animated & Ship-Specific Feature Parts
     private final ModelPart sail;
+    private final ModelPart sailBoom;
     private final ModelPart sailTop;
     private final ModelPart helmWheel;
     private final ModelPart cargoCrate;
@@ -48,16 +43,19 @@ public class SloopModel extends EntityModel<Boat> {
     private final ModelPart merchantDesk;
     private final ModelPart tradeFigurehead;
     private final ModelPart crowsNest;
+    private final ModelPart pennantStaff;
     private final ModelPart tradePennant;
     private final ModelPart waistSeat;
     private final ModelPart bowSeat;
     private final ModelPart lantern;
+    private final ModelPart lanternBracket;
     private final ModelPart sternLantern;
     private final ModelPart root;
 
     public SloopModel(ModelPart root) {
         this.root            = root;
         this.sail            = root.getChild("sail");
+        this.sailBoom        = root.getChild("sail_boom");
         this.sailTop         = root.getChild("sail_top");
         this.helmWheel       = root.getChild("helm_wheel");
         this.cargoCrate      = root.getChild("cargo_crate");
@@ -68,10 +66,12 @@ public class SloopModel extends EntityModel<Boat> {
         this.merchantDesk    = root.getChild("merchant_desk");
         this.tradeFigurehead = root.getChild("trade_figurehead");
         this.crowsNest       = root.getChild("crows_nest");
+        this.pennantStaff    = root.getChild("pennant_staff");
         this.tradePennant    = root.getChild("trade_pennant");
         this.waistSeat       = root.getChild("waist_seat");
         this.bowSeat         = root.getChild("bow_seat");
         this.lantern         = root.getChild("lantern");
+        this.lanternBracket  = root.getChild("lantern_bracket");
         this.sternLantern    = root.getChild("stern_lantern");
     }
 
@@ -198,13 +198,18 @@ public class SloopModel extends EntityModel<Boat> {
                         .addBox(0.5F,  -52.5F, -16.0F, 1.0F, 3.5F, 1.0F),
                 PartPose.ZERO);
 
+        root.addOrReplaceChild("pennant_staff",
+                CubeListBuilder.create()
+                        .texOffs(220, 58).addBox(-0.5F, -73.0F, -14.5F, 1.0F, 5.0F, 1.0F),
+                PartPose.ZERO);
+
+        // Long fluttering masthead pennant ("Flama") pivoted at the topmast tip so it waves in the wind
         root.addOrReplaceChild("trade_pennant",
                 CubeListBuilder.create()
-                        .texOffs(220, 58).addBox(-0.5F, -72.0F, -15.5F, 1.0F, 4.0F, 1.0F)
-                        .texOffs(0, 150).addBox(0.5F, -72.0F, -15.5F, 6.0F, 1.0F, 2.0F)
-                        .texOffs(0, 150).addBox(0.5F, -71.0F, -15.5F, 4.0F, 1.0F, 1.5F)
-                        .texOffs(0, 150).addBox(0.5F, -70.0F, -15.5F, 2.0F, 1.0F, 1.0F),
-                PartPose.ZERO);
+                        .texOffs(0, 150).addBox(0.5F, -1.0F, -0.5F, 6.0F, 3.5F, 0.8F)
+                        .texOffs(0, 150).addBox(6.5F, -0.5F, -0.4F, 5.0F, 2.5F, 0.7F)
+                        .texOffs(0, 150).addBox(11.5F, 0.0F, -0.3F, 4.0F, 1.5F, 0.6F),
+                PartPose.offset(0.0F, -71.5F, -14.0F));
 
         // --- Channels & Rigging Shrouds ---
         root.addOrReplaceChild("channels",
@@ -240,7 +245,12 @@ public class SloopModel extends EntityModel<Boat> {
         root.addOrReplaceChild("sail",
                 CubeListBuilder.create()
                         .texOffs(0, 150).addBox(-21.0F, 0.0F, -0.5F, 42.0F, 10.0F, 1.0F)
-                        .texOffs(0, 150).addBox(-21.0F, 9.5F, -1.5F, 42.0F, 10.5F, 1.0F)
+                        .texOffs(0, 150).addBox(-21.0F, 9.5F, -1.5F, 42.0F, 10.5F, 1.0F),
+                PartPose.offset(0.0F, -48.0F, -17.0F));
+
+        // Lower wooden boom separated from canvas sail so dyeing sails never tints the timber boom
+        root.addOrReplaceChild("sail_boom",
+                CubeListBuilder.create()
                         .texOffs(0, 178).addBox(-21.5F, 20.0F, -1.0F, 43.0F, 2.0F, 2.0F),
                 PartPose.offset(0.0F, -48.0F, -17.0F));
 
@@ -464,7 +474,12 @@ public class SloopModel extends EntityModel<Boat> {
 
         float windBow = windBase - Mth.sin(ageInTicks * windSpeed) * windAmplitude;
         this.sail.xRot = windBow;
+        this.sailBoom.xRot = windBow;
         this.sailTop.xRot = windBow * 1.15F;
+
+        // Fluttering masthead pennant ("Flama") animation
+        this.tradePennant.yRot = Mth.sin(ageInTicks * (windSpeed * 2.4F)) * 0.28F;
+        this.tradePennant.zRot = Mth.cos(ageInTicks * (windSpeed * 1.8F)) * 0.09F;
 
         // Steering wheel: rotates smoothly around its central axis (Z axis)
         float turnRate = entity.getYRot() - entity.yRotO;
@@ -484,7 +499,8 @@ public class SloopModel extends EntityModel<Boat> {
 
         boolean hasCopperHull = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && s.hasCopperHull());
         boolean hasBowLantern = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && s.getBowLanternType() > 0);
-        boolean hasBanner     = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && !s.getBannerStack().isEmpty());
+        boolean hasBanner     = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && !s.getBannerStack().isEmpty())
+                || (entity instanceof com.lexovian.currentsoftrade.entity.CargoBoatEntity c && !c.getBannerStack().isEmpty());
 
         // Cargo Boat & Upgraded Sloop equipment:
         this.cargoCrate.visible   = isCargo;
@@ -500,7 +516,10 @@ public class SloopModel extends EntityModel<Boat> {
         this.merchantDesk.visible    = isTrade;
         this.tradeFigurehead.visible = isTrade;
         this.crowsNest.visible       = isTrade;
+        this.pennantStaff.visible    = isTrade || hasBanner;
         this.tradePennant.visible    = isTrade || hasBanner;
+        this.lanternBracket.visible  = !hasBanner;
+        this.sternLantern.visible    = !hasBanner;
     }
 
     public float getSailXRot() {
@@ -509,57 +528,87 @@ public class SloopModel extends EntityModel<Boat> {
 
     public void renderCustomShip(Boat entity, PoseStack poseStack, VertexConsumer buffer,
                                  int packedLight, int packedOverlay) {
-        if (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity sloop && !sloop.isMerchantShip()) {
-            int sailColorId = sloop.getSailColor();
-            int bowLantern = sloop.getBowLanternType();
+        int sailColorId = -1;
+        int bowLantern = 0;
+        ItemStack bannerStack = ItemStack.EMPTY;
 
-            if (sailColorId >= 0 || bowLantern > 0) {
-                boolean prevSailVis = this.sail.visible;
-                boolean prevTopVis = this.sailTop.visible;
-                boolean prevLanternVis = this.lantern.visible;
-                boolean prevSternLanternVis = this.sternLantern.visible;
+        if (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity sloop) {
+            sailColorId = sloop.getSailColor();
+            bowLantern = sloop.getBowLanternType();
+            bannerStack = sloop.getBannerStack();
+        } else if (entity instanceof com.lexovian.currentsoftrade.entity.CargoBoatEntity cargo && cargo.isPlayerControlled()) {
+            sailColorId = cargo.getSailColor();
+            bannerStack = cargo.getBannerStack();
+        }
 
-                if (sailColorId >= 0) {
-                    this.sail.visible = false;
-                    this.sailTop.visible = false;
-                }
-                if (bowLantern > 0) {
-                    this.lantern.visible = false;
-                    this.sternLantern.visible = false;
-                }
+        int pennantColorId = -1;
+        if (!bannerStack.isEmpty() && bannerStack.getItem() instanceof BannerItem bannerItem) {
+            pennantColorId = bannerItem.getColor().getId();
+        } else if (sailColorId >= 0) {
+            pennantColorId = sailColorId;
+        }
 
-                this.root.render(poseStack, buffer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
+        if (sailColorId >= 0 || bowLantern > 0 || pennantColorId >= 0) {
+            boolean prevSailVis = this.sail.visible;
+            boolean prevTopVis = this.sailTop.visible;
+            boolean prevPennantVis = this.tradePennant.visible;
+            boolean prevLanternVis = this.lantern.visible;
+            boolean prevSternLanternVis = this.sternLantern.visible;
 
-                if (sailColorId >= 0) {
-                    this.sail.visible = prevSailVis;
-                    this.sailTop.visible = prevTopVis;
-                    float[] rgb = computeSailTintRGB(sailColorId);
-                    this.sail.render(poseStack, buffer, packedLight, packedOverlay, rgb[0], rgb[1], rgb[2], 1.0F);
-                    this.sailTop.render(poseStack, buffer, packedLight, packedOverlay, rgb[0], rgb[1], rgb[2], 1.0F);
-                }
+            if (sailColorId >= 0) {
+                this.sail.visible = false;
+                this.sailTop.visible = false;
+            }
+            if (pennantColorId >= 0) {
+                this.tradePennant.visible = false;
+            }
+            if (bowLantern > 0) {
+                this.lantern.visible = false;
+                this.sternLantern.visible = false;
+            }
 
-                if (bowLantern > 0) {
-                    this.lantern.visible = prevLanternVis;
-                    this.sternLantern.visible = prevSternLanternVis;
-                    float lr = (bowLantern == 2) ? 0.53F : 1.0F;
-                    float lg = (bowLantern == 2) ? 0.93F : 1.0F;
-                    float lb = 1.0F;
+            this.root.render(poseStack, buffer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
+
+            if (sailColorId >= 0) {
+                this.sail.visible = prevSailVis;
+                this.sailTop.visible = prevTopVis;
+                float[] rgb = computeSailTintRGB(sailColorId);
+                this.sail.render(poseStack, buffer, packedLight, packedOverlay, rgb[0], rgb[1], rgb[2], 1.0F);
+                this.sailTop.render(poseStack, buffer, packedLight, packedOverlay, rgb[0], rgb[1], rgb[2], 1.0F);
+            }
+
+            if (pennantColorId >= 0) {
+                this.tradePennant.visible = prevPennantVis;
+                float[] rgb = computeSailTintRGB(pennantColorId);
+                this.tradePennant.render(poseStack, buffer, packedLight, packedOverlay, rgb[0], rgb[1], rgb[2], 1.0F);
+            }
+
+            if (bowLantern > 0) {
+                this.lantern.visible = prevLanternVis;
+                this.sternLantern.visible = prevSternLanternVis;
+                float lr = (bowLantern == 2) ? 0.53F : 1.0F;
+                float lg = (bowLantern == 2) ? 0.93F : 1.0F;
+                float lb = 1.0F;
+                if (prevLanternVis) {
                     this.lantern.render(poseStack, buffer, 0xF000F0, packedOverlay, lr, lg, lb, 1.0F);
+                }
+                if (prevSternLanternVis) {
                     this.sternLantern.render(poseStack, buffer, 0xF000F0, packedOverlay, lr, lg, lb, 1.0F);
                 }
-                return;
             }
+            return;
         }
+
         this.root.render(poseStack, buffer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private static float[] computeSailTintRGB(int colorId) {
         net.minecraft.world.item.DyeColor dye = net.minecraft.world.item.DyeColor.byId(colorId);
         float[] c = dye.getTextureDiffuseColors();
-        // Blend 80% dye color with 20% warm canvas cream so sail folds & seams stay crisp
-        float r = Mth.clamp(c[0] * 0.80F + 0.19F, 0.0F, 1.0F);
-        float g = Mth.clamp(c[1] * 0.80F + 0.185F, 0.0F, 1.0F);
-        float b = Mth.clamp(c[2] * 0.80F + 0.17F, 0.0F, 1.0F);
+        // Blend 82% dye color with 18% warm canvas cream so sail folds & seams stay crisp
+        float r = Mth.clamp(c[0] * 0.82F + 0.17F, 0.0F, 1.0F);
+        float g = Mth.clamp(c[1] * 0.82F + 0.165F, 0.0F, 1.0F);
+        float b = Mth.clamp(c[2] * 0.82F + 0.155F, 0.0F, 1.0F);
         return new float[]{ r, g, b };
     }
 

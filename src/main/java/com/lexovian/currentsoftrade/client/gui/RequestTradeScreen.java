@@ -233,10 +233,12 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             if (selectedIdx >= trades.size()) {
                 selectedIdx = 0;
             }
+            HarborTradeOffer activeOffer = trades.get(selectedIdx);
             Component offerHeader = Component.translatable("gui.currents_of_trade.harbor_offer");
             String counter = " §8(" + (selectedIdx + 1) + "/" + trades.size() + ")";
             String arbitrageMarker = this.menu.isArbitrageRoute() ? " §6✦" : "";
-            guiGraphics.drawString(this.font, offerHeader.getString() + counter + arbitrageMarker, 18, 56, 0x333333, false);
+            String urgentMarker = activeOffer.isUrgentBounty() ? " §6§l[★ 2x]" : "";
+            guiGraphics.drawString(this.font, offerHeader.getString() + counter + arbitrageMarker + urgentMarker, 18, 56, 0x333333, false);
         } else {
             guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.harbor_offer"), 18, 56, 0x333333, false);
         }
@@ -267,6 +269,9 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             }
 
             HarborTradeOffer offer = trades.get(selectedIdx);
+            if (offer.isUrgentBounty()) {
+                guiGraphics.renderOutline(this.leftPos + 36, this.topPos + 66, 124, 18, 0xFFFFAA00);
+            }
             ItemStack costA = offer.getCostA();
             ItemStack costB = offer.getCostB();
             ItemStack res = offer.getResult();
@@ -312,10 +317,15 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
                 guiGraphics.renderTooltip(this.font, costB, mouseX, mouseY);
             } else if (isHovering(resultX - this.leftPos, 67, 16, 16, mouseX, mouseY) && !res.isEmpty()) {
                 guiGraphics.renderTooltip(this.font, res, mouseX, mouseY);
+            } else if (offer.isUrgentBounty() && isHovering(36, 66, 124, 18, mouseX, mouseY)) {
+                guiGraphics.renderTooltip(this.font, List.of(
+                        Component.translatable("tooltip.currents_of_trade.urgent_bounty_title"),
+                        Component.translatable("tooltip.currents_of_trade.urgent_bounty_desc")
+                ), java.util.Optional.empty(), mouseX, mouseY);
             }
         }
 
-        if (this.menu.isArbitrageRoute() && isHovering(88, 45, 95, 9, mouseX, mouseY)) {
+        if (this.menu.isArbitrageRoute() && isHovering(88, 45, 95, 11, mouseX, mouseY)) {
             guiGraphics.renderTooltip(this.font, List.of(
                     Component.translatable("tooltip.currents_of_trade.arbitrage_active_title"),
                     Component.translatable("tooltip.currents_of_trade.arbitrage_active_desc")

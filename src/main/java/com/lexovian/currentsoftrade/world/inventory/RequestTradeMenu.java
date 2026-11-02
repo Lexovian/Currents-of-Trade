@@ -540,6 +540,11 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                 total += inInv.getCount();
             }
         }
+        // Also count items available in adjacent Harbor Depot chests/barrels (within 4 blocks of Anchor Point)
+        BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
+                ? this.currentPos : player.blockPosition();
+        List<Container> depots = AnchorPointBlockEntity.getNearbyDepotContainers(this.level, origin);
+        total += AnchorPointBlockEntity.countInContainers(depots, required);
         return total;
     }
 
@@ -580,6 +585,12 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                     inv.items.set(i, ItemStack.EMPTY);
                 }
             }
+        }
+        if (needed > 0) {
+            BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
+                    ? this.currentPos : player.blockPosition();
+            List<Container> depots = AnchorPointBlockEntity.getNearbyDepotContainers(this.level, origin);
+            AnchorPointBlockEntity.consumeFromContainers(depots, required, needed);
         }
         inv.setChanged();
         this.tradeContainer.setChanged();
@@ -732,13 +743,14 @@ public class RequestTradeMenu extends AbstractContainerMenu {
             this.tradeContainer.setItem(SLOT_FEE, ItemStack.EMPTY);
         }
 
-        // Resolve home harbor name, save trade preset, and trigger cooldown
+        // Resolve home harbor name, save trade preset + destination for Redstone auto-dispatch, and trigger cooldown
         String homeHarborName = "Home Port";
         if (this.level.getBlockEntity(origin) instanceof AnchorPointBlockEntity anchor) {
             homeHarborName = anchor.getHarborName();
             if (!this.stagedPresetEntries.isEmpty()) {
                 anchor.setSavedTradePreset(this.stagedPresetEntries);
             }
+            anchor.setSavedDestination(target, destHarbor, NauticalChartItem.getWaypoints(getChartStack()));
             anchor.triggerTravelCooldown();
         }
 

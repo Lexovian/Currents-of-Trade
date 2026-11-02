@@ -24,14 +24,59 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 public class AnchorPointBlock extends Block implements EntityBlock {
 
+    public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
+
     public AnchorPointBlock(BlockBehaviour.Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(TRIGGERED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(TRIGGERED);
+    }
+
+    // --- Redstone Automation & Comparator Support ---
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
+        if (!level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            boolean powered = level.hasNeighborSignal(pos) || level.hasNeighborSignal(pos.above());
+            boolean wasTriggered = state.getValue(TRIGGERED);
+            if (powered && !wasTriggered) {
+                level.setBlock(pos, state.setValue(TRIGGERED, true), 4);
+                if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                    anchor.tryRedstoneAutoDispatch(serverLevel);
+                }
+            } else if (!powered && wasTriggered) {
+                level.setBlock(pos, state.setValue(TRIGGERED, false), 4);
+            }
+        }
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+            return anchor.getComparatorSignal();
+        }
+        return 0;
     }
 
     // --- Block Entity Lifecycle ---
@@ -40,6 +85,44 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new AnchorPointBlockEntity(pos, state);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            if (!level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                String harborName = "Harbor";
+                if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                    harborName = anchor.getHarborName();
+                } else {
+                    String savedName = com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getHarborName(pos);
+                    if (savedName != null) harborName = savedName;
+                }
+                com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).removeHarbor(pos);
+
+                if (serverLevel.getServer() != null) {
+                    for (net.minecraft.server.level.ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
+                        boolean removedAny = false;
+                        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                            ItemStack item = player.getInventory().getItem(i);
+                            if (item.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem) {
+                                if (com.lexovian.currentsoftrade.item.RouteJournalItem.removeRoute(item, pos)) {
+                                    removedAny = true;
+                                }
+                            }
+                        }
+                        if (removedAny) {
+                            player.displayClientMessage(
+                                    Component.translatable("message.currents_of_trade.journal_harbor_removed", harborName),
+                                    false
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
     }
 
     // --- Placement & Setup ---

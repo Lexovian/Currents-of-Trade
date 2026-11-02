@@ -344,20 +344,61 @@ public class NauticalChartItem extends Item {
      */
     public static List<HarborTradeOffer> getHarborTrades(ItemStack stack, HolderLookup.Provider registries, @Nullable Level level) {
         BlockPos targetPos = getTargetPos(stack);
+        List<HarborTradeOffer> baseTrades = null;
         if (targetPos != null && level instanceof ServerLevel serverLevel) {
             List<HarborTradeOffer> liveTrades = HarborSavedData.get(serverLevel).getTrades(targetPos);
-            if (!liveTrades.isEmpty()) return liveTrades;
+            if (!liveTrades.isEmpty()) {
+                baseTrades = liveTrades;
+            }
         }
 
-        CompoundTag tag = CustomData.get(stack).copyTag();
-        if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
-            ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
-            List<HarborTradeOffer> list = new ArrayList<>();
-            for (int i = 0; i < tradesList.size(); i++) {
-                list.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+        if (baseTrades == null) {
+            CompoundTag tag = CustomData.get(stack).copyTag();
+            if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
+                ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
+                List<HarborTradeOffer> list = new ArrayList<>();
+                for (int i = 0; i < tradesList.size(); i++) {
+                    list.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+                }
+                baseTrades = list;
             }
-            return list;
         }
-        return List.of();
+
+        if (baseTrades == null) {
+            baseTrades = List.of();
+        }
+
+        // Prepend the daily Urgent Harbor Bounty (2x High-Demand Contract) for the target harbor!
+        if (targetPos != null && level != null) {
+            MaritimeTradeRegion region = getTargetRegion(stack, level, targetPos);
+            HarborTradeOffer urgent = region.getUrgentBountyOffer(level, targetPos);
+            List<HarborTradeOffer> combined = new ArrayList<>(baseTrades.size() + 1);
+            combined.add(urgent);
+            for (HarborTradeOffer o : baseTrades) {
+                if (!o.isUrgentBounty()) {
+                    combined.add(o);
+                }
+            }
+            return combined;
+        }
+        return baseTrades;
+    }
+
+    public static MaritimeTradeRegion getTargetRegion(ItemStack stack, @Nullable Level level, @Nullable BlockPos targetPos) {
+        if (stack.getItem() instanceof RouteJournalItem) {
+            List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+            int idx = RouteJournalItem.getSelectedIndex(stack);
+            if (idx >= 0 && idx < routes.size()) {
+                return MaritimeTradeRegion.byId(routes.get(idx).regionId());
+            }
+        }
+        CompoundTag tag = CustomData.get(stack).copyTag();
+        if (tag.contains("RegionId")) {
+            return MaritimeTradeRegion.byId(tag.getString("RegionId"));
+        }
+        if (level != null && targetPos != null) {
+            return MaritimeTradeRegion.fromLevelAndPos(level, targetPos);
+        }
+        return MaritimeTradeRegion.TEMPERATE;
     }
 }

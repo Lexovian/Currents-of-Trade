@@ -49,6 +49,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
     private long lastTravelTime = 0;
     private final List<HarborTradeOffer> harborTrades = new ArrayList<>();
     private final List<TradePresetEntry> savedTradePreset = new ArrayList<>();
+    private BlockPos savedTargetPos = null;
+    private String savedTargetHarborName = "";
+    private final List<BlockPos> savedWaypoints = new ArrayList<>();
 
     public record TradePresetEntry(HarborTradeOffer offer, int count) {
         public CompoundTag toTag(HolderLookup.Provider registries) {
@@ -80,6 +83,254 @@ public class AnchorPointBlockEntity extends BlockEntity {
         }
     }
 
+    public void setSavedDestination(BlockPos targetPos, String targetHarborName, List<BlockPos> waypoints) {
+        this.savedTargetPos = targetPos != null ? targetPos.immutable() : null;
+        this.savedTargetHarborName = targetHarborName != null ? targetHarborName : "";
+        this.savedWaypoints.clear();
+        if (waypoints != null) {
+            this.savedWaypoints.addAll(waypoints);
+        }
+        setChanged();
+    }
+
+    public BlockPos getSavedTargetPos() {
+        return this.savedTargetPos;
+    }
+
+    public String getSavedTargetHarborName() {
+        return this.savedTargetHarborName;
+    }
+
+    // --- Redstone Auto-Dispatch & Depot Helpers ---
+
+    /**
+     * Comparator signal output:
+     * - 15 when a Trade/Cargo/Sloop ship with items is docked within 12 blocks
+     * - 8 when harbor is ready to dispatch (cooldown == 0 and has a saved preset)
+     * - 0 when on cooldown or unconfigured
+     */
+    public int getComparatorSignal() {
+        if (this.level == null) return 0;
+        net.minecraft.world.phys.AABB dockArea = new net.minecraft.world.phys.AABB(this.worldPosition).inflate(12.0D);
+        for (com.lexovian.currentsoftrade.entity.TradeBoatEntity ship : this.level.getEntitiesOfClass(com.lexovian.currentsoftrade.entity.TradeBoatEntity.class, dockArea)) {
+            for (int i = 0; i < ship.getContainerSize(); i++) {
+                if (!ship.getItem(i).isEmpty()) {
+                    return 15;
+                }
+            }
+        }
+        if (getRemainingCooldownSeconds() <= 0 && !this.savedTradePreset.isEmpty()) {
+            return 8;
+        }
+        return 0;
+    }
+
+    /**
+     * Collects all adjacent/nearby Harbor Depot containers (chests, barrels, etc. within 4 blocks).
+     */
+    public static List<net.minecraft.world.Container> getNearbyDepotContainers(Level level, BlockPos anchorPos) {
+        List<net.minecraft.world.Container> containers = new ArrayList<>();
+        if (level == null) return containers;
+        for (BlockPos check : BlockPos.betweenClosed(anchorPos.offset(-4, -2, -4), anchorPos.offset(4, 2, 4))) {
+            if (check.equals(anchorPos)) continue;
+            BlockEntity be = level.getBlockEntity(check);
+            if (be instanceof net.minecraft.world.Container container && !(be instanceof net.minecraft.world.level.block.entity.EnderChestBlockEntity)) {
+                containers.add(container);
+            }
+        }
+        return containers;
+    }
+
+    public static int countInContainers(List<net.minecraft.world.Container> containers, ItemStack required) {
+        if (required.isEmpty()) return Integer.MAX_VALUE;
+        int total = 0;
+        for (net.minecraft.world.Container c : containers) {
+            for (int i = 0; i < c.getContainerSize(); i++) {
+                ItemStack stack = c.getItem(i);
+                if (isStackMatchingForDepot(stack, required)) {
+                    total += stack.getCount();
+                }
+            }
+        }
+        return total;
+    }
+
+    public static int consumeFromContainers(List<net.minecraft.world.Container> containers, ItemStack required, int amountNeeded) {
+        if (required.isEmpty() || amountNeeded <= 0) return 0;
+        int remaining = amountNeeded;
+        for (net.minecraft.world.Container c : containers) {
+            boolean modified = false;
+            for (int i = 0; i < c.getContainerSize() && remaining > 0; i++) {
+                ItemStack stack = c.getItem(i);
+                if (isStackMatchingForDepot(stack, required)) {
+                    int take = Math.min(remaining, stack.getCount());
+                    stack.shrink(take);
+                    remaining -= take;
+                    if (stack.isEmpty()) {
+                        c.setItem(i, ItemStack.EMPTY);
+                    }
+                    modified = true;
+                }
+            }
+            if (modified) {
+                c.setChanged();
+            }
+            if (remaining <= 0) break;
+        }
+        return amountNeeded - remaining;
+    }
+
+    private static boolean isStackMatchingForDepot(ItemStack candidate, ItemStack required) {
+        if (candidate.isEmpty() || !ItemStack.isSameItem(candidate, required)) return false;
+        if (!required.hasTag()) return true;
+        return ItemStack.isSameItemSameTags(candidate, required);
+    }
+
+    /**
+     * Triggered when the Anchor Point receives a rising Redstone pulse.
+     * Automatically pulls payment items + Doubloon fee from adjacent Harbor Depot chests/barrels
+     * and dispatches a Trade Ship using the harbor's last saved trade order!
+     */
+    public boolean tryRedstoneAutoDispatch(ServerLevel serverLevel) {
+        if (getHarborStatus() != HarborStatus.VALID || getRemainingCooldownSeconds() > 0) {
+            return false;
+        }
+        if (this.savedTradePreset.isEmpty()) {
+            return false;
+        }
+
+        // Resolve destination from saved target or from a Nautical Chart / Route Journal inside adjacent depot chests
+        List<net.minecraft.world.Container> depots = getNearbyDepotContainers(serverLevel, this.worldPosition);
+        if (depots.isEmpty()) {
+            return false;
+        }
+
+        BlockPos targetPos = this.savedTargetPos;
+        String targetName = this.savedTargetHarborName;
+        List<BlockPos> waypoints = new ArrayList<>(this.savedWaypoints);
+
+        for (net.minecraft.world.Container c : depots) {
+            for (int i = 0; i < c.getContainerSize(); i++) {
+                ItemStack s = c.getItem(i);
+                if (!s.isEmpty() && (s.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem
+                        || s.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)
+                        && com.lexovian.currentsoftrade.item.NauticalChartItem.isBound(s)) {
+                    targetPos = com.lexovian.currentsoftrade.item.NauticalChartItem.getTargetPos(s);
+                    targetName = com.lexovian.currentsoftrade.item.NauticalChartItem.getTargetHarbor(s, serverLevel);
+                    waypoints = com.lexovian.currentsoftrade.item.NauticalChartItem.getWaypoints(s);
+                    break;
+                }
+            }
+        }
+
+        if (targetPos == null) {
+            return false;
+        }
+
+        BlockPos waterStart = com.lexovian.currentsoftrade.entity.TradeBoatEntity.findBestHarborWaterSpawn(serverLevel, this.worldPosition);
+        if (waterStart == null || !com.lexovian.currentsoftrade.entity.TradeBoatEntity.verifyPortWaterConnection(serverLevel, waterStart, waypoints, targetPos)) {
+            return false;
+        }
+
+        // Stage as many trades from the preset as depot supplies allow
+        List<ItemStack> stagedPayments = new ArrayList<>();
+        List<ItemStack> stagedRewards = new ArrayList<>();
+        int maxSlots = getCargoSlotCount();
+        int totalTrades = 0;
+        int totalStacks = 0;
+
+        for (TradePresetEntry entry : this.savedTradePreset) {
+            HarborTradeOffer offer = entry.offer();
+            ItemStack costA = offer.getCostA();
+            ItemStack costB = offer.getCostB();
+            ItemStack result = offer.getResult();
+
+            for (int c = 0; c < entry.count(); c++) {
+                if (stagedPayments.size() >= maxSlots || stagedRewards.size() >= maxSlots) break;
+
+                boolean canPayA = costA.isEmpty() || countInContainers(depots, costA) >= costA.getCount();
+                boolean canPayB = costB.isEmpty() || countInContainers(depots, costB) >= costB.getCount();
+                if (!costA.isEmpty() && !costB.isEmpty() && ItemStack.isSameItem(costA, costB)) {
+                    canPayB = countInContainers(depots, costA) >= (costA.getCount() + costB.getCount());
+                }
+                if (!canPayA || !canPayB) break;
+
+                consumeFromContainers(depots, costA, costA.getCount());
+                if (!costB.isEmpty()) {
+                    consumeFromContainers(depots, costB, costB.getCount());
+                }
+                stagedPayments.add(costA.copy());
+                if (!costB.isEmpty()) stagedPayments.add(costB.copy());
+                stagedRewards.add(result.copy());
+                totalTrades++;
+                totalStacks += 2;
+            }
+        }
+
+        if (totalTrades == 0) {
+            return false;
+        }
+
+        double dist = Math.sqrt(this.worldPosition.distSqr(targetPos));
+        int baseFee = Math.max(1, (int) Math.ceil(dist / 200.0));
+        int surcharge = totalStacks > 0 ? (int) Math.ceil(totalStacks / 3.0) : 0;
+        int totalFee = baseFee + surcharge;
+
+        ItemStack doubloonReq = new ItemStack(CurrentsofTrade.DOUBLOON.get(), totalFee);
+        if (countInContainers(depots, doubloonReq) < totalFee) {
+            // Refund staged payments back into depots if Doubloon fee is missing
+            for (ItemStack refund : stagedPayments) {
+                for (net.minecraft.world.Container c : depots) {
+                    for (int i = 0; i < c.getContainerSize() && !refund.isEmpty(); i++) {
+                        ItemStack slot = c.getItem(i);
+                        if (slot.isEmpty()) {
+                            c.setItem(i, refund.copy());
+                            refund.setCount(0);
+                            c.setChanged();
+                        } else if (ItemStack.isSameItemSameTags(slot, refund) && slot.getCount() < slot.getMaxStackSize()) {
+                            int fit = Math.min(refund.getCount(), slot.getMaxStackSize() - slot.getCount());
+                            slot.grow(fit);
+                            refund.shrink(fit);
+                            c.setChanged();
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        consumeFromContainers(depots, doubloonReq, totalFee);
+        triggerTravelCooldown();
+
+        double spawnX = waterStart.getX() + 0.5;
+        double spawnY = waterStart.getY() + 0.85;
+        double spawnZ = waterStart.getZ() + 0.5;
+        double dx = (targetPos.getX() + 0.5) - spawnX;
+        double dz = (targetPos.getZ() + 0.5) - spawnZ;
+        float initialYaw = (float) (net.minecraft.util.Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+
+        com.lexovian.currentsoftrade.entity.TradeBoatEntity tradeBoat =
+                new com.lexovian.currentsoftrade.entity.TradeBoatEntity(serverLevel, spawnX, spawnY, spawnZ);
+        tradeBoat.setYRot(initialYaw);
+        tradeBoat.setYHeadRot(initialYaw);
+        tradeBoat.yRotO = initialYaw;
+        tradeBoat.setRouteWaypoints(waypoints);
+        tradeBoat.setVoyageTarget(targetPos, targetName.isEmpty() ? "Target Port" : targetName);
+        tradeBoat.setCustomName(net.minecraft.network.chat.Component.literal("Automated Trade Ship"));
+        tradeBoat.setCustomNameVisible(true);
+        tradeBoat.setTradeMission(this.worldPosition, getHarborName(), stagedRewards);
+
+        for (int i = 0; i < stagedPayments.size() && i < tradeBoat.getContainerSize(); i++) {
+            tradeBoat.setItem(i, stagedPayments.get(i).copy());
+        }
+
+        serverLevel.addFreshEntity(tradeBoat);
+        serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_SPLASH_HIGH_SPEED, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+        serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.BELL_BLOCK, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.2F);
+        serverLevel.updateNeighbourForOutputSignal(this.worldPosition, getBlockState().getBlock());
+        return true;
+    }
+
     public AnchorPointBlockEntity(BlockPos pos, BlockState state) {
         super(CurrentsofTrade.ANCHOR_POINT_BE.get(), pos, state);
     }
@@ -96,10 +347,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     // --- Harbor Naming ---
 
-    /**
-     * Generates a harbour name from the biome at the given position,
-     * e.g. "Port Taiga" or "Port Ocean". Falls back to coordinates on failure.
-     */
     public static String generateDynamicHarborName(Level level, BlockPos pos) {
         if (level == null) {
             return "Port " + pos.getX() + ", " + pos.getZ();
@@ -130,7 +377,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
     }
 
     public boolean addHarborTrade(HarborTradeOffer trade) {
-        // Use level-based cap; fall back to global config if somehow called before level is set
         int maxTrades = getMaxTradeOffers();
         if (this.harborTrades.size() < maxTrades) {
             this.harborTrades.add(trade);
@@ -140,7 +386,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         }
         return false;
     }
-
 
     public boolean removeHarborTrade(int index) {
         if (index >= 0 && index < this.harborTrades.size()) {
@@ -212,9 +457,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         syncToSavedData();
     }
 
-    /**
-     * Human-readable level title, e.g. "Fishing Wharf" or "Royal Dockyard".
-     */
     public String getHarborLevelName() {
         return switch (this.tradeLevel) {
             case 2 -> "Trading Post";
@@ -225,10 +467,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         };
     }
 
-    /**
-     * Returns the voyage cooldown in seconds for this harbor level.
-     * Higher levels = shorter cooldowns.
-     */
     public int getLevelCooldownSeconds() {
         return switch (this.tradeLevel) {
             case 2 -> 45;
@@ -239,10 +477,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         };
     }
 
-    /**
-     * Returns the cargo slot count available for Send Items / Return Trade at this level.
-     * Grows from 18 (Lv1) to 54 (Lv5) in steps of 9.
-     */
     public int getCargoSlotCount() {
         return switch (this.tradeLevel) {
             case 2 -> 27;
@@ -253,9 +487,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         };
     }
 
-    /**
-     * Returns the maximum number of trade offers this harbor can hold at its current level.
-     */
     public int getMaxTradeOffers() {
         return switch (this.tradeLevel) {
             case 2 -> 8;
@@ -266,20 +497,12 @@ public class AnchorPointBlockEntity extends BlockEntity {
         };
     }
 
-    /**
-     * Returns true when the player can pay the upgrade cost for the next harbor level.
-     * Returns false at max level.
-     */
     public boolean canUpgrade(net.minecraft.world.entity.player.Player player) {
         if (this.tradeLevel >= MAX_HARBOR_LEVEL) return false;
         HarborUpgradeCost cost = HarborUpgradeCost.forLevel(this.tradeLevel);
         return cost != null && cost.canAfford(player);
     }
 
-    /**
-     * Consumes the required materials and advances this harbor to the next level.
-     * Caller MUST verify {@link #canUpgrade(net.minecraft.world.entity.player.Player)} first.
-     */
     public void executeUpgrade(net.minecraft.world.entity.player.Player player) {
         if (this.tradeLevel >= MAX_HARBOR_LEVEL) return;
         HarborUpgradeCost cost = HarborUpgradeCost.forLevel(this.tradeLevel);
@@ -300,12 +523,10 @@ public class AnchorPointBlockEntity extends BlockEntity {
         syncToSavedData();
         if (this.level instanceof ServerLevel serverLevel) {
             HarborSavedData.get(serverLevel).setHarborLevel(this.worldPosition, this.tradeLevel);
-            // Upgrade celebration sound & particles
             double px = this.worldPosition.getX() + 0.5;
             double py = this.worldPosition.getY() + 1.2;
             double pz = this.worldPosition.getZ() + 0.5;
             if (this.tradeLevel >= MAX_HARBOR_LEVEL) {
-                // Royal Dockyard (Lv.5) ultimate celebration
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.BELL_BLOCK, net.minecraft.sounds.SoundSource.BLOCKS, 1.5F, 0.9F);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING, px, py, pz, 35, 0.4, 0.4, 0.4, 0.15);
@@ -320,7 +541,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
                     }
                 }
             } else {
-                // Tier progress celebration
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, net.minecraft.sounds.SoundSource.BLOCKS, 0.9F, 1.2F);
                 serverLevel.playSound(null, this.worldPosition, net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, px, py, pz, 16, 0.35, 0.35, 0.35, 0.05);
@@ -336,7 +556,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
                 || "Port Alpha".equalsIgnoreCase(this.harborName.trim());
 
         if (needsName) {
-            // Try to pull a previously saved name from persistent data first
             if (this.level instanceof ServerLevel serverLevel) {
                 String saved = HarborSavedData.get(serverLevel).getHarborName(this.worldPosition);
                 if (saved != null && !saved.trim().isEmpty() && !"Port Alpha".equalsIgnoreCase(saved.trim())) {
@@ -344,7 +563,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
                     return this.harborName;
                 }
             }
-            // Fall back to biome-based dynamic name
             this.harborName = (this.level != null)
                     ? generateDynamicHarborName(this.level, this.worldPosition)
                     : "Port " + this.worldPosition.getX() + ", " + this.worldPosition.getZ();
@@ -376,10 +594,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     // --- Harbor Validation ---
 
-    /**
-     * Validates whether this anchor point sits beside a legitimate harbour:
-     * open sky, minimum water volume, and at least 2 blocks of depth.
-     */
     public HarborStatus getHarborStatus() {
         if (this.level == null) return HarborStatus.VALID;
         if (this.level.dimension() != Level.OVERWORLD) return HarborStatus.WRONG_DIMENSION;
@@ -387,7 +601,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         BlockPos center = this.getBlockPos();
         BlockPos waterStart = null;
 
-        // Find any adjacent water block within search box (radius 10, depth -7 to reach pier water from inside rigid coastal dock offices)
         for (BlockPos check : BlockPos.betweenClosed(center.offset(-10, -7, -10), center.offset(10, 2, 10))) {
             if (this.level.getFluidState(check).is(FluidTags.WATER)) {
                 waterStart = check.immutable();
@@ -401,7 +614,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
         int minWater = Config.MIN_HARBOR_WATER_BLOCKS != null ? Config.MIN_HARBOR_WATER_BLOCKS.get() : MIN_HARBOR_WATER_BLOCKS;
 
-        // BFS flood-fill to count connected water blocks
         int waterCount = 0;
         boolean hasSkyAccess = false;
         boolean hasDeepWater = false;
@@ -415,7 +627,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
             BlockPos current = queue.poll();
             waterCount++;
 
-            // Surface harbor check: Valid if open to sky OR at surface elevation (Y >= 50, sea level is 62/63)
             if (!hasSkyAccess && (this.level.canSeeSky(current.above()) || this.level.canSeeSky(current.above(2)) || current.getY() >= 50)) {
                 hasSkyAccess = true;
             }
@@ -446,11 +657,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     // --- Voyage Cooldown ---
 
-    /** Returns seconds remaining on the post-departure cooldown (0 = ready to sail). */
     public int getRemainingCooldownSeconds() {
         if (this.level == null) return 0;
         long elapsed = this.level.getGameTime() - this.lastTravelTime;
-        // Use level-based cooldown; config value acts as a hard ceiling if set lower
         int levelCooldown = getLevelCooldownSeconds();
         int configCooldown = Config.VOYAGE_COOLDOWN_SECONDS != null ? Config.VOYAGE_COOLDOWN_SECONDS.get() : 60;
         int cooldownSec = Math.min(levelCooldown, configCooldown);
@@ -460,7 +669,6 @@ public class AnchorPointBlockEntity extends BlockEntity {
         }
         return 0;
     }
-
 
     public void triggerTravelCooldown() {
         if (this.level != null) {
@@ -492,6 +700,12 @@ public class AnchorPointBlockEntity extends BlockEntity {
             }
             tag.put("SavedTradePreset", presetList);
         }
+        if (this.savedTargetPos != null) {
+            tag.putInt("SavedTargetX", this.savedTargetPos.getX());
+            tag.putInt("SavedTargetY", this.savedTargetPos.getY());
+            tag.putInt("SavedTargetZ", this.savedTargetPos.getZ());
+            tag.putString("SavedTargetName", this.savedTargetHarborName);
+        }
     }
 
     @Override
@@ -516,6 +730,10 @@ public class AnchorPointBlockEntity extends BlockEntity {
             for (int i = 0; i < presetList.size(); i++) {
                 this.savedTradePreset.add(TradePresetEntry.fromTag(presetList.getCompound(i), registries));
             }
+        }
+        if (tag.contains("SavedTargetX")) {
+            this.savedTargetPos = new BlockPos(tag.getInt("SavedTargetX"), tag.getInt("SavedTargetY"), tag.getInt("SavedTargetZ"));
+            this.savedTargetHarborName = tag.getString("SavedTargetName");
         }
         syncToSavedData();
     }
