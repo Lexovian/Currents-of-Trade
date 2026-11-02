@@ -75,6 +75,10 @@ public class HarborSavedData extends SavedData {
         return all;
     }
 
+    public boolean hasHarbor(BlockPos pos) {
+        return harborNamesMap.containsKey(pos) || harborTradesMap.containsKey(pos) || harborLevelsMap.containsKey(pos);
+    }
+
     public void removeHarbor(BlockPos pos) {
         boolean changed = harborTradesMap.remove(pos) != null;
         if (harborNamesMap.remove(pos) != null) changed = true;

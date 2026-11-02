@@ -122,37 +122,62 @@ public class RouteJournalItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        List<String> pruned = pruneBrokenHarbors(stack, level);
+        if (!pruned.isEmpty() && !level.isClientSide) {
+            for (String name : pruned) {
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", name), false);
+            }
+        }
         List<RouteEntry> routes = getRoutes(stack);
 
-        if (routes.isEmpty()) {
-            if (!level.isClientSide) {
-                player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_empty"), true);
+        // Shift + Right-Click quickly cycles the active harbor in the action bar
+        if (player.isShiftKeyDown()) {
+            if (routes.isEmpty()) {
+                if (!level.isClientSide) {
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_empty"), true);
+                }
+                return InteractionResultHolder.pass(stack);
             }
-            return InteractionResultHolder.pass(stack);
+
+            int currentIdx = getSelectedIndex(stack);
+            int nextIdx = (currentIdx + 1) % routes.size();
+            setSelectedIndex(stack, nextIdx);
+
+            if (level.isClientSide) {
+                level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.8F, 1.1F);
+            } else {
+                RouteEntry selected = routes.get(nextIdx);
+                if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                    syncActiveHarborTrades(stack, selected.pos(), serverLevel);
+                }
+                player.displayClientMessage(Component.translatable(
+                        "message.currents_of_trade.journal_switched",
+                        selected.name(),
+                        selected.pos().getX(),
+                        selected.pos().getZ(),
+                        nextIdx + 1,
+                        routes.size()
+                ), true);
+            }
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
         }
 
-        int currentIdx = getSelectedIndex(stack);
-        int nextIdx = (currentIdx + 1) % routes.size();
-        setSelectedIndex(stack, nextIdx);
-
+        // Normal Right-Click opens the Interactive Nautical Atlas & Maritime Compendium GUI!
         if (level.isClientSide) {
-            level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.8F, 1.1F);
-        } else {
-            RouteEntry selected = routes.get(nextIdx);
-            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                syncActiveHarborTrades(stack, selected.pos(), serverLevel);
-            }
-            player.displayClientMessage(Component.translatable(
-                    "message.currents_of_trade.journal_switched",
-                    selected.name(),
-                    selected.pos().getX(),
-                    selected.pos().getZ(),
-                    nextIdx + 1,
-                    routes.size()
-            ), true);
+            level.playSound(player, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.85F, 1.05F);
+            ClientScreenOpener.open(hand);
+        } else if (!routes.isEmpty() && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            int idx = Math.max(0, Math.min(routes.size() - 1, getSelectedIndex(stack)));
+            syncActiveHarborTrades(stack, routes.get(idx).pos(), serverLevel);
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+    }
+
+    private static final class ClientScreenOpener {
+        static void open(InteractionHand hand) {
+            com.lexovian.currentsoftrade.client.gui.NauticalAtlasScreen.open(hand);
+        }
     }
 
     public static void syncActiveHarborTrades(ItemStack stack, BlockPos targetPos, net.minecraft.server.level.ServerLevel serverLevel) {
@@ -230,6 +255,98 @@ public class RouteJournalItem extends Item {
             tag.putInt(TAG_SELECTED_INDEX, 0);
         }
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
+    public static boolean removeRoute(ItemStack stack, BlockPos pos) {
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) return false;
+        CompoundTag tag = customData.copyTag();
+        if (!tag.contains(TAG_ROUTES, Tag.TAG_LIST)) return false;
+
+        ListTag list = tag.getList(TAG_ROUTES, Tag.TAG_COMPOUND);
+        int removeIdx = -1;
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag entryTag = list.getCompound(i);
+            BlockPos entryPos = new BlockPos(entryTag.getInt("X"), entryTag.getInt("Y"), entryTag.getInt("Z"));
+            if (entryPos.equals(pos)) {
+                removeIdx = i;
+                break;
+            }
+        }
+        if (removeIdx == -1) return false;
+
+        list.remove(removeIdx);
+        tag.put(TAG_ROUTES, list);
+
+        int currentIdx = tag.getInt(TAG_SELECTED_INDEX);
+        if (list.isEmpty()) {
+            tag.putInt(TAG_SELECTED_INDEX, 0);
+        } else if (currentIdx >= list.size()) {
+            tag.putInt(TAG_SELECTED_INDEX, list.size() - 1);
+        } else if (currentIdx > removeIdx) {
+            tag.putInt(TAG_SELECTED_INDEX, currentIdx - 1);
+        }
+
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        return true;
+    }
+
+    public static boolean removeRouteByIndex(ItemStack stack, int index) {
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) return false;
+        CompoundTag tag = customData.copyTag();
+        if (!tag.contains(TAG_ROUTES, Tag.TAG_LIST)) return false;
+
+        ListTag list = tag.getList(TAG_ROUTES, Tag.TAG_COMPOUND);
+        if (index < 0 || index >= list.size()) return false;
+
+        list.remove(index);
+        tag.put(TAG_ROUTES, list);
+
+        int currentIdx = tag.getInt(TAG_SELECTED_INDEX);
+        if (list.isEmpty()) {
+            tag.putInt(TAG_SELECTED_INDEX, 0);
+        } else if (currentIdx >= list.size()) {
+            tag.putInt(TAG_SELECTED_INDEX, list.size() - 1);
+        } else if (currentIdx > index) {
+            tag.putInt(TAG_SELECTED_INDEX, currentIdx - 1);
+        }
+
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        return true;
+    }
+
+    public static List<String> pruneBrokenHarbors(ItemStack stack, Level level) {
+        List<RouteEntry> routes = getRoutes(stack);
+        if (routes.isEmpty()) return List.of();
+
+        List<String> removedNames = new ArrayList<>();
+        for (RouteEntry entry : routes) {
+            boolean broken = false;
+            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                if (serverLevel.isLoaded(entry.pos())) {
+                    if (!(serverLevel.getBlockState(entry.pos()).getBlock() instanceof AnchorPointBlock)) {
+                        broken = true;
+                    }
+                } else {
+                    if (!com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).hasHarbor(entry.pos())) {
+                        broken = true;
+                    }
+                }
+            } else {
+                if (level.hasChunkAt(entry.pos())) {
+                    if (!(level.getBlockState(entry.pos()).getBlock() instanceof AnchorPointBlock)) {
+                        broken = true;
+                    }
+                }
+            }
+            if (broken) {
+                if (removeRoute(stack, entry.pos())) {
+                    removedNames.add(entry.name());
+                }
+            }
+        }
+        return removedNames;
     }
 
     public static int getSelectedIndex(ItemStack stack) {

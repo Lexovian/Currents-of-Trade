@@ -27,6 +27,9 @@ import com.lexovian.currentsoftrade.item.JadeFigurineItem;
 import com.lexovian.currentsoftrade.item.CacaoElixirItem;
 import com.lexovian.currentsoftrade.item.NarwhalIvoryItem;
 import com.lexovian.currentsoftrade.item.DamascusSteelItem;
+import com.lexovian.currentsoftrade.item.FrankincenseTearsItem;
+import com.lexovian.currentsoftrade.item.TyrianPurpleItem;
+import com.lexovian.currentsoftrade.item.DragonsBloodResinItem;
 import com.lexovian.currentsoftrade.item.MessageInABottleItem;
 import com.lexovian.currentsoftrade.item.StormGlassItem;
 import com.lexovian.currentsoftrade.item.CaptainsPipeItem;
@@ -38,9 +41,11 @@ import com.lexovian.currentsoftrade.item.CargoBoatItem;
 import com.lexovian.currentsoftrade.item.TradeBoatItem;
 import com.lexovian.currentsoftrade.entity.WanderingSailorEntity;
 import com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe;
+import com.lexovian.currentsoftrade.world.village.CoastalDockPoolElement;
 import com.lexovian.currentsoftrade.world.village.CoastalWaterCheckProcessor;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -91,9 +96,13 @@ public class CurrentsofTrade {
     public static final DeferredRegister<VillagerProfession> VILLAGER_PROFESSIONS = DeferredRegister.create(Registries.VILLAGER_PROFESSION, MODID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(Registries.RECIPE_SERIALIZER, MODID);
     public static final DeferredRegister<StructureProcessorType<?>> STRUCTURE_PROCESSORS = DeferredRegister.create(Registries.STRUCTURE_PROCESSOR, MODID);
+    public static final DeferredRegister<StructurePoolElementType<?>> STRUCTURE_POOL_ELEMENTS = DeferredRegister.create(Registries.STRUCTURE_POOL_ELEMENT, MODID);
 
     public static final DeferredHolder<StructureProcessorType<?>, StructureProcessorType<CoastalWaterCheckProcessor>> COASTAL_WATER_CHECK =
             STRUCTURE_PROCESSORS.register("coastal_water_check", () -> () -> CoastalWaterCheckProcessor.CODEC);
+
+    public static final DeferredHolder<StructurePoolElementType<?>, StructurePoolElementType<CoastalDockPoolElement>> COASTAL_DOCK_ELEMENT =
+            STRUCTURE_POOL_ELEMENTS.register("coastal_dock", () -> () -> CoastalDockPoolElement.CODEC);
 
     public static final DeferredHolder<RecipeSerializer<?>, SimpleCraftingRecipeSerializer<TreasureMapCraftingRecipe>> TREASURE_MAP_RECIPE_SERIALIZER =
             RECIPE_SERIALIZERS.register("crafting_special_treasure_map", () -> new SimpleCraftingRecipeSerializer<>(TreasureMapCraftingRecipe::new));
@@ -238,6 +247,18 @@ public class CurrentsofTrade {
     public static final DeferredItem<DamascusSteelItem> DAMASCUS_STEEL =
             ITEMS.registerItem("damascus_steel", DamascusSteelItem::new, new Item.Properties().stacksTo(16));
 
+    /** Golden resin tears from desert cliffs — clears debuffs and grants Resistance I (30s) + Regeneration I (20s). */
+    public static final DeferredItem<FrankincenseTearsItem> FRANKINCENSE_TEARS =
+            ITEMS.registerItem("frankincense_tears", FrankincenseTearsItem::new, new Item.Properties().stacksTo(16));
+
+    /** Royal marine snail dye — dyes sails royal purple or grants Hero of the Village I (60s) + Glowing (30s). */
+    public static final DeferredItem<TyrianPurpleItem> TYRIAN_PURPLE =
+            ITEMS.registerItem("tyrian_purple", TyrianPurpleItem::new, new Item.Properties().stacksTo(16));
+
+    /** Exotic dragon's blood resin — dyes sails blood red or grants Fire Resistance I (60s) + Strength I (30s). */
+    public static final DeferredItem<DragonsBloodResinItem> DRAGONS_BLOOD_RESIN =
+            ITEMS.registerItem("dragons_blood_resin", DragonsBloodResinItem::new, new Item.Properties().stacksTo(16));
+
     // --- Menu Types ---
     public static final DeferredHolder<MenuType<?>, MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(AnchorPointMenu::new));
@@ -330,6 +351,9 @@ public class CurrentsofTrade {
                                 output.accept(CACAO_ELIXIR.get());
                                 output.accept(NARWHAL_IVORY.get());
                                 output.accept(DAMASCUS_STEEL.get());
+                                output.accept(FRANKINCENSE_TEARS.get());
+                                output.accept(TYRIAN_PURPLE.get());
+                                output.accept(DRAGONS_BLOOD_RESIN.get());
                                 output.accept(MESSAGE_IN_A_BOTTLE.get());
                                 output.accept(SPICE_SACK.get());
                                 output.accept(AMBER_VIAL.get());
@@ -359,6 +383,7 @@ public class CurrentsofTrade {
         CREATIVE_MODE_TABS.register(modEventBus);
         RECIPE_SERIALIZERS.register(modEventBus);
         STRUCTURE_PROCESSORS.register(modEventBus);
+        STRUCTURE_POOL_ELEMENTS.register(modEventBus);
 
         modEventBus.addListener(this::addCreative);
         modEventBus.addListener(this::registerAttributes);

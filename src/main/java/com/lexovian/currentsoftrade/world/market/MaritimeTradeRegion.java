@@ -168,6 +168,7 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.SPICE_SACK.get()
                     || item == CurrentsofTrade.SALT_POUCH.get()
                     || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.FRANKINCENSE_TEARS.get()
                     || item == CurrentsofTrade.DAMASCUS_STEEL.get();
 
             case COLD -> item == CurrentsofTrade.AMBER_VIAL.get()
@@ -178,11 +179,13 @@ public enum MaritimeTradeRegion {
             case TROPICAL -> item == CurrentsofTrade.SANDALWOOD.get()
                     || item == CurrentsofTrade.VANILLA_BUNDLE.get()
                     || item == CurrentsofTrade.JADE_FIGURINE.get()
-                    || item == CurrentsofTrade.CACAO_ELIXIR.get();
+                    || item == CurrentsofTrade.CACAO_ELIXIR.get()
+                    || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get();
 
             case TEMPERATE -> item == CurrentsofTrade.FINE_PORCELAIN.get()
                     || item == CurrentsofTrade.TEA_BRICK.get()
                     || item == CurrentsofTrade.LUMINOUS_PEARL.get()
+                    || item == CurrentsofTrade.TYRIAN_PURPLE.get()
                     || item == CurrentsofTrade.DAMASCUS_STEEL.get();
         };
     }
@@ -196,6 +199,8 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.JADE_FIGURINE.get()
                     || item == CurrentsofTrade.NARWHAL_IVORY.get()
                     || item == CurrentsofTrade.CACAO_ELIXIR.get()
+                    || item == CurrentsofTrade.TYRIAN_PURPLE.get()
+                    || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()
                     || item == Items.COD || item == Items.SALMON
                     || item == Items.COOKED_COD || item == Items.COOKED_SALMON
                     || item == Items.ICE || item == Items.PACKED_ICE || item == Items.BLUE_ICE;
@@ -204,12 +209,15 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.VANILLA_BUNDLE.get()
                     || item == CurrentsofTrade.SPICE_SACK.get()
                     || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.FRANKINCENSE_TEARS.get()
+                    || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()
                     || item == CurrentsofTrade.CACAO_ELIXIR.get()
                     || item == CurrentsofTrade.DAMASCUS_STEEL.get();
 
             case TROPICAL -> item == CurrentsofTrade.FINE_PORCELAIN.get()
                     || item == CurrentsofTrade.SILK_BALE.get()
                     || item == CurrentsofTrade.TEA_BRICK.get()
+                    || item == CurrentsofTrade.TYRIAN_PURPLE.get()
                     || item == CurrentsofTrade.DAMASCUS_STEEL.get()
                     || item == CurrentsofTrade.NARWHAL_IVORY.get();
 
@@ -217,6 +225,8 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.SPICE_SACK.get()
                     || item == CurrentsofTrade.AMBER_VIAL.get()
                     || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
+                    || item == CurrentsofTrade.FRANKINCENSE_TEARS.get()
+                    || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()
                     || item == CurrentsofTrade.JADE_FIGURINE.get();
         };
     }
@@ -246,8 +256,9 @@ public enum MaritimeTradeRegion {
                 offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 4)));
 
                 if (level >= 2) {
-                    // Lv 2: Spice export (cheap)
+                    // Lv 2: Spice export (cheap) & Frankincense export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2)));
                 }
                 if (level >= 3) {
                     // Lv 3: Silk & Saffron export
@@ -255,9 +266,11 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Amber & Cacao Elixir import + Damascus Steel export
+                    // Lv 4: Amber & Cacao Elixir import + Damascus Steel export + Tyrian Purple import + Dragon's Blood import
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 9)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
                 }
                 if (level >= 5) {
@@ -278,13 +291,15 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Amber export & Saffron / Cacao Elixir imports
+                    // Lv 3: Amber export & Saffron / Cacao Elixir / Frankincense imports
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Fossil & Spiral Sea Ivory export
+                    // Lv 4: Fossil & Spiral Sea Ivory export + Dragon's Blood import (fiery warmth in the cold!)
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1)));
                 }
@@ -305,13 +320,15 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Sandalwood export & Porcelain import
+                    // Lv 3: Sandalwood & Dragon's Blood Resin exports + Porcelain import
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Silk import & Carved Jade Figurine export
+                    // Lv 4: Silk & Tyrian Purple imports + Carved Jade Figurine export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1)));
                 }
                 if (level >= 5) {
@@ -331,14 +348,17 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2)));
                 }
                 if (level >= 3) {
-                    // Lv 3: Fine Porcelain export + Sandalwood & Saffron imports
+                    // Lv 3: Fine Porcelain & Tyrian Purple exports + Sandalwood & Saffron imports
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                 }
                 if (level >= 4) {
-                    // Lv 4: Amber import & Damascus Steel export
+                    // Lv 4: Amber, Dragon's Blood & Frankincense imports + Damascus Steel export
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 9)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)));
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
                 }
                 if (level >= 5) {
@@ -349,5 +369,46 @@ public enum MaritimeTradeRegion {
         }
 
         return offers;
+    }
+
+    /**
+     * Generates a daily rotating Urgent Harbor Bounty contract (2x Doubloon reward)
+     * for one of this region's high-demand commodities. Refreshes every 24,000 ticks (1 Minecraft day).
+     */
+    public HarborTradeOffer getUrgentBountyOffer(Level level, BlockPos pos) {
+        long day = (level != null) ? (level.getDayTime() / 24000L) : 0L;
+        long posHash = (pos != null) ? (pos.getX() * 3129871L ^ pos.getZ() * 116129781L) : 0L;
+        int variant = (int) Math.floorMod(day + posHash, 5L);
+
+        return switch (this) {
+            case ARID -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+            };
+            case COLD -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+            };
+            case TROPICAL -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+            };
+            case TEMPERATE -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+            };
+        };
     }
 }

@@ -2,6 +2,7 @@ package com.lexovian.currentsoftrade.network;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
 import com.lexovian.currentsoftrade.world.inventory.RequestTradeMenu;
 import com.lexovian.currentsoftrade.world.inventory.SendItemsMenu;
@@ -16,14 +17,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+
+import java.util.List;
 
 public class ModPayloads {
 
@@ -178,7 +183,6 @@ public class ModPayloads {
                 if (context.player() instanceof ServerPlayer player) {
                     BlockPos targetPos = findAnchorPointNear(player, pos);
 
-                    // Prefer the position already confirmed in the currently open menu
                     if (player.containerMenu instanceof TravelMenu travelMenu) {
                         BlockPos serverPos = travelMenu.getCurrentPos();
                         if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
@@ -555,6 +559,54 @@ public class ModPayloads {
         }
     }
 
+    // --- Select Route Journal Entry from Nautical Atlas GUI ---
+
+    public record SelectJournalRoutePayload(boolean offhand, int routeIndex) implements CustomPacketPayload {
+        public static final Type<SelectJournalRoutePayload> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "select_journal_route"));
+        public static final StreamCodec<ByteBuf, SelectJournalRoutePayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.BOOL,    SelectJournalRoutePayload::offhand,
+                        ByteBufCodecs.VAR_INT, SelectJournalRoutePayload::routeIndex,
+                        SelectJournalRoutePayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    InteractionHand hand = offhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+                    ItemStack stack = player.getItemInHand(hand);
+                    if (!(stack.getItem() instanceof RouteJournalItem)) return;
+                    List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+                    if (routeIndex < 0) {
+                        int deleteIdx = -routeIndex - 1;
+                        if (deleteIdx >= 0 && deleteIdx < routes.size()) {
+                            RouteJournalItem.RouteEntry removed = routes.get(deleteIdx);
+                            RouteJournalItem.removeRouteByIndex(stack, deleteIdx);
+                            player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", removed.name()), true);
+                            player.inventoryMenu.broadcastChanges();
+                        }
+                    } else if (routeIndex >= 0 && routeIndex < routes.size()) {
+                        RouteJournalItem.setSelectedIndex(stack, routeIndex);
+                        RouteJournalItem.RouteEntry selected = routes.get(routeIndex);
+                        RouteJournalItem.syncActiveHarborTrades(stack, selected.pos(), player.serverLevel());
+                        player.displayClientMessage(Component.translatable(
+                                "message.currents_of_trade.journal_switched",
+                                selected.name(),
+                                selected.pos().getX(),
+                                selected.pos().getZ(),
+                                routeIndex + 1,
+                                routes.size()
+                        ), true);
+                        player.inventoryMenu.broadcastChanges();
+                    }
+                }
+            });
+        }
+    }
+
     // --- Payload registration ---
 
     @EventBusSubscriber(modid = CurrentsofTrade.MODID)
@@ -576,6 +628,7 @@ public class ModPayloads {
             registrar.playToServer(UpgradeHarborPayload.TYPE,       UpgradeHarborPayload.STREAM_CODEC,       UpgradeHarborPayload::handle);
             registrar.playToServer(RepeatTradeOrderPayload.TYPE,    RepeatTradeOrderPayload.STREAM_CODEC,    RepeatTradeOrderPayload::handle);
             registrar.playToServer(UnloadShipToHarborPayload.TYPE,  UnloadShipToHarborPayload.STREAM_CODEC,  UnloadShipToHarborPayload::handle);
+            registrar.playToServer(SelectJournalRoutePayload.TYPE,  SelectJournalRoutePayload.STREAM_CODEC,  SelectJournalRoutePayload::handle);
         }
     }
 }

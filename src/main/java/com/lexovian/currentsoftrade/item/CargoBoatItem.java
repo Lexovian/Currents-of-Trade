@@ -2,6 +2,8 @@ package com.lexovian.currentsoftrade.item;
 
 import com.lexovian.currentsoftrade.entity.CargoBoatEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -12,9 +14,11 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -71,6 +75,17 @@ public class CargoBoatItem extends Item {
             cargoBoat.setYRot(player.getYRot());
             cargoBoat.setPlayerControlled(true);
 
+            CustomData customData = itemstack.get(DataComponents.CUSTOM_DATA);
+            if (customData != null) {
+                CompoundTag tag = customData.copyTag();
+                if (tag.contains("SailColor")) {
+                    cargoBoat.setSailColor(tag.getInt("SailColor"));
+                }
+                if (tag.contains("BannerItem")) {
+                    cargoBoat.setBannerStack(ItemStack.parseOptional(level.registryAccess(), tag.getCompound("BannerItem")));
+                }
+            }
+
             level.addFreshEntity(cargoBoat);
             level.gameEvent(player, GameEvent.ENTITY_PLACE, clickLoc);
             level.playSound(null, cargoBoat.getX(), cargoBoat.getY(), cargoBoat.getZ(),
@@ -89,6 +104,19 @@ public class CargoBoatItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("item.currents_of_trade.cargo_boat.desc"));
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null) {
+            CompoundTag tag = customData.copyTag();
+            if (tag.contains("SailColor")) {
+                DyeColor color = DyeColor.byId(tag.getInt("SailColor"));
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_sail_color",
+                        Component.translatable("color.minecraft." + color.getName())));
+            }
+            if (tag.contains("BannerItem")) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_banner_mounted"));
+            }
+        }
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

@@ -345,20 +345,56 @@ public class NauticalChartItem extends Item {
      */
     public static List<HarborTradeOffer> getHarborTrades(ItemStack stack, HolderLookup.Provider registries, @Nullable Level level) {
         BlockPos targetPos = getTargetPos(stack);
+        List<HarborTradeOffer> baseList = new ArrayList<>();
+
         if (targetPos != null && level instanceof ServerLevel serverLevel) {
             List<HarborTradeOffer> liveTrades = HarborSavedData.get(serverLevel).getTrades(targetPos);
-            if (!liveTrades.isEmpty()) return liveTrades;
+            if (!liveTrades.isEmpty()) {
+                baseList.addAll(liveTrades);
+            }
         }
 
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
-            ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
-            List<HarborTradeOffer> list = new ArrayList<>();
-            for (int i = 0; i < tradesList.size(); i++) {
-                list.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+        if (baseList.isEmpty()) {
+            CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+            if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
+                ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
+                for (int i = 0; i < tradesList.size(); i++) {
+                    baseList.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+                }
             }
-            return list;
         }
-        return List.of();
+
+        if (targetPos != null && !baseList.isEmpty()) {
+            boolean alreadyHasBounty = false;
+            for (HarborTradeOffer offer : baseList) {
+                if (offer.isUrgentBounty()) {
+                    alreadyHasBounty = true;
+                    break;
+                }
+            }
+            if (!alreadyHasBounty) {
+                CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+                MaritimeTradeRegion region;
+                if (stack.getItem() instanceof RouteJournalItem) {
+                    List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+                    int idx = RouteJournalItem.getSelectedIndex(stack);
+                    if (idx >= 0 && idx < routes.size()) {
+                        region = MaritimeTradeRegion.byId(routes.get(idx).regionId());
+                    } else {
+                        region = MaritimeTradeRegion.fromLevelAndPos(level, targetPos);
+                    }
+                } else if (tag.contains("RegionId")) {
+                    region = MaritimeTradeRegion.byId(tag.getString("RegionId"));
+                } else {
+                    region = MaritimeTradeRegion.fromLevelAndPos(level, targetPos);
+                }
+                HarborTradeOffer bounty = region.getUrgentBountyOffer(level, targetPos);
+                if (bounty != null) {
+                    baseList.add(0, bounty);
+                }
+            }
+        }
+
+        return baseList;
     }
 }

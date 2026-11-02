@@ -309,16 +309,109 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             return InteractionResult.PASS;
         }
 
+        // Check ship customization items FIRST (works whether normal-clicking or Shift+Right-Clicking!)
+        InteractionResult customResult = this.tryApplyCustomization(player, hand);
+        if (customResult.consumesAction()) {
+            return customResult;
+        }
+
         // Sneak + Right-Click opens the 18-slot Captain's Hold
         if (player.isSecondaryUseActive()) {
             return this.interactWithContainerVehicle(player);
         }
 
-        ItemStack held = player.getItemInHand(hand);
+        return super.interact(player, hand);
+    }
 
-        // 1. Dye Sails (16 DyeColors)
-        if (held.getItem() instanceof DyeItem dyeItem) {
-            DyeColor color = dyeItem.getDyeColor();
+    public static boolean isShipCustomizationItem(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        Item item = stack.getItem();
+        return item instanceof DyeItem
+                || stack.is(CurrentsofTrade.TYRIAN_PURPLE.get())
+                || stack.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())
+                || item instanceof BannerItem
+                || stack.is(Items.WATER_BUCKET)
+                || stack.is(Items.SPONGE)
+                || stack.is(Items.WET_SPONGE)
+                || stack.is(Items.SHEARS)
+                || stack.is(Items.LANTERN)
+                || stack.is(Items.SOUL_LANTERN)
+                || stack.is(Items.COPPER_BLOCK)
+                || stack.is(Items.WAXED_COPPER_BLOCK);
+    }
+
+    /**
+     * Allows players to dye sails, mount banners/pennants ("flama"), or attach lanterns/copper
+     * even when standing on deck, riding the ship, or aiming high up at the 16-block mast and sails
+     * (above the 0.85m hull collision box).
+     */
+    public static boolean tryCustomizeNearbyShip(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (!isShipCustomizationItem(held)) return false;
+
+        Entity rootVehicle = player.getRootVehicle();
+        if (rootVehicle instanceof SloopEntity sloop && !sloop.isMerchantShip()) {
+            return sloop.tryApplyCustomization(player, hand).consumesAction();
+        }
+        if (rootVehicle instanceof CargoBoatEntity cargo && cargo.isPlayerControlled()) {
+            return cargo.tryApplyCustomization(player, hand).consumesAction();
+        }
+
+        Vec3 eye = player.getEyePosition();
+        Vec3 reachEnd = eye.add(player.getViewVector(1.0F).scale(7.5));
+        AABB searchArea = player.getBoundingBox().inflate(9.0, 18.0, 9.0);
+
+        java.util.List<Entity> candidates = player.level().getEntities(player, searchArea,
+                e -> (e instanceof SloopEntity s && !s.isMerchantShip())
+                        || (e instanceof CargoBoatEntity c && c.isPlayerControlled()));
+
+        Entity bestShip = null;
+        double bestDistSq = Double.MAX_VALUE;
+        for (Entity candidate : candidates) {
+            // Full 3D volume covering hull + 16m mast & sails
+            AABB sailAndHullBox = new AABB(
+                    candidate.getX() - 3.0, candidate.getY() - 0.5, candidate.getZ() - 3.0,
+                    candidate.getX() + 3.0, candidate.getY() + 17.5, candidate.getZ() + 3.0
+            );
+            boolean hitRay = sailAndHullBox.clip(eye, reachEnd).isPresent() || sailAndHullBox.contains(eye);
+            boolean standingOnDeck = candidate.getBoundingBox().inflate(1.35, 1.5, 1.35).contains(player.position());
+            if (hitRay || standingOnDeck) {
+                double dSq = candidate.distanceToSqr(player);
+                if (dSq < bestDistSq) {
+                    bestDistSq = dSq;
+                    bestShip = candidate;
+                }
+            }
+        }
+
+        if (bestShip instanceof SloopEntity sloop) {
+            return sloop.tryApplyCustomization(player, hand).consumesAction();
+        }
+        if (bestShip instanceof CargoBoatEntity cargo) {
+            return cargo.tryApplyCustomization(player, hand).consumesAction();
+        }
+        return false;
+    }
+
+    public InteractionResult tryApplyCustomization(Player player, InteractionHand hand) {
+        if (this.isMerchantShip()) return InteractionResult.PASS;
+        ItemStack held = player.getItemInHand(hand);
+        if (held.isEmpty()) return InteractionResult.PASS;
+
+        // 1. Dye Sails (16 DyeColors, Royal Tyrian Purple, or Dragon's Blood Red)
+        if (held.getItem() instanceof DyeItem || held.is(CurrentsofTrade.TYRIAN_PURPLE.get()) || held.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())) {
+            DyeColor color;
+            Component colorName;
+            if (held.is(CurrentsofTrade.TYRIAN_PURPLE.get())) {
+                color = DyeColor.PURPLE;
+                colorName = Component.translatable("color.currents_of_trade.tyrian_purple");
+            } else if (held.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())) {
+                color = DyeColor.RED;
+                colorName = Component.translatable("color.currents_of_trade.dragons_blood");
+            } else {
+                color = ((DyeItem) held.getItem()).getDyeColor();
+                colorName = Component.translatable("color.minecraft." + color.getName());
+            }
             if (this.getSailColor() != color.getId()) {
                 if (!this.level().isClientSide) {
                     this.setSailColor(color.getId());
@@ -326,8 +419,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                         held.shrink(1);
                     }
                     this.level().playSound(null, this.blockPosition(), SoundEvents.DYE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
-                    player.displayClientMessage(Component.translatable("message.currents_of_trade.sloop_dyed",
-                            Component.translatable("color.minecraft." + color.getName())), true);
+                    String key = "message.currents_of_trade.sloop_dyed";
+                    player.displayClientMessage(Component.translatable(key, colorName), true);
                     this.awardFlagshipAdvancement(player);
                 }
                 return InteractionResult.sidedSuccess(this.level().isClientSide);
@@ -344,7 +437,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
 
-        // 3. Mount Banner Heraldry on Main Sail
+        // 3. Mount Banner / Pennant ("Flama") on Main Sail & Masthead
         if (held.getItem() instanceof BannerItem) {
             if (!this.level().isClientSide) {
                 if (!this.getBannerStack().isEmpty() && !player.getAbilities().instabuild) {
@@ -421,7 +514,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
 
-        return super.interact(player, hand);
+        return InteractionResult.PASS;
     }
 
     @Override

@@ -2,12 +2,16 @@ package com.lexovian.currentsoftrade.entity;
 
 import com.lexovian.currentsoftrade.Config;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -16,8 +20,14 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.item.BannerItem;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +36,10 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     private static final EntityDataAccessor<Boolean> IS_PLAYER_CONTROLLED =
             SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> SAIL_COLOR =
+            SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<ItemStack> BANNER_STACK =
+            SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.ITEM_STACK);
 
     // --- Constructors ---
 
@@ -53,6 +67,8 @@ public class CargoBoatEntity extends TradeBoatEntity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(IS_PLAYER_CONTROLLED, false);
+        builder.define(SAIL_COLOR, -1);
+        builder.define(BANNER_STACK, ItemStack.EMPTY);
     }
 
     public boolean isPlayerControlled() {
@@ -61,6 +77,22 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     public void setPlayerControlled(boolean playerControlled) {
         this.entityData.set(IS_PLAYER_CONTROLLED, playerControlled);
+    }
+
+    public int getSailColor() {
+        return this.entityData.get(SAIL_COLOR);
+    }
+
+    public void setSailColor(int colorId) {
+        this.entityData.set(SAIL_COLOR, colorId);
+    }
+
+    public ItemStack getBannerStack() {
+        return this.entityData.get(BANNER_STACK);
+    }
+
+    public void setBannerStack(ItemStack stack) {
+        this.entityData.set(BANNER_STACK, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
     }
 
     @Nullable
@@ -113,6 +145,12 @@ public class CargoBoatEntity extends TradeBoatEntity {
         if (com.lexovian.currentsoftrade.item.NauticalChartItem.tryUseAboard(player, hand, this)) {
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
+        if (this.isPlayerControlled()) {
+            InteractionResult customResult = this.tryApplyCustomization(player, hand);
+            if (customResult.consumesAction()) {
+                return customResult;
+            }
+        }
         if (player.isSecondaryUseActive() || this.cargoDelivered) {
             return this.interactWithContainerVehicle(player);
         }
@@ -127,14 +165,108 @@ public class CargoBoatEntity extends TradeBoatEntity {
         return this.interactWithContainerVehicle(player);
     }
 
+    public InteractionResult tryApplyCustomization(Player player, InteractionHand hand) {
+        if (!this.isPlayerControlled()) return InteractionResult.PASS;
+        ItemStack held = player.getItemInHand(hand);
+        if (held.isEmpty()) return InteractionResult.PASS;
+
+        // 1. Dye Sails (16 DyeColors, Royal Tyrian Purple, or Dragon's Blood Red)
+        if (held.getItem() instanceof DyeItem || held.is(CurrentsofTrade.TYRIAN_PURPLE.get()) || held.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())) {
+            DyeColor color;
+            Component colorName;
+            if (held.is(CurrentsofTrade.TYRIAN_PURPLE.get())) {
+                color = DyeColor.PURPLE;
+                colorName = Component.translatable("color.currents_of_trade.tyrian_purple");
+            } else if (held.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())) {
+                color = DyeColor.RED;
+                colorName = Component.translatable("color.currents_of_trade.dragons_blood");
+            } else {
+                color = ((DyeItem) held.getItem()).getDyeColor();
+                colorName = Component.translatable("color.minecraft." + color.getName());
+            }
+            if (this.getSailColor() != color.getId()) {
+                if (!this.level().isClientSide) {
+                    this.setSailColor(color.getId());
+                    if (!player.getAbilities().instabuild) {
+                        held.shrink(1);
+                    }
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.DYE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_dyed", colorName), true);
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
+            }
+        }
+
+        // 2. Wash Dyed Sails
+        if ((held.is(Items.WATER_BUCKET) || held.is(Items.SPONGE) || held.is(Items.WET_SPONGE)) && this.getSailColor() >= 0) {
+            if (!this.level().isClientSide) {
+                this.setSailColor(-1);
+                this.level().playSound(null, this.blockPosition(), SoundEvents.BUCKET_EMPTY, SoundSource.PLAYERS, 1.0F, 1.1F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_washed"), true);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 3. Mount Banner / Pennant ("Flama")
+        if (held.getItem() instanceof BannerItem) {
+            if (!this.level().isClientSide) {
+                if (!this.getBannerStack().isEmpty() && !player.getAbilities().instabuild) {
+                    player.getInventory().placeItemBackInInventory(this.getBannerStack().copy());
+                }
+                this.setBannerStack(held.copyWithCount(1));
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                }
+                this.level().playSound(null, this.blockPosition(), SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_banner_mounted"), true);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 4. Remove Banner with Shears
+        if (held.is(Items.SHEARS) && !this.getBannerStack().isEmpty()) {
+            if (!this.level().isClientSide) {
+                if (!player.getAbilities().instabuild) {
+                    player.getInventory().placeItemBackInInventory(this.getBannerStack().copy());
+                }
+                this.setBannerStack(ItemStack.EMPTY);
+                this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_banner_removed"), true);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        return InteractionResult.PASS;
+    }
+
     // --- Damage & Drops ---
+
+    public ItemStack createDropStack() {
+        ItemStack stack = new ItemStack(this.getDropItem());
+        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()) {
+            CustomData existing = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            CompoundTag tag = existing.copyTag();
+            if (this.getSailColor() >= 0) {
+                tag.putInt("SailColor", this.getSailColor());
+            }
+            if (!this.getBannerStack().isEmpty()) {
+                tag.put("BannerItem", this.getBannerStack().saveOptional(this.registryAccess()));
+            }
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        }
+        return stack;
+    }
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (this.isPlayerControlled()) {
             if (this.isInvulnerableTo(source)) return false;
             if (!this.level().isClientSide && !this.isRemoved()) {
-                this.destroy(source);
+                Containers.dropContents(this.level(), this, this);
+                if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+                    this.spawnAtLocation(this.createDropStack());
+                }
+                this.discard();
                 return true;
             }
             return false;
@@ -149,7 +281,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     @Override
     public Component getTypeName() {
-        return Component.literal("Cargo Ship");
+        return Component.translatable("item.currents_of_trade.cargo_boat");
     }
 
     // --- NBT Serialization ---
@@ -158,6 +290,10 @@ public class CargoBoatEntity extends TradeBoatEntity {
     protected void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("PlayerControlled", this.isPlayerControlled());
+        tag.putInt("SailColor", this.getSailColor());
+        if (!this.getBannerStack().isEmpty()) {
+            tag.put("BannerItem", this.getBannerStack().saveOptional(this.registryAccess()));
+        }
     }
 
     @Override
@@ -165,6 +301,14 @@ public class CargoBoatEntity extends TradeBoatEntity {
         super.readAdditionalSaveData(tag);
         if (tag.contains("PlayerControlled")) {
             this.setPlayerControlled(tag.getBoolean("PlayerControlled"));
+        }
+        if (tag.contains("SailColor")) {
+            this.setSailColor(tag.getInt("SailColor"));
+        }
+        if (tag.contains("BannerItem")) {
+            this.setBannerStack(ItemStack.parseOptional(this.registryAccess(), tag.getCompound("BannerItem")));
+        } else {
+            this.setBannerStack(ItemStack.EMPTY);
         }
     }
 }

@@ -319,6 +319,7 @@ public class WanderingSailorSpawner {
                                                     @Nullable BlockPos wanderDest,
                                                     @Nullable String harborName) {
         MooringSpot spot = findMooringLocation(level, origin, 14);
+        int leagueId = level.getRandom().nextInt(WanderingSailorEntity.LEAGUE_COUNT);
 
         BlockPos sailorPos;
         SloopEntity ship = null;
@@ -339,8 +340,7 @@ public class WanderingSailorSpawner {
 
             ship = new SloopEntity(CurrentsofTrade.SLOOP.get(), level);
             ship.setMerchantShip(true);
-            ship.setCustomName(Component.literal("Merchant Ship"));
-            ship.setCustomNameVisible(true);
+            applyTradeLeagueIdentity(level, ship, leagueId);
             ship.setPos(boatX, boatY, boatZ);
             ship.setYRot(spot.yaw());
             ship.setDeltaMovement(0, 0, 0);
@@ -359,6 +359,8 @@ public class WanderingSailorSpawner {
             if (ship != null) ship.discard();
             return new SpawnResult(false, sailorPos, "Failed to create Wandering Sailor entity!");
         }
+
+        sailor.setTradeLeague(leagueId);
 
         double sailorX = sailorPos.getX() + 0.5;
         double sailorY = sailorPos.getY();
@@ -388,12 +390,13 @@ public class WanderingSailorSpawner {
         // Sound harbor/village arrival bell
         level.playSound(null, sailorX, sailorY, sailorZ, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2.0F, 1.0F);
 
-        // Announcement to nearby players
+        // Announcement to nearby players with the visiting Maritime Trade League's name
+        Component leagueName = Component.translatable("league.currents_of_trade." + leagueId);
         Component announcement;
         if (harborName != null && !harborName.isBlank()) {
-            announcement = Component.translatable("message.currents_of_trade.wandering_sailor_arrived", harborName);
+            announcement = Component.translatable("message.currents_of_trade.league_sailor_arrived", leagueName, harborName);
         } else {
-            announcement = Component.translatable("message.currents_of_trade.wandering_sailor_village_arrived");
+            announcement = Component.translatable("message.currents_of_trade.league_sailor_village_arrived", leagueName);
         }
 
         for (var player : level.players()) {
@@ -403,7 +406,93 @@ public class WanderingSailorSpawner {
         }
 
         String targetDesc = (harborName != null) ? harborName : "village";
-        return new SpawnResult(true, sailorPos, "Wandering Sailor arrived at " + targetDesc + "!");
+        return new SpawnResult(true, sailorPos, "Wandering Sailor (" + leagueName.getString() + ") arrived at " + targetDesc + "!");
+    }
+
+    /**
+     * Outfits a naturally spawned Merchant Ship with its Maritime Trade League's flagship name,
+     * dyed sail colors, heraldic stern banner, bow lantern, and copper hull trim.
+     */
+    private static void applyTradeLeagueIdentity(ServerLevel level, SloopEntity ship, int leagueId) {
+        ship.setCustomName(Component.translatable("ship.currents_of_trade.league_" + leagueId));
+        ship.setCustomNameVisible(true);
+
+        var patternGetter = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BANNER_PATTERN);
+
+        switch (leagueId) {
+            case 0 -> { // Golden Levant Company — Orange sails, Gold/Orange Sun & Border Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.ORANGE.getId());
+                ship.setBowLanternType(1);
+                ship.setCopperHull(true);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ORANGE_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.RHOMBUS_MIDDLE, net.minecraft.world.item.DyeColor.YELLOW)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.CURLY_BORDER, net.minecraft.world.item.DyeColor.YELLOW)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+            case 1 -> { // Boreal Amber Hanse — Light Blue sails, Hanseatic Cross Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.LIGHT_BLUE.getId());
+                ship.setBowLanternType(2);
+                ship.setCopperHull(true);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LIGHT_BLUE_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.STRAIGHT_CROSS, net.minecraft.world.item.DyeColor.WHITE)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.BORDER, net.minecraft.world.item.DyeColor.BLUE)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+            case 2 -> { // Emerald Archipelago Guild — Lime sails, Green/Gold Diamond Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.LIME.getId());
+                ship.setBowLanternType(1);
+                ship.setCopperHull(false);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GREEN_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.RHOMBUS_MIDDLE, net.minecraft.world.item.DyeColor.LIME)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.FLOWER, net.minecraft.world.item.DyeColor.YELLOW)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+            case 3 -> { // Imperial Jade Flotilla — Red sails, Imperial Gold Circle & Border Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.RED.getId());
+                ship.setBowLanternType(1);
+                ship.setCopperHull(true);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RED_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.CIRCLE_MIDDLE, net.minecraft.world.item.DyeColor.YELLOW)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.BORDER, net.minecraft.world.item.DyeColor.YELLOW)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+            case 4 -> { // Crimson Privateer Syndicate — Black sails, Black/Red Saltire & Skull Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.BLACK.getId());
+                ship.setBowLanternType(2);
+                ship.setCopperHull(true);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BLACK_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.CROSS, net.minecraft.world.item.DyeColor.RED)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.SKULL, net.minecraft.world.item.DyeColor.WHITE)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+            default -> { // Azure Thalassocracy — Blue sails, Cyan Saltire & Gold Compass Banner
+                ship.setSailColor(net.minecraft.world.item.DyeColor.BLUE.getId());
+                ship.setBowLanternType(2);
+                ship.setCopperHull(true);
+                net.minecraft.world.item.ItemStack banner = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BLUE_BANNER);
+                banner.set(net.minecraft.core.component.DataComponents.BANNER_PATTERNS,
+                        new net.minecraft.world.level.block.entity.BannerPatternLayers.Builder()
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.CROSS, net.minecraft.world.item.DyeColor.LIGHT_BLUE)
+                                .addIfRegistered(patternGetter, net.minecraft.world.level.block.entity.BannerPatterns.RHOMBUS_MIDDLE, net.minecraft.world.item.DyeColor.YELLOW)
+                                .build());
+                ship.setBannerStack(banner);
+            }
+        }
     }
 
     private static String resolveHarborName(ServerLevel level, BlockPos pos) {

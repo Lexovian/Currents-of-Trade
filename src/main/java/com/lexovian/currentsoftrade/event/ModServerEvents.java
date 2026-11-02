@@ -1,16 +1,28 @@
 package com.lexovian.currentsoftrade.event;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
+import com.lexovian.currentsoftrade.entity.SloopEntity;
 import com.lexovian.currentsoftrade.world.spawner.WanderingSailorSpawner;
 import com.lexovian.currentsoftrade.world.village.VillagePoolInjection;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionResult;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = CurrentsofTrade.MODID)
 public class ModServerEvents {
+
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (SloopEntity.tryCustomizeNearbyShip(event.getEntity(), event.getHand())) {
+            event.getEntity().swing(event.getHand(), true);
+            event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide));
+            event.setCanceled(true);
+        }
+    }
 
     @SubscribeEvent
     public static void onNeighborNotify(net.neoforged.neoforge.event.level.BlockEvent.NeighborNotifyEvent event) {
@@ -19,7 +31,6 @@ public class ModServerEvents {
             com.lexovian.currentsoftrade.entity.TradeBoatEntity.invalidateChunkNavAt(serverLevel, event.getPos());
         }
     }
-
 
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
@@ -35,4 +46,3 @@ public class ModServerEvents {
         }
     }
 }
-

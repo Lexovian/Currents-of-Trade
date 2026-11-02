@@ -2,6 +2,7 @@ package com.lexovian.currentsoftrade.client.gui;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.network.ModPayloads;
+import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
@@ -16,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> {
@@ -283,11 +285,18 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
 
             if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
                     && mouseY >= regY && mouseY <= regY + 9) {
-                guiGraphics.renderTooltip(this.font, List.of(
-                        region.getDisplayName(),
-                        region.getExportDescription(),
-                        region.getImportDescription()
-                ), java.util.Optional.empty(), mouseX, mouseY);
+                List<Component> tipLines = new ArrayList<>();
+                tipLines.add(region.getDisplayName());
+                tipLines.add(region.getExportDescription());
+                tipLines.add(region.getImportDescription());
+                HarborTradeOffer bounty = region.getUrgentBountyOffer(this.minecraft.level, this.menu.getBlockPos());
+                if (bounty != null && !bounty.getCostA().isEmpty()) {
+                    tipLines.add(Component.translatable("tooltip.currents_of_trade.harbor_daily_bounty",
+                            bounty.getCostA().getCount(),
+                            bounty.getCostA().getHoverName(),
+                            bounty.getResult().getCount()));
+                }
+                guiGraphics.renderTooltip(this.font, tipLines, java.util.Optional.empty(), mouseX, mouseY);
             }
         }
 

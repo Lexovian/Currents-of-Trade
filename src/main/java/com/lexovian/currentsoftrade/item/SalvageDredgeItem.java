@@ -102,7 +102,7 @@ public class SalvageDredgeItem extends Item {
 
         // 15% Deep Ocean Relics & Rare Treasures (23% with Luck)
         if (roll < 0.15F) {
-            int sub = rng.nextInt(8);
+            int sub = rng.nextInt(10);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1);
                 case 1 -> new ItemStack(Items.NAUTILUS_SHELL, 1);
@@ -111,6 +111,8 @@ public class SalvageDredgeItem extends Item {
                 case 4 -> createSunkenMap(level, pos);
                 case 5 -> new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1);
                 case 6 -> new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1);
+                case 7 -> new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1);
+                case 8 -> new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1);
                 default -> rng.nextFloat() < 0.2F ? new ItemStack(Items.HEART_OF_THE_SEA, 1) : new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3);
             };
         }
@@ -129,13 +131,16 @@ public class SalvageDredgeItem extends Item {
 
         // 30% Trade Commodities
         if (roll < 0.70F) {
-            int sub = rng.nextInt(6);
+            int sub = rng.nextInt(9);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 1 + rng.nextInt(2));
                 case 1 -> new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 1);
                 case 2 -> new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1);
                 case 3 -> new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 1);
                 case 4 -> new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1);
+                case 5 -> new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 1);
+                case 6 -> new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1);
+                case 7 -> new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1);
                 default -> new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 1);
             };
         }

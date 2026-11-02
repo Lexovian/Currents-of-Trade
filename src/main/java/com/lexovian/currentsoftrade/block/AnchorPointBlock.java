@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -26,13 +27,24 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 public class AnchorPointBlock extends Block implements EntityBlock {
 
+    public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
+
     public AnchorPointBlock(BlockBehaviour.Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(TRIGGERED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(TRIGGERED);
     }
 
     // --- Block Entity Lifecycle ---
@@ -41,6 +53,76 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new AnchorPointBlockEntity(pos, state);
+    }
+
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+                String harborName = "Harbor";
+                if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                    harborName = anchor.getHarborName();
+                } else {
+                    String savedName = com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getHarborName(pos);
+                    if (savedName != null) harborName = savedName;
+                }
+                com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).removeHarbor(pos);
+
+                if (serverLevel.getServer() != null) {
+                    for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
+                        boolean removedAny = false;
+                        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                            ItemStack item = player.getInventory().getItem(i);
+                            if (item.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem) {
+                                if (com.lexovian.currentsoftrade.item.RouteJournalItem.removeRoute(item, pos)) {
+                                    removedAny = true;
+                                }
+                            }
+                        }
+                        if (removedAny) {
+                            player.displayClientMessage(
+                                    Component.translatable("message.currents_of_trade.journal_harbor_removed", harborName),
+                                    false
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    // --- Redstone Automation & Comparator Output ---
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        if (level.isClientSide) return;
+
+        boolean hasSignal = level.hasNeighborSignal(pos) || level.hasNeighborSignal(pos.above());
+        boolean wasTriggered = state.getValue(TRIGGERED);
+
+        if (hasSignal && !wasTriggered) {
+            level.setBlock(pos, state.setValue(TRIGGERED, true), 4);
+            if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                anchor.tryRedstoneAutoDispatch(serverLevel);
+            }
+        } else if (!hasSignal && wasTriggered) {
+            level.setBlock(pos, state.setValue(TRIGGERED, false), 4);
+        }
+    }
+
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+            return anchor.getComparatorSignal();
+        }
+        return 0;
     }
 
     // --- Placement & Setup ---

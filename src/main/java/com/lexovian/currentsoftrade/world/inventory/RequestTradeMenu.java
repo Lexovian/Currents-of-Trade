@@ -550,6 +550,9 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                 total += inInv.getCount();
             }
         }
+        BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
+                ? this.currentPos : player.blockPosition();
+        total += AnchorPointBlockEntity.countDepotMatchingItems(this.level, origin, required);
         return total;
     }
 
@@ -590,6 +593,11 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                     inv.items.set(i, ItemStack.EMPTY);
                 }
             }
+        }
+        if (needed > 0) {
+            BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
+                    ? this.currentPos : player.blockPosition();
+            AnchorPointBlockEntity.consumeFromDepotContainers(this.level, origin, required, needed);
         }
         inv.setChanged();
         this.tradeContainer.setChanged();
@@ -742,13 +750,14 @@ public class RequestTradeMenu extends AbstractContainerMenu {
             this.tradeContainer.setItem(SLOT_FEE, ItemStack.EMPTY);
         }
 
-        // Resolve home harbor name, save trade preset, and trigger cooldown
+        // Resolve home harbor name, save trade preset & route target for Redstone automation, and trigger cooldown
         String homeHarborName = "Home Port";
         if (this.level.getBlockEntity(origin) instanceof AnchorPointBlockEntity anchor) {
             homeHarborName = anchor.getHarborName();
             if (!this.stagedPresetEntries.isEmpty()) {
                 anchor.setSavedTradePreset(this.stagedPresetEntries);
             }
+            anchor.setSavedRouteTarget(target, destHarbor, NauticalChartItem.getWaypoints(chart));
             anchor.triggerTravelCooldown();
         }
 

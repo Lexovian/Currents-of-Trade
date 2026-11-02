@@ -183,8 +183,12 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
         guiGraphics.blit(GUI_TEXTURE, this.leftPos + 43, this.topPos + 86, 17, 146, 18, 18);
 
         // Trade offer display frame plate in the middle
-        guiGraphics.fill(this.leftPos + 36, this.topPos + 66, this.leftPos + 160, this.topPos + 84, 0x22000000);
-        guiGraphics.renderOutline(this.leftPos + 36, this.topPos + 66, 124, 18, 0xFF8B8B8B);
+        HarborTradeOffer selected = this.menu.getSelectedTrade();
+        boolean isBounty = selected != null && selected.isUrgentBounty();
+        int fillCol = isBounty ? 0x33D4AF37 : 0x22000000;
+        int outlineCol = isBounty ? 0xFFD4AF37 : 0xFF8B8B8B;
+        guiGraphics.fill(this.leftPos + 36, this.topPos + 66, this.leftPos + 160, this.topPos + 84, fillCol);
+        guiGraphics.renderOutline(this.leftPos + 36, this.topPos + 66, 124, 18, outlineCol);
     }
 
     @Override
@@ -234,10 +238,12 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             if (selectedIdx >= trades.size()) {
                 selectedIdx = 0;
             }
+            HarborTradeOffer currentOffer = trades.get(selectedIdx);
             Component offerHeader = Component.translatable("gui.currents_of_trade.harbor_offer");
             String counter = " §8(" + (selectedIdx + 1) + "/" + trades.size() + ")";
             String arbitrageMarker = this.menu.isArbitrageRoute() ? " §6✦" : "";
-            guiGraphics.drawString(this.font, offerHeader.getString() + counter + arbitrageMarker, 18, 56, 0x333333, false);
+            String bountyMarker = (currentOffer != null && currentOffer.isUrgentBounty()) ? " §6§l[★ 2x]" : "";
+            guiGraphics.drawString(this.font, offerHeader.getString() + counter + arbitrageMarker + bountyMarker, 18, 56, 0x333333, false);
         } else {
             guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.harbor_offer"), 18, 56, 0x333333, false);
         }
@@ -303,6 +309,17 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             if (!res.isEmpty()) {
                 guiGraphics.renderItem(res, resultX, baseY);
                 guiGraphics.renderItemDecorations(this.font, res, resultX, baseY);
+            }
+
+            if (offer.isUrgentBounty()) {
+                String bountyTag = "§6★2x";
+                guiGraphics.drawString(this.font, bountyTag, this.leftPos + 135, baseY + 4, 0xD4AF37, false);
+                if (isHovering(132, 66, 26, 18, mouseX, mouseY)) {
+                    guiGraphics.renderTooltip(this.font, List.of(
+                            Component.translatable("tooltip.currents_of_trade.urgent_bounty_title"),
+                            Component.translatable("tooltip.currents_of_trade.urgent_bounty_desc")
+                    ), java.util.Optional.empty(), mouseX, mouseY);
+                }
             }
 
             // Tooltips on hovering over trade offer items
