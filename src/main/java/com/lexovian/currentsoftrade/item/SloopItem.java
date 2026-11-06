@@ -44,6 +44,22 @@ public class SloopItem extends Item {
         }
 
         Vec3 clickLoc = hitresult.getLocation();
+        Vec3 playerPos = player.position();
+        Vec3 viewVec = player.getViewVector(1.0F);
+        Vec3 horizView = new Vec3(viewVec.x, 0.0, viewVec.z);
+        if (horizView.lengthSqr() < 1e-4) {
+            horizView = Vec3.directionFromRotation(0.0F, player.getYRot());
+        }
+        horizView = horizView.normalize();
+
+        double spawnX = clickLoc.x;
+        double spawnZ = clickLoc.z;
+        double distToPlayer = Math.sqrt((spawnX - playerPos.x) * (spawnX - playerPos.x) + (spawnZ - playerPos.z) * (spawnZ - playerPos.z));
+        if (distToPlayer < 3.2) {
+            double pushDist = 3.2 - distToPlayer;
+            spawnX += horizView.x * pushDist;
+            spawnZ += horizView.z * pushDist;
+        }
 
         // Block other entities from occupying the exact click point
         List<Entity> nearby = level.getEntities(player,
@@ -57,27 +73,32 @@ public class SloopItem extends Item {
         }
 
         if (!level.isClientSide) {
-            // Require at least one water block at or just below the click position
-            BlockPos clickedBlock = ((BlockHitResult) hitresult).getBlockPos();
-            boolean waterNearby = level.getFluidState(clickedBlock).is(FluidTags.WATER)
-                    || level.getFluidState(clickedBlock.below()).is(FluidTags.WATER)
-                    || level.getFluidState(clickedBlock.above()).is(FluidTags.WATER);
+            BlockPos spawnBlock = BlockPos.containing(spawnX, clickLoc.y, spawnZ);
+            boolean waterNearby = level.getFluidState(spawnBlock).is(FluidTags.WATER)
+                    || level.getFluidState(spawnBlock.below()).is(FluidTags.WATER)
+                    || level.getFluidState(spawnBlock.above()).is(FluidTags.WATER);
 
             if (!waterNearby) {
-                player.displayClientMessage(
-                        Component.translatable("message.currents_of_trade.sloop_needs_water"), true);
-                return InteractionResultHolder.fail(itemstack);
+                BlockPos clickedBlock = ((BlockHitResult) hitresult).getBlockPos();
+                waterNearby = level.getFluidState(clickedBlock).is(FluidTags.WATER)
+                        || level.getFluidState(clickedBlock.below()).is(FluidTags.WATER)
+                        || level.getFluidState(clickedBlock.above()).is(FluidTags.WATER);
+                if (!waterNearby) {
+                    player.displayClientMessage(
+                            Component.translatable("message.currents_of_trade.sloop_needs_water"), true);
+                    return InteractionResultHolder.fail(itemstack);
+                }
+                spawnX = clickLoc.x;
+                spawnZ = clickLoc.z;
             }
 
             // Spawn the sloop at the water surface (offset up slightly so it floats cleanly)
-            SloopEntity sloop = new SloopEntity(level, clickLoc.x, clickLoc.y + 0.1, clickLoc.z);
+            SloopEntity sloop = new SloopEntity(level, spawnX, clickLoc.y + 0.1, spawnZ);
             sloop.setYRot(player.getYRot());
             sloop.loadUpgradesFromStack(itemstack);
-            // Note: we intentionally skip the noCollision check here -- vanilla boats do the same.
-            // The large visual hitbox (4.5 wide) would otherwise block placement near any shoreline.
 
             level.addFreshEntity(sloop);
-            level.gameEvent(player, GameEvent.ENTITY_PLACE, clickLoc);
+            level.gameEvent(player, GameEvent.ENTITY_PLACE, new Vec3(spawnX, clickLoc.y, spawnZ));
             level.playSound(null, sloop.getX(), sloop.getY(), sloop.getZ(),
                     SoundEvents.BOAT_PADDLE_WATER, SoundSource.BLOCKS, 1.0F, 1.0F);
 

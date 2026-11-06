@@ -227,7 +227,8 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
                     || item == CurrentsofTrade.FRANKINCENSE_TEARS.get()
                     || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()
-                    || item == CurrentsofTrade.JADE_FIGURINE.get();
+                    || item == CurrentsofTrade.JADE_FIGURINE.get()
+                    || item == CurrentsofTrade.NARWHAL_IVORY.get();
         };
     }
 
@@ -362,8 +363,9 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
                 }
                 if (level >= 5) {
-                    // Lv 5 (Royal Dockyard): Carved Jade Figurine import (14 Doubloons!)
+                    // Lv 5 (Royal Dockyard): Carved Jade Figurine & Sea Ivory imports (14 Doubloons!)
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
         }

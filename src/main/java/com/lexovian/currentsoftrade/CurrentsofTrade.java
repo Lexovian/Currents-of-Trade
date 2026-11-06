@@ -418,6 +418,7 @@ public class CurrentsofTrade {
             event.accept(TRADE_LEDGER);
             event.accept(SLOOP_ITEM);
             event.accept(CARGO_BOAT_ITEM);
+            event.accept(TRADE_BOAT_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(DOUBLOON);
@@ -436,6 +437,9 @@ public class CurrentsofTrade {
             event.accept(CACAO_ELIXIR);
             event.accept(NARWHAL_IVORY);
             event.accept(DAMASCUS_STEEL);
+            event.accept(FRANKINCENSE_TEARS);
+            event.accept(TYRIAN_PURPLE);
+            event.accept(DRAGONS_BLOOD_RESIN);
         }
     }
 }

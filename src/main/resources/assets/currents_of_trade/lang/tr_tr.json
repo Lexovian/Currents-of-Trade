@@ -193,7 +193,7 @@
   "message.currents_of_trade.trade_docked_at_harbor": "§a⚓ [Ticaret] §e%s§a limanına ticaret gemisi yanaştı! Eşyaları almak için sandığa sağ tıklayın.",
   "message.currents_of_trade.trade_arrived_home_depot": "§a⚓ [Ticaret] Sipariş ettiğiniz ticaret gemisi §e%s§a limanına döndü ve mallarınızı liman deposuna aktardı!",
   "message.currents_of_trade.trade_docked_at_harbor_depot": "§a⚓ [Ticaret] §e%s§a limanına dönen ticaret gemisi malları liman deposuna aktardı!",
-  "message.currents_of_trade.boat_hold_full": "§c[Liman] Gemi ambarı dolu! (En fazla 18 slot)",
+  "message.currents_of_trade.boat_hold_full": "§c[Liman] Gemi ambarı dolu! (En fazla %s slot)",
   "message.currents_of_trade.sloop_needs_water": "§c[Sloop] Sadece su üzerine yerleştirilebilir!",
   "item.currents_of_trade.anchor_point": "Anchor Point (Çıpa Noktası)",
   "item.currents_of_trade.sloop": "Sloop (Yelkenli Gemi)",
@@ -474,5 +474,9 @@
   "tooltip.currents_of_trade.dragons_blood_resin_hint": "§7Ateş Direnci (60sn) ve Kuvvet (30sn) için tüket, veya yelkenleri kızıl renge boya.",
   "tooltip.currents_of_trade.commodity.dragons_blood_resin.market": "§6✦ Deniz Ticareti: §aTropik Liman İhracı §8| §bYüksek Talep: Soğuk, Ilıman & Kurak Limanlar (+%100)",
   "color.currents_of_trade.dragons_blood": "§cEjderha Kanı Kırmızısı",
-  "jei.currents_of_trade.info.dragons_blood_resin": "Tropik adaların kadim ağaçlarından süzülen efsanevi kıpkırmızı reçine. Tüketildiğinde Ateş Direnci I (60sn) ve Kuvvet I (30sn) kazandırır veya tersanede gemi yelkenlerini canlı Ejderha Kanı Kırmızısına boyamak için kullanılır."
+  "jei.currents_of_trade.info.dragons_blood_resin": "Tropik adaların kadim ağaçlarından süzülen efsanevi kıpkırmızı reçine. Tüketildiğinde Ateş Direnci I (60sn) ve Kuvvet I (30sn) kazandırır veya tersanede gemi yelkenlerini canlı Ejderha Kanı Kırmızısına boyamak için kullanılır.",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_ready": "§a✔ Hemen teslim etmek için buraya tıkla (veya eşyayla bloğa sağ tıkla)!",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_hint": "§8(Doğrudan teslimat: Eşyayla bloğa sağ tıkla veya buraya tıkla)",
+  "message.currents_of_trade.bounty_delivered": "§6★ [Liman Siparişi] §f%sx %s §e%s §alimanına teslim edildi! Ödül: §6%sx %s§a!",
+  "message.currents_of_trade.bounty_missing_items": "§c★ [Liman Siparişi] Teslimat için §f%sx %s §cgerekiyor! (Ödül: §6%sx %s§c)"
 }

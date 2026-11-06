@@ -171,7 +171,7 @@
   "message.currents_of_trade.trade_docked_at_harbor": "§a⚓ [Commerce] Un navire est revenu à §e%s§a ! Clic droit sur le coffre.",
   "message.currents_of_trade.trade_arrived_home_depot": "§a⚓ [Commerce] Votre navire est revenu à §e%s§a et a déposé les biens dans le dépôt portuaire !",
   "message.currents_of_trade.trade_docked_at_harbor_depot": "§a⚓ [Commerce] Un navire est revenu à §e%s§a et a transféré son fret au dépôt !",
-  "message.currents_of_trade.boat_hold_full": "§c[Port] Capacité du navire pleine ! (Max 18 emplacements)",
+  "message.currents_of_trade.boat_hold_full": "§c[Port] Capacité du navire pleine ! (Max %s emplacements)",
   "message.currents_of_trade.sloop_needs_water": "§c[Sloop] Doit être placé dans l'eau !",
   "item.currents_of_trade.anchor_point": "Point d'ancrage",
   "item.currents_of_trade.sloop": "Sloop",
@@ -424,5 +424,9 @@
   "tooltip.currents_of_trade.dragons_blood_resin_hint": "§7Consommer pour Résistance au feu (60s) & Force (30s), ou teindre les voiles en pourpre.",
   "tooltip.currents_of_trade.commodity.dragons_blood_resin.market": "§6✦ Route maritime : §aExporté par ports tropicaux §8| §bForte demande : Ports froids, tempérés & arides (+100%)",
   "color.currents_of_trade.dragons_blood": "§cRouge sang-dragon",
-  "jei.currents_of_trade.info.dragons_blood_resin": "Une précieuse résine pourpre récoltée sur des arbres ancestraux des routes commerciales tropicales. Peut être consommée pour obtenir Résistance au feu I (60s) et Force I (30s), ou employée par les charpentiers pour teindre les voiles d'un éclatant rouge sang-dragon."
+  "jei.currents_of_trade.info.dragons_blood_resin": "Une précieuse résine pourpre récoltée sur des arbres ancestraux des routes commerciales tropicales. Peut être consommée pour obtenir Résistance au feu I (60s) et Force I (30s), ou employée par les charpentiers pour teindre les voiles d'un éclatant rouge sang-dragon.",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_ready": "§a✔ Cliquez ici (ou clic droit sur le bloc avec l'objet) pour livrer !",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_hint": "§8(Livraison directe : Clic droit sur le bloc avec l'objet ou cliquez ici)",
+  "message.currents_of_trade.bounty_delivered": "§6★ [Prime du port] §f%sx %s §alivré à §e%s §apour §6%sx %s§a !",
+  "message.currents_of_trade.bounty_missing_items": "§c★ [Prime du port] Requiert §f%sx %s §cpour obtenir §6%sx %s§c !"
 }

@@ -291,16 +291,43 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
                 tipLines.add(region.getImportDescription());
                 HarborTradeOffer bounty = region.getUrgentBountyOffer(this.minecraft.level, this.menu.getBlockPos());
                 if (bounty != null && !bounty.getCostA().isEmpty()) {
-                    tipLines.add(Component.translatable("tooltip.currents_of_trade.harbor_daily_bounty",
-                            bounty.getCostA().getCount(),
-                            bounty.getCostA().getHoverName(),
-                            bounty.getResult().getCount()));
+                    String summary = bounty.getCostA().getCount() + "x " + bounty.getCostA().getHoverName().getString()
+                            + " -> " + bounty.getResult().getCount() + "x " + bounty.getResult().getHoverName().getString();
+                    tipLines.add(Component.translatable("tooltip.currents_of_trade.harbor_daily_bounty", summary));
+                    boolean hasItems = this.minecraft.player != null
+                            && com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity.countPlayerMatchingItems(
+                                    this.minecraft.player, bounty.getCostA()) >= bounty.getCostA().getCount();
+                    tipLines.add(Component.translatable(hasItems
+                            ? "tooltip.currents_of_trade.harbor_bounty_deliver_ready"
+                            : "tooltip.currents_of_trade.harbor_bounty_deliver_hint"));
                 }
                 guiGraphics.renderTooltip(this.font, tipLines, java.util.Optional.empty(), mouseX, mouseY);
             }
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.minecraft != null && this.minecraft.level != null) {
+            int level = this.menu.getHarborLevel();
+            int textY = this.topPos + (level >= 5 ? 85 : 105);
+            MaritimeTradeRegion region = MaritimeTradeRegion.fromLevelAndPos(this.minecraft.level, this.menu.getBlockPos());
+            Component regionText = Component.translatable("gui.currents_of_trade.harbor_region", region.getDisplayName());
+            int regX = this.leftPos + (this.imageWidth - this.font.width(regionText)) / 2;
+            int regY = textY + 12;
+
+            if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
+                    && mouseY >= regY && mouseY <= regY + 10) {
+                this.minecraft.getSoundManager().play(
+                        net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                PacketDistributor.sendToServer(new ModPayloads.DeliverBountyPayload(this.menu.getBlockPos()));
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     // --- Helper Methods ---

@@ -167,6 +167,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         this.xo = x;
         this.yo = y;
         this.zo = z;
+        this.updateParts();
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
     }
 
@@ -216,6 +217,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     public boolean canCollideWith(Entity entity) {
         // Never collide with our own stern/prow multipart hitboxes (they would clip forward motion every tick)
         if (entity instanceof ShipPart<?> part && part.getParent() == this) return false;
+        // Do not trap players inside the hull
+        if (entity instanceof Player && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
+                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
+            return false;
+        }
         return super.canCollideWith(entity);
     }
 
@@ -701,6 +707,33 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
             callback.accept(passenger, this.getX() + worldX, this.getY() + verticalOffset, this.getZ() + worldZ);
         }
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        float yawRad = (float) Math.toRadians(this.getYRot());
+        double sin = Math.sin(yawRad);
+        double cos = Math.cos(yawRad);
+
+        double[][] sideOffsets = new double[][]{
+                { cos * 2.2, sin * 2.2 },   // Starboard side
+                { -cos * 2.2, -sin * 2.2 }, // Port side
+                { -sin * 3.2, cos * 3.2 },  // Stern (behind)
+                { sin * 3.2, -cos * 3.2 }   // Prow (in front)
+        };
+
+        for (double[] offset : sideOffsets) {
+            double testX = this.getX() + offset[0];
+            double testZ = this.getZ() + offset[1];
+            double testY = this.getY() + 0.2;
+            BlockPos testPos = BlockPos.containing(testX, testY, testZ);
+            if (this.level().getFluidState(testPos).is(FluidTags.WATER)
+                    || this.level().getBlockState(testPos).isAir()) {
+                return new Vec3(testX, testY, testZ);
+            }
+        }
+
+        return super.getDismountLocationForPassenger(passenger);
     }
 
     @Override
@@ -3329,6 +3362,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+
+        if (tag.contains("VoyageShip")) {
+            this.voyageShip = tag.getBoolean("VoyageShip");
+            this.entityData.set(IS_VOYAGE_SHIP, this.voyageShip);
+        }
 
         if (!this.voyageShip && (!tag.contains("CruiseSpeed") || tag.getDouble("CruiseSpeed") > CARGO_MAX_SPEED)) {
             this.cruiseSpeed = 0.9;

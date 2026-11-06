@@ -121,9 +121,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     protected AABB makeBoundingBox() {
-        // Compact 2.4m x 2.4m central waist bounding box (around main deck & mast)
-        // Perfectly fits within the 2.7m hull beam at ANY angle (even 45-degree diagonal!)
-        double half = 1.20;
+        double half = 0.68;
         return new AABB(
                 this.getX() - half, this.getY(), this.getZ() - half,
                 this.getX() + half, this.getY() + 0.85, this.getZ() + half
@@ -554,6 +552,11 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
     public boolean canCollideWith(Entity entity) {
         // Never collide with our own stern/prow multipart hitboxes (they would clip forward motion every tick)
         if (entity instanceof ShipPart<?> part && part.getParent() == this) return false;
+        // Do not trap players inside the hull
+        if (entity instanceof Player && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
+                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
+            return false;
+        }
         return super.canCollideWith(entity);
     }
 
@@ -854,5 +857,33 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             passenger.setYBodyRot(((net.minecraft.world.entity.animal.Animal) passenger).yBodyRot + (float) i);
             passenger.setYHeadRot(passenger.getYHeadRot() + (float) i);
         }
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        float yawRad = (float) Math.toRadians(this.getYRot());
+        double sin = Math.sin(yawRad);
+        double cos = Math.cos(yawRad);
+
+        // Try starboard (+cos, +sin) and port (-cos, -sin) side escape locations:
+        double[][] sideOffsets = new double[][]{
+                { cos * 2.2, sin * 2.2 },   // Starboard side
+                { -cos * 2.2, -sin * 2.2 }, // Port side
+                { -sin * 3.2, cos * 3.2 },  // Stern (behind)
+                { sin * 3.2, -cos * 3.2 }   // Prow (in front)
+        };
+
+        for (double[] offset : sideOffsets) {
+            double testX = this.getX() + offset[0];
+            double testZ = this.getZ() + offset[1];
+            double testY = this.getY() + 0.2;
+            BlockPos testPos = BlockPos.containing(testX, testY, testZ);
+            if (this.level().getFluidState(testPos).is(FluidTags.WATER)
+                    || this.level().getBlockState(testPos).isAir()) {
+                return new Vec3(testX, testY, testZ);
+            }
+        }
+
+        return super.getDismountLocationForPassenger(passenger);
     }
 }

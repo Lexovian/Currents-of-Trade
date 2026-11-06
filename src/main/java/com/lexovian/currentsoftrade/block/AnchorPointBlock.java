@@ -180,6 +180,16 @@ public class AnchorPointBlock extends Block implements EntityBlock {
             }
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
+        if (!stack.isEmpty()
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.TradeLedgerItem)) {
+            if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                if (anchor.tryDeliverUrgentBounty(player, stack)) {
+                    return ItemInteractionResult.sidedSuccess(level.isClientSide);
+                }
+            }
+        }
         return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
     }
 

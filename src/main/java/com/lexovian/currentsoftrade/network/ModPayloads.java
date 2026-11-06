@@ -607,6 +607,35 @@ public class ModPayloads {
         }
     }
 
+    // --- Deliver Daily Urgent Bounty directly at Anchor Point ---
+
+    public record DeliverBountyPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<DeliverBountyPayload> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "deliver_bounty"));
+        public static final StreamCodec<ByteBuf, DeliverBountyPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, DeliverBountyPayload::pos, DeliverBountyPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    if (player.level().getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        anchor.tryDeliverUrgentBounty(player, null);
+                    }
+                }
+            });
+        }
+    }
+
     // --- Payload registration ---
 
     @EventBusSubscriber(modid = CurrentsofTrade.MODID)
@@ -629,6 +658,7 @@ public class ModPayloads {
             registrar.playToServer(RepeatTradeOrderPayload.TYPE,    RepeatTradeOrderPayload.STREAM_CODEC,    RepeatTradeOrderPayload::handle);
             registrar.playToServer(UnloadShipToHarborPayload.TYPE,  UnloadShipToHarborPayload.STREAM_CODEC,  UnloadShipToHarborPayload::handle);
             registrar.playToServer(SelectJournalRoutePayload.TYPE,  SelectJournalRoutePayload.STREAM_CODEC,  SelectJournalRoutePayload::handle);
+            registrar.playToServer(DeliverBountyPayload.TYPE,       DeliverBountyPayload.STREAM_CODEC,       DeliverBountyPayload::handle);
         }
     }
 }
