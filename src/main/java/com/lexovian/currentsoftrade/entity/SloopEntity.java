@@ -118,9 +118,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     protected AABB makeBoundingBox() {
-        // Compact 2.4m x 2.4m central waist bounding box (around main deck & mast)
-        // Perfectly fits within the 2.7m hull beam at ANY angle (even 45-degree diagonal!)
-        double half = 1.20;
+        double half = 0.68;
         return new AABB(
                 this.getX() - half, this.getY(), this.getZ() - half,
                 this.getX() + half, this.getY() + 0.85, this.getZ() + half
@@ -471,35 +469,45 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 || held.is(Items.WAXED_COPPER_BLOCK);
         if (!isCustomItem) return false;
 
-        if (player.getVehicle() instanceof SloopEntity riddenSloop) {
+        Entity rootVehicle = player.getRootVehicle();
+        if (rootVehicle instanceof SloopEntity riddenSloop && !riddenSloop.isMerchantShip()) {
             return riddenSloop.tryApplyCustomization(player, held) != InteractionResult.PASS;
         }
-        if (player.getVehicle() instanceof CargoBoatEntity riddenCargo && riddenCargo.isPlayerControlled()) {
+        if (rootVehicle instanceof CargoBoatEntity riddenCargo && riddenCargo.isPlayerControlled()) {
             return riddenCargo.tryApplyCustomization(player, held) != InteractionResult.PASS;
         }
 
         Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getViewVector(1.0F);
-        AABB searchArea = player.getBoundingBox().inflate(6.0D);
+        Vec3 reachEnd = eye.add(player.getViewVector(1.0F).scale(7.5));
+        AABB searchArea = player.getBoundingBox().inflate(9.0D, 18.0D, 9.0D);
 
-        for (SloopEntity sloop : player.level().getEntitiesOfClass(SloopEntity.class, searchArea)) {
-            if (sloop.isMerchantShip()) continue;
-            AABB tallMastBox = sloop.getBoundingBox().inflate(1.2D, 0.5D, 1.2D).expandTowards(0.0D, 5.5D, 0.0D);
-            if (tallMastBox.contains(eye) || tallMastBox.clip(eye, eye.add(look.scale(6.0D))).isPresent()) {
-                if (sloop.tryApplyCustomization(player, held) != InteractionResult.PASS) {
-                    return true;
+        java.util.List<Entity> candidates = player.level().getEntities(player, searchArea,
+                e -> (e instanceof SloopEntity s && !s.isMerchantShip())
+                        || (e instanceof CargoBoatEntity c && c.isPlayerControlled()));
+
+        Entity bestShip = null;
+        double bestDistSq = Double.MAX_VALUE;
+        for (Entity candidate : candidates) {
+            AABB sailAndHullBox = new AABB(
+                    candidate.getX() - 3.0, candidate.getY() - 0.5, candidate.getZ() - 3.0,
+                    candidate.getX() + 3.0, candidate.getY() + 17.5, candidate.getZ() + 3.0
+            );
+            boolean hitRay = sailAndHullBox.clip(eye, reachEnd).isPresent() || sailAndHullBox.contains(eye);
+            boolean standingOnDeck = candidate.getBoundingBox().inflate(1.35, 1.5, 1.35).contains(player.position());
+            if (hitRay || standingOnDeck) {
+                double dSq = candidate.distanceToSqr(player);
+                if (dSq < bestDistSq) {
+                    bestDistSq = dSq;
+                    bestShip = candidate;
                 }
             }
         }
 
-        for (CargoBoatEntity cargo : player.level().getEntitiesOfClass(CargoBoatEntity.class, searchArea)) {
-            if (!cargo.isPlayerControlled()) continue;
-            AABB tallMastBox = cargo.getBoundingBox().inflate(1.2D, 0.5D, 1.2D).expandTowards(0.0D, 5.5D, 0.0D);
-            if (tallMastBox.contains(eye) || tallMastBox.clip(eye, eye.add(look.scale(6.0D))).isPresent()) {
-                if (cargo.tryApplyCustomization(player, held) != InteractionResult.PASS) {
-                    return true;
-                }
-            }
+        if (bestShip instanceof SloopEntity sloop) {
+            return sloop.tryApplyCustomization(player, held) != InteractionResult.PASS;
+        }
+        if (bestShip instanceof CargoBoatEntity cargo) {
+            return cargo.tryApplyCustomization(player, held) != InteractionResult.PASS;
         }
         return false;
     }
@@ -549,6 +557,11 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
     public boolean canCollideWith(Entity entity) {
         // Never collide with our own stern/prow multipart hitboxes (they would clip forward motion every tick)
         if (entity instanceof ShipPart<?> part && part.getParent() == this) return false;
+        // Do not trap players inside the hull
+        if (entity instanceof Player && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
+                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
+            return false;
+        }
         return super.canCollideWith(entity);
     }
 
@@ -848,5 +861,33 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             passenger.setYBodyRot(((net.minecraft.world.entity.animal.Animal) passenger).yBodyRot + (float) i);
             passenger.setYHeadRot(passenger.getYHeadRot() + (float) i);
         }
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        float yawRad = (float) Math.toRadians(this.getYRot());
+        double sin = Math.sin(yawRad);
+        double cos = Math.cos(yawRad);
+
+        // Try starboard (+cos, +sin) and port (-cos, -sin) side escape locations:
+        double[][] sideOffsets = new double[][]{
+                { cos * 2.2, sin * 2.2 },   // Starboard side
+                { -cos * 2.2, -sin * 2.2 }, // Port side
+                { -sin * 3.2, cos * 3.2 },  // Stern (behind)
+                { sin * 3.2, -cos * 3.2 }   // Prow (in front)
+        };
+
+        for (double[] offset : sideOffsets) {
+            double testX = this.getX() + offset[0];
+            double testZ = this.getZ() + offset[1];
+            double testY = this.getY() + 0.2;
+            BlockPos testPos = BlockPos.containing(testX, testY, testZ);
+            if (this.level().getFluidState(testPos).is(FluidTags.WATER)
+                    || this.level().getBlockState(testPos).isAir()) {
+                return new Vec3(testX, testY, testZ);
+            }
+        }
+
+        return super.getDismountLocationForPassenger(passenger);
     }
 }

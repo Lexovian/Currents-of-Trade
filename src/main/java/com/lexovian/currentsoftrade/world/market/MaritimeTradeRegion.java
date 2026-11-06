@@ -227,7 +227,8 @@ public enum MaritimeTradeRegion {
                     || item == CurrentsofTrade.SAFFRON_BUNDLE.get()
                     || item == CurrentsofTrade.FRANKINCENSE_TEARS.get()
                     || item == CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()
-                    || item == CurrentsofTrade.JADE_FIGURINE.get();
+                    || item == CurrentsofTrade.JADE_FIGURINE.get()
+                    || item == CurrentsofTrade.NARWHAL_IVORY.get();
         };
     }
 
@@ -362,8 +363,9 @@ public enum MaritimeTradeRegion {
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1)));
                 }
                 if (level >= 5) {
-                    // Lv 5 (Royal Dockyard): Carved Jade Figurine import (14 Doubloons!)
+                    // Lv 5 (Royal Dockyard): Carved Jade Figurine & Sea Ivory imports (14 Doubloons!)
                     offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
+                    offers.add(new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14)));
                 }
             }
         }
@@ -372,40 +374,40 @@ public enum MaritimeTradeRegion {
     }
 
     /**
-     * Generates a rotating Daily Urgent Harbor Bounty (2x Payout!) based on the world day and harbor coordinates.
-     * Rotates every Minecraft day (24,000 ticks) and gives players a lucrative time-sensitive contract.
+     * Generates a daily rotating Urgent Harbor Bounty contract (2x Doubloon reward)
+     * for one of this region's high-demand commodities. Refreshes every 24,000 ticks (1 Minecraft day).
      */
-    public HarborTradeOffer getUrgentBountyOffer(Level level, BlockPos harborPos) {
+    public HarborTradeOffer getUrgentBountyOffer(Level level, BlockPos pos) {
         long day = (level != null) ? (level.getDayTime() / 24000L) : 0L;
-        long posHash = (harborPos != null) ? (harborPos.asLong() * 31L) : 0L;
-        int idx = (int) Math.floorMod(day + posHash, 5L);
+        long posHash = (pos != null) ? (pos.getX() * 3129871L ^ pos.getZ() * 116129781L) : 0L;
+        int variant = (int) Math.floorMod(day + posHash, 5L);
 
         return switch (this) {
-            case ARID -> switch (idx) {
+            case ARID -> switch (variant) {
                 case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
                 case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
-                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
                 case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
-                default -> new HarborTradeOffer(new ItemStack(Items.COD, 12), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
             };
-            case COLD -> switch (idx) {
-                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14), true);
-                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
-                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14), true);
+            case COLD -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
                 case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
-                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
             };
-            case TROPICAL -> switch (idx) {
-                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 22), true);
-                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 22), true);
-                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
-                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
-                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 14), true);
+            case TROPICAL -> switch (variant) {
+                case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20), true);
+                case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
+                default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
             };
-            case TEMPERATE -> switch (idx) {
+            case TEMPERATE -> switch (variant) {
                 case 0 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
                 case 1 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
-                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 18), true);
+                case 2 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
                 case 3 -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), true);
                 default -> new HarborTradeOffer(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1), ItemStack.EMPTY, new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), true);
             };

@@ -514,6 +514,31 @@ public class ModPayloads {
         playToServer(SelectJournalRoutePayload.class,
                 (m, b) -> { b.writeVarInt(m.handOrdinal()); b.writeVarInt(m.routeIndex()); },
                 b -> new SelectJournalRoutePayload(b.readVarInt(), b.readVarInt()), SelectJournalRoutePayload::handle);
+        playToServer(DeliverBountyPayload.class,
+                (m, b) -> b.writeBlockPos(m.pos()),
+                b -> new DeliverBountyPayload(b.readBlockPos()), DeliverBountyPayload::handle);
+    }
+
+    // --- Deliver Daily Urgent Bounty directly at Anchor Point ---
+
+    public record DeliverBountyPayload(BlockPos pos) {
+        public void handle(PayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    if (player.level().getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        anchor.tryDeliverUrgentBounty(player, null);
+                    }
+                }
+            });
+        }
     }
 
     // --- Select Route Journal Active Harbor from Nautical Atlas GUI ---

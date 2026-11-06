@@ -12,13 +12,17 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -180,10 +184,138 @@ public class AnchorPointBlockEntity extends BlockEntity {
         return amountNeeded - remaining;
     }
 
-    private static boolean isStackMatchingForDepot(ItemStack candidate, ItemStack required) {
+    public static boolean isStackMatchingForDepot(ItemStack candidate, ItemStack required) {
         if (candidate.isEmpty() || !ItemStack.isSameItem(candidate, required)) return false;
         if (!required.hasTag()) return true;
         return ItemStack.isSameItemSameTags(candidate, required);
+    }
+
+    public static int countPlayerMatchingItems(net.minecraft.world.entity.player.Player player, ItemStack required) {
+        if (player == null || required.isEmpty()) return 0;
+        int total = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
+            if (isStackMatchingForDepot(s, required)) {
+                total += s.getCount();
+            }
+        }
+        return total;
+    }
+
+    public static int consumeFromPlayerInventory(net.minecraft.world.entity.player.Player player, @Nullable ItemStack preferredStack, ItemStack required, int needed) {
+        if (player == null || required.isEmpty() || needed <= 0) return 0;
+        int remaining = needed;
+        if (preferredStack != null && !preferredStack.isEmpty() && isStackMatchingForDepot(preferredStack, required)) {
+            int take = Math.min(remaining, preferredStack.getCount());
+            preferredStack.shrink(take);
+            remaining -= take;
+        }
+        for (int i = 0; i < player.getInventory().getContainerSize() && remaining > 0; i++) {
+            ItemStack s = player.getInventory().getItem(i);
+            if (isStackMatchingForDepot(s, required)) {
+                int take = Math.min(remaining, s.getCount());
+                s.shrink(take);
+                remaining -= take;
+                if (s.isEmpty()) {
+                    player.getInventory().setItem(i, ItemStack.EMPTY);
+                }
+            }
+        }
+        player.getInventory().setChanged();
+        return needed - remaining;
+    }
+
+    /**
+     * Allows a player to directly deliver the port's Daily Urgent Bounty (or a High-Demand regional import commodity)
+     * at the Anchor Point without needing to dispatch a ship from a second port.
+     */
+    public boolean tryDeliverUrgentBounty(net.minecraft.world.entity.player.Player player, @Nullable ItemStack heldStack) {
+        if (this.level == null || player == null) return false;
+
+        MaritimeTradeRegion region = getTradeRegion();
+        HarborTradeOffer bounty = region.getUrgentBountyOffer(this.level, this.worldPosition);
+
+        HarborTradeOffer matchedOffer = null;
+        if (heldStack != null && !heldStack.isEmpty()) {
+            if (bounty != null && !bounty.getCostA().isEmpty() && isStackMatchingForDepot(heldStack, bounty.getCostA())) {
+                matchedOffer = bounty;
+            } else if (!heldStack.is(CurrentsofTrade.DOUBLOON.get())) {
+                for (HarborTradeOffer offer : region.generateDefaultHarborTrades(MAX_HARBOR_LEVEL)) {
+                    if (offer.getCostB().isEmpty()
+                            && offer.getResult().is(CurrentsofTrade.DOUBLOON.get())
+                            && !offer.getCostA().is(CurrentsofTrade.DOUBLOON.get())
+                            && isStackMatchingForDepot(heldStack, offer.getCostA())) {
+                        net.minecraft.resources.ResourceLocation key =
+                                net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(offer.getCostA().getItem());
+                        if (key != null && CurrentsofTrade.MODID.equals(key.getNamespace())) {
+                            matchedOffer = offer;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (matchedOffer == null) {
+                return false;
+            }
+        } else {
+            matchedOffer = bounty;
+            if (matchedOffer == null || matchedOffer.getCostA().isEmpty()) {
+                return false;
+            }
+        }
+
+        ItemStack required = matchedOffer.getCostA();
+        int needed = required.getCount();
+        int available = countPlayerMatchingItems(player, required);
+
+        if (available < needed) {
+            if (!this.level.isClientSide) {
+                this.level.playSound(null, this.worldPosition, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 0.8F, 1.0F);
+                player.displayClientMessage(Component.translatable(
+                        "message.currents_of_trade.bounty_missing_items",
+                        needed,
+                        required.getHoverName(),
+                        matchedOffer.getResult().getCount(),
+                        matchedOffer.getResult().getHoverName()
+                ), true);
+            }
+            return true;
+        }
+
+        if (!this.level.isClientSide) {
+            if (!player.getAbilities().instabuild) {
+                consumeFromPlayerInventory(player, heldStack, required, needed);
+            }
+            ItemStack reward = matchedOffer.getResult().copy();
+            if (!player.getInventory().add(reward)) {
+                player.drop(reward, false);
+            }
+            player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
+            if (player.containerMenu != null) {
+                player.containerMenu.broadcastChanges();
+            }
+
+            this.level.playSound(null, this.worldPosition, SoundEvents.VILLAGER_YES, SoundSource.BLOCKS, 1.0F, 1.1F);
+            this.level.playSound(null, this.worldPosition, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.9F, 1.2F);
+            if (this.level instanceof ServerLevel serverLevel) {
+                double px = this.worldPosition.getX() + 0.5;
+                double py = this.worldPosition.getY() + 1.2;
+                double pz = this.worldPosition.getZ() + 0.5;
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, px, py, pz, 14, 0.35, 0.3, 0.35, 0.05);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON, px, py, pz, 10, 0.3, 0.25, 0.3, 0.05);
+            }
+
+            player.displayClientMessage(Component.translatable(
+                    "message.currents_of_trade.bounty_delivered",
+                    needed,
+                    required.getHoverName(),
+                    getHarborName(),
+                    matchedOffer.getResult().getCount(),
+                    matchedOffer.getResult().getHoverName()
+            ), true);
+        }
+        return true;
     }
 
     /**

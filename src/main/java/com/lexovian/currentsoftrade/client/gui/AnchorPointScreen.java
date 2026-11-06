@@ -284,16 +284,46 @@ public class AnchorPointScreen extends AbstractContainerScreen<AnchorPointMenu> 
                 Component bountyLine = Component.translatable("tooltip.currents_of_trade.harbor_daily_bounty",
                         urgent.getCostA().getCount() + "x " + urgent.getCostA().getHoverName().getString()
                                 + " -> " + urgent.getResult().getCount() + "x " + urgent.getResult().getHoverName().getString());
+                boolean hasItems = this.minecraft.player != null
+                        && com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity.countPlayerMatchingItems(
+                                this.minecraft.player, urgent.getCostA()) >= urgent.getCostA().getCount();
+                Component deliverHint = Component.translatable(hasItems
+                        ? "tooltip.currents_of_trade.harbor_bounty_deliver_ready"
+                        : "tooltip.currents_of_trade.harbor_bounty_deliver_hint");
                 guiGraphics.renderTooltip(this.font, List.of(
                         region.getDisplayName(),
                         region.getExportDescription(),
                         region.getImportDescription(),
-                        bountyLine
+                        bountyLine,
+                        deliverHint
                 ), java.util.Optional.empty(), mouseX, mouseY);
             }
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.minecraft != null && this.minecraft.level != null) {
+            int level = this.menu.getHarborLevel();
+            int textY = this.topPos + (level >= 5 ? 85 : 105);
+            MaritimeTradeRegion region = MaritimeTradeRegion.fromLevelAndPos(this.minecraft.level, this.menu.getBlockPos());
+            Component regionText = Component.translatable("gui.currents_of_trade.harbor_region", region.getDisplayName());
+            int regX = this.leftPos + (this.imageWidth - this.font.width(regionText)) / 2;
+            int regY = textY + 12;
+
+            if (mouseX >= regX && mouseX <= regX + this.font.width(regionText)
+                    && mouseY >= regY && mouseY <= regY + 10) {
+                this.minecraft.getSoundManager().play(
+                        net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                com.lexovian.currentsoftrade.network.ModPayloads.sendToServer(
+                        new ModPayloads.DeliverBountyPayload(this.menu.getBlockPos()));
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     // --- Helper Methods ---

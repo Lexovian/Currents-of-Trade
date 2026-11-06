@@ -54,6 +54,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
         this.xo = x;
         this.yo = y;
         this.zo = z;
+        this.updateParts();
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
         this.setCustomName(Component.literal("Cargo Ship"));
         this.setCustomNameVisible(true);
@@ -234,6 +235,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     public ItemStack createCustomizedDropStack() {
         ItemStack stack = new ItemStack(this.getDropItem());
+        if (this.hasCustomName() && !this.getCustomName().getString().equals("Cargo Ship")) {
+            stack.setHoverName(this.getCustomName());
+        }
         if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()) {
             CustomData.update(stack, tag -> {
                 tag.putInt("SailColor", this.getSailColor());
@@ -315,6 +319,8 @@ public class CargoBoatEntity extends TradeBoatEntity {
         }
         if (tag.contains("BannerItem")) {
             this.setBannerStack(ItemStack.of(tag.getCompound("BannerItem")));
+        } else {
+            this.setBannerStack(ItemStack.EMPTY);
         }
     }
 }

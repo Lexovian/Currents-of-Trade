@@ -171,7 +171,7 @@
   "message.currents_of_trade.trade_docked_at_harbor": "§a⚓ [Handel] Ein Handelsschiff ist nach §e%s§a zurückgekehrt! Klicke auf die Truhe.",
   "message.currents_of_trade.trade_arrived_home_depot": "§a⚓ [Handel] Dein Handelsschiff hat in §e%s§a angelegt und die Waren ins Depot übertragen!",
   "message.currents_of_trade.trade_docked_at_harbor_depot": "§a⚓ [Handel] Ein Handelsschiff ist nach §e%s§a zurückgekehrt und hat seine Ladung ins Depot entladen!",
-  "message.currents_of_trade.boat_hold_full": "§c[Hafen] Schiffskapazität voll! (Max. 18 Plätze)",
+  "message.currents_of_trade.boat_hold_full": "§c[Hafen] Schiffskapazität voll! (Max. %s Plätze)",
   "message.currents_of_trade.sloop_needs_water": "§c[Schaluppe] Muss auf Wasser platziert werden!",
   "item.currents_of_trade.anchor_point": "Ankerplatz",
   "item.currents_of_trade.sloop": "Schaluppe",
@@ -424,5 +424,10 @@
   "tooltip.currents_of_trade.dragons_blood_resin_hint": "§7Verzehren für Feuerresistenz (60s) & Stärke (30s), oder zum Färben roter Segel.",
   "tooltip.currents_of_trade.commodity.dragons_blood_resin.market": "§6✦ Seeweg: §aExportiert von Tropischen Häfen §8| §bHohe Nachfrage: Kalt, Gemäßigt & Arid (+100%)",
   "color.currents_of_trade.dragons_blood": "§cDrachenblutrot",
-  "jei.currents_of_trade.info.dragons_blood_resin": "Ein begehrtes karmesinrotes Harz aus fernen Inselbäumen entlang tropischer Handelsrouten. Verleiht beim Verzehr Feuerresistenz I (60s) und Stärke I (30s) oder dient Schiffsbauern zum Färben leuchtend roter Schiffssegel."
+  "jei.currents_of_trade.info.dragons_blood_resin": "Ein begehrtes karmesinrotes Harz aus fernen Inselbäumen entlang tropischer Handelsrouten. Verleiht beim Verzehr Feuerresistenz I (60s) und Stärke I (30s) oder dient Schiffsbauern zum Färben leuchtend roter Schiffssegel.",
+  "gui.currents_of_trade.atlas.delete_harbor_tooltip": "'%s' aus dem Atlas entfernen",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_ready": "§a✔ Hier klicken (oder mit Item Rechtsklick auf Block) zum Abgeben!",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_hint": "§8(Direktabgabe: Mit Item Rechtsklick auf Block oder hier klicken)",
+  "message.currents_of_trade.bounty_delivered": "§6★ [Hafenprämie] §f%sx %s §aan §e%s §ageliefert für §6%sx %s§a!",
+  "message.currents_of_trade.bounty_missing_items": "§c★ [Hafenprämie] Benötigt §f%sx %s §cfür §6%sx %s§c!"
 }

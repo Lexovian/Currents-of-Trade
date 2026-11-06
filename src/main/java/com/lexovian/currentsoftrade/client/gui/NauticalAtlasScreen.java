@@ -221,7 +221,7 @@ public class NauticalAtlasScreen extends Screen {
             for (int i = 0; i < routes.size(); i++) {
                 RouteJournalItem.RouteEntry r = routes.get(i);
                 boolean isSel = (i == selectedIdx);
-                boolean rowHover = mouseX >= listX && mouseX <= listX + listW && mouseY >= rowY && mouseY < rowY + 14;
+                boolean rowHover = mouseX >= listX && mouseX <= listX + listW - 14 && mouseY >= rowY && mouseY < rowY + 14;
 
                 int bg = isSel ? 0xFF2B4C65 : (rowHover ? 0xFF243B52 : 0xFF182838);
                 g.fill(listX, rowY, listX + listW, rowY + 14, bg);
@@ -246,7 +246,11 @@ public class NauticalAtlasScreen extends Screen {
                 g.renderOutline(delX, delY, 11, 12, delHover ? 0xFFFF5252 : 0xFF6B2222);
                 g.drawString(this.font, "✕", delX + 3, delY + 2, delHover ? 0xFFFFFFFF : 0xFFE57373, false);
 
-                if (rowHover) {
+                if (delHover) {
+                    g.renderTooltip(this.font, List.of(
+                            Component.translatable("gui.currents_of_trade.atlas.delete_harbor_tooltip", r.name())
+                    ), Optional.empty(), mouseX, mouseY);
+                } else if (rowHover) {
                     hoveredRoute = i;
                 }
                 rowY += 16;

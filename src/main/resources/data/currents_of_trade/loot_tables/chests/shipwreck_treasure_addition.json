@@ -101,6 +101,46 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:captains_tricorne",
           "weight": 8
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:saffron_bundle",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:jade_figurine",
+          "weight": 14
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:cacao_elixir",
+          "weight": 16
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:narwhal_ivory",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:damascus_steel",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:frankincense_tears",
+          "weight": 14
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:tyrian_purple",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:dragons_blood_resin",
+          "weight": 12
         }
       ]
     }

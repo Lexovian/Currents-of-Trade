@@ -474,5 +474,10 @@
   "tooltip.currents_of_trade.dragons_blood_resin_hint": "§7Ateş Direnci (60sn) ve Kuvvet (30sn) için tüket, veya yelkenleri kızıl renge boya.",
   "tooltip.currents_of_trade.commodity.dragons_blood_resin.market": "§6✦ Deniz Ticareti: §aTropik Liman İhracı §8| §bYüksek Talep: Soğuk, Ilıman & Kurak Limanlar (+%100)",
   "color.currents_of_trade.dragons_blood": "§cEjderha Kanı Kırmızısı",
-  "jei.currents_of_trade.info.dragons_blood_resin": "Tropik adaların kadim ağaçlarından süzülen efsanevi kıpkırmızı reçine. Tüketildiğinde Ateş Direnci I (60sn) ve Kuvvet I (30sn) kazandırır veya tersanede gemi yelkenlerini canlı Ejderha Kanı Kırmızısına boyamak için kullanılır."
+  "jei.currents_of_trade.info.dragons_blood_resin": "Tropik adaların kadim ağaçlarından süzülen efsanevi kıpkırmızı reçine. Tüketildiğinde Ateş Direnci I (60sn) ve Kuvvet I (30sn) kazandırır veya tersanede gemi yelkenlerini canlı Ejderha Kanı Kırmızısına boyamak için kullanılır.",
+  "gui.currents_of_trade.atlas.delete_harbor_tooltip": "'%s' limanını Atlastan sil",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_ready": "§a✔ Hemen teslim etmek için buraya tıkla (veya eşyayla bloğa sağ tıkla)!",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_hint": "§8(Doğrudan teslimat: Eşyayla bloğa sağ tıkla veya buraya tıkla)",
+  "message.currents_of_trade.bounty_delivered": "§6★ [Liman Siparişi] §f%sx %s §e%s §alimanına teslim edildi! Ödül: §6%sx %s§a!",
+  "message.currents_of_trade.bounty_missing_items": "§c★ [Liman Siparişi] Teslimat için §f%sx %s §cgerekiyor! (Ödül: §6%sx %s§c)"
 }

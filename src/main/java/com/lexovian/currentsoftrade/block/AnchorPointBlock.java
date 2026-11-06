@@ -182,6 +182,16 @@ public class AnchorPointBlock extends Block implements EntityBlock {
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
+        if (!stack.isEmpty()
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.TradeLedgerItem)) {
+            if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                if (anchor.tryDeliverUrgentBounty(player, stack)) {
+                    return InteractionResult.sidedSuccess(level.isClientSide);
+                }
+            }
+        }
         // 1.21 only runs the "without item" interaction for the main hand.
         if (hand != InteractionHand.MAIN_HAND) {
             return InteractionResult.PASS;

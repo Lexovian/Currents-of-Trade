@@ -91,6 +91,31 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:tea_brick",
           "weight": 15
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:jade_figurine",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:narwhal_ivory",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:frankincense_tears",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:tyrian_purple",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:dragons_blood_resin",
+          "weight": 10
         }
       ]
     }

@@ -44,6 +44,22 @@ public class CargoBoatItem extends Item {
         }
 
         Vec3 clickLoc = hitresult.getLocation();
+        Vec3 playerPos = player.position();
+        Vec3 viewVec = player.getViewVector(1.0F);
+        Vec3 horizView = new Vec3(viewVec.x, 0.0, viewVec.z);
+        if (horizView.lengthSqr() < 1e-4) {
+            horizView = Vec3.directionFromRotation(0.0F, player.getYRot());
+        }
+        horizView = horizView.normalize();
+
+        double spawnX = clickLoc.x;
+        double spawnZ = clickLoc.z;
+        double distToPlayer = Math.sqrt((spawnX - playerPos.x) * (spawnX - playerPos.x) + (spawnZ - playerPos.z) * (spawnZ - playerPos.z));
+        if (distToPlayer < 3.2) {
+            double pushDist = 3.2 - distToPlayer;
+            spawnX += horizView.x * pushDist;
+            spawnZ += horizView.z * pushDist;
+        }
 
         List<Entity> nearby = level.getEntities(player,
                 player.getBoundingBox().expandTowards(player.getViewVector(1.0F).scale(5.0)).inflate(1.0),
@@ -56,24 +72,32 @@ public class CargoBoatItem extends Item {
         }
 
         if (!level.isClientSide) {
-            BlockPos clickedBlock = ((BlockHitResult) hitresult).getBlockPos();
-            boolean waterNearby = level.getFluidState(clickedBlock).is(FluidTags.WATER)
-                    || level.getFluidState(clickedBlock.below()).is(FluidTags.WATER)
-                    || level.getFluidState(clickedBlock.above()).is(FluidTags.WATER);
+            BlockPos spawnBlock = BlockPos.containing(spawnX, clickLoc.y, spawnZ);
+            boolean waterNearby = level.getFluidState(spawnBlock).is(FluidTags.WATER)
+                    || level.getFluidState(spawnBlock.below()).is(FluidTags.WATER)
+                    || level.getFluidState(spawnBlock.above()).is(FluidTags.WATER);
 
             if (!waterNearby) {
-                player.displayClientMessage(
-                        Component.translatable("message.currents_of_trade.sloop_needs_water"), true);
-                return InteractionResultHolder.fail(itemstack);
+                BlockPos clickedBlock = ((BlockHitResult) hitresult).getBlockPos();
+                waterNearby = level.getFluidState(clickedBlock).is(FluidTags.WATER)
+                        || level.getFluidState(clickedBlock.below()).is(FluidTags.WATER)
+                        || level.getFluidState(clickedBlock.above()).is(FluidTags.WATER);
+                if (!waterNearby) {
+                    player.displayClientMessage(
+                            Component.translatable("message.currents_of_trade.sloop_needs_water"), true);
+                    return InteractionResultHolder.fail(itemstack);
+                }
+                spawnX = clickLoc.x;
+                spawnZ = clickLoc.z;
             }
 
-            CargoBoatEntity cargoBoat = new CargoBoatEntity(level, clickLoc.x, clickLoc.y + 0.1, clickLoc.z);
+            CargoBoatEntity cargoBoat = new CargoBoatEntity(level, spawnX, clickLoc.y + 0.1, spawnZ);
             cargoBoat.setYRot(player.getYRot());
             cargoBoat.setPlayerControlled(true);
             cargoBoat.loadUpgradesFromStack(itemstack);
 
             level.addFreshEntity(cargoBoat);
-            level.gameEvent(player, GameEvent.ENTITY_PLACE, clickLoc);
+            level.gameEvent(player, GameEvent.ENTITY_PLACE, new Vec3(spawnX, clickLoc.y, spawnZ));
             level.playSound(null, cargoBoat.getX(), cargoBoat.getY(), cargoBoat.getZ(),
                     SoundEvents.BOAT_PADDLE_WATER, SoundSource.BLOCKS, 1.0F, 1.0F);
 
@@ -90,6 +114,20 @@ public class CargoBoatItem extends Item {
     public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable("item.currents_of_trade.cargo_boat.desc"));
+        com.lexovian.currentsoftrade.compat.CustomData customData =
+                com.lexovian.currentsoftrade.compat.CustomData.getOrNull(stack);
+        if (customData != null) {
+            net.minecraft.nbt.CompoundTag tag = customData.copyTag();
+            if (tag.contains("SailColor") && tag.getInt("SailColor") >= 0) {
+                net.minecraft.world.item.DyeColor color = net.minecraft.world.item.DyeColor.byId(tag.getInt("SailColor"));
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_sail_color",
+                        Component.translatable("color.minecraft." + color.getName())));
+            }
+            if (tag.contains("BannerItem")) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_banner"));
+            }
+        }
+        tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

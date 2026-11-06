@@ -474,5 +474,10 @@
   "tooltip.currents_of_trade.dragons_blood_resin_hint": "§7Consume for Fire Resistance (60s) & Strength (30s), or dye ship sails crimson.",
   "tooltip.currents_of_trade.commodity.dragons_blood_resin.market": "§6✦ Maritime Route: §aExported by Tropical Ports §8| §bHigh Demand: Cold, Temperate & Arid Ports (+100%)",
   "color.currents_of_trade.dragons_blood": "§cDragon's Blood Red",
-  "jei.currents_of_trade.info.dragons_blood_resin": "A prized crimson resin tapped from ancient trees along tropical trade routes. Can be consumed to gain Fire Resistance I (60s) and Strength I (30s), or used by shipwrights to dye ship sails a vibrant Dragon's Blood Red."
+  "jei.currents_of_trade.info.dragons_blood_resin": "A prized crimson resin tapped from ancient trees along tropical trade routes. Can be consumed to gain Fire Resistance I (60s) and Strength I (30s), or used by shipwrights to dye ship sails a vibrant Dragon's Blood Red.",
+  "gui.currents_of_trade.atlas.delete_harbor_tooltip": "Remove '%s' from Atlas",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_ready": "§a✔ Click here (or Right-Click block with item) to deliver now!",
+  "tooltip.currents_of_trade.harbor_bounty_deliver_hint": "§8(Deliver directly: Right-Click block with item or click here)",
+  "message.currents_of_trade.bounty_delivered": "§6★ [Harbor Bounty] §aDelivered §f%sx %s §ato §e%s §afor §6%sx %s§a!",
+  "message.currents_of_trade.bounty_missing_items": "§c★ [Harbor Bounty] Requires §f%sx %s §cto claim §6%sx %s§c!"
 }
