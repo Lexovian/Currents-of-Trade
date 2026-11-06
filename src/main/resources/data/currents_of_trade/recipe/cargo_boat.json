@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CBC",
+    "THT",
+    "SKS"
+  ],
+  "key": {
+    "C": "minecraft:chest",
+    "B": "minecraft:barrel",
+    "T": "minecraft:stripped_oak_wood",
+    "H": "minecraft:iron_chain",
+    "S": "minecraft:stripped_oak_log",
+    "K": "minecraft:oak_chest_boat"
+  },
+  "result": {
+    "id": "currents_of_trade:cargo_boat",
+    "count": 1
+  }
+}

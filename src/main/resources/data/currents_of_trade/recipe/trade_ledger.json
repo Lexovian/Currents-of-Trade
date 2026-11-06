@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GEG",
+    "LBL",
+    "GEG"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "E": "minecraft:emerald",
+    "L": "minecraft:leather",
+    "B": "minecraft:writable_book"
+  },
+  "result": {
+    "id": "currents_of_trade:trade_ledger",
+    "count": 1
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:doubloon",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 3.0,
+                "max": 8.0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 2.0,
+        "max": 3.0
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:sandalwood",
+          "weight": 25,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1.0,
+                "max": 3.0
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:tea_brick",
+          "weight": 25,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1.0,
+                "max": 3.0
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:spice_sack",
+          "weight": 25,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1.0,
+                "max": 2.0
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:vanilla_bundle",
+          "weight": 25,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1.0,
+                "max": 2.0
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:captains_pipe",
+          "weight": 15
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:ammonite_fossil",
+          "weight": 15
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:captains_tricorne",
+          "weight": 8
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:saffron_bundle",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:jade_figurine",
+          "weight": 14
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:cacao_elixir",
+          "weight": 16
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:narwhal_ivory",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:damascus_steel",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:frankincense_tears",
+          "weight": 14
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:tyrian_purple",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:dragons_blood_resin",
+          "weight": 12
+        }
+      ]
+    }
+  ]
+}

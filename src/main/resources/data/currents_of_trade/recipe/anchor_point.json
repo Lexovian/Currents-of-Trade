@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CIC",
+    "LIL",
+    "SSS"
+  ],
+  "key": {
+    "C": "minecraft:iron_chain",
+    "I": "minecraft:iron_ingot",
+    "L": "minecraft:stripped_oak_log",
+    "S": "minecraft:stone_bricks"
+  },
+  "result": {
+    "id": "currents_of_trade:anchor_point",
+    "count": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " F ",
+    "BGB",
+    "BBB"
+  ],
+  "key": {
+    "F": "minecraft:feather",
+    "B": "minecraft:black_wool",
+    "G": "minecraft:gold_ingot"
+  },
+  "result": {
+    "id": "currents_of_trade:captains_tricorne",
+    "count": 1
+  }
+}

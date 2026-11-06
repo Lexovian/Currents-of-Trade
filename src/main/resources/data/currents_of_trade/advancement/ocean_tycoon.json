@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:doubloon"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.ocean_tycoon.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.ocean_tycoon.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:fair_winds",
+  "criteria": {
+    "has_64_doubloons": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:doubloon",
+            "count": {
+              "min": 64
+            }
+          }
+        ]
+      }
+    }
+  }
+}

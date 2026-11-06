@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PLP",
+    "PCP",
+    "PIP"
+  ],
+  "key": {
+    "P": "minecraft:paper",
+    "L": "minecraft:lapis_lazuli",
+    "C": "minecraft:compass",
+    "I": "minecraft:ink_sac"
+  },
+  "result": {
+    "id": "currents_of_trade:nautical_chart",
+    "count": 1
+  }
+}

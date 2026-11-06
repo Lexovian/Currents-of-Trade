@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "currents_of_trade:block/anchor_point_top",
+    "bottom": "currents_of_trade:block/anchor_point_bottom",
+    "side": "currents_of_trade:block/anchor_point_side"
+  }
+}

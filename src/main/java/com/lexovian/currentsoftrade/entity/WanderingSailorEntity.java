@@ -1,0 +1,297 @@
+package com.lexovian.currentsoftrade.entity;
+
+import com.lexovian.currentsoftrade.CurrentsofTrade;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public class WanderingSailorEntity extends WanderingTrader {
+
+    public static final int LEAGUE_COUNT = 6;
+    private static final EntityDataAccessor<Integer> DATA_TRADE_LEAGUE =
+            SynchedEntityData.defineId(WanderingSailorEntity.class, EntityDataSerializers.INT);
+
+    // Stay time: min 7 minutes (8,400 ticks), max 15 minutes (18,000 ticks)
+    public static final int MIN_DESPAWN_DELAY = 8400;
+    public static final int MAX_DESPAWN_DELAY = 18000;
+    public static final int DEFAULT_DESPAWN_DELAY = 12000; // ~10 minutes
+    private int sailorDespawnDelay = DEFAULT_DESPAWN_DELAY;
+
+    @Nullable
+    private UUID mooredBoatUUID = null;
+
+    public @Nullable UUID getMooredBoatUUID() {
+        return this.mooredBoatUUID;
+    }
+
+    public void setMooredBoatUUID(@Nullable UUID uuid) {
+        this.mooredBoatUUID = uuid;
+    }
+
+    public int getTradeLeague() {
+        return Mth.clamp(this.entityData.get(DATA_TRADE_LEAGUE), 0, LEAGUE_COUNT - 1);
+    }
+
+    public void setTradeLeague(int leagueId) {
+        int clamped = Mth.clamp(leagueId, 0, LEAGUE_COUNT - 1);
+        this.entityData.set(DATA_TRADE_LEAGUE, clamped);
+        this.setCustomName(Component.translatable("entity.currents_of_trade.wandering_sailor.league_" + clamped));
+        if (this.level() instanceof ServerLevel serverLevel) {
+            this.updateTrades(serverLevel);
+        }
+    }
+
+    public WanderingSailorEntity(EntityType<? extends WanderingTrader> entityType, Level level) {
+        super(entityType, level);
+        int initLeague = level != null ? level.getRandom().nextInt(LEAGUE_COUNT) : 0;
+        this.entityData.set(DATA_TRADE_LEAGUE, initLeague);
+        this.setCustomName(Component.translatable("entity.currents_of_trade.wandering_sailor.league_" + initLeague));
+        this.setCustomNameVisible(true);
+        if (level != null && !level.isClientSide()) {
+            this.sailorDespawnDelay = level.getRandom().nextIntBetweenInclusive(MIN_DESPAWN_DELAY, MAX_DESPAWN_DELAY);
+            this.setDespawnDelay(this.sailorDespawnDelay);
+        }
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_TRADE_LEAGUE, 0);
+    }
+
+    public static AttributeSupplier.Builder createAttributes() {
+        return Mob.createMobAttributes()
+                .add(Attributes.MAX_HEALTH, 26.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.5D);
+    }
+
+    @Override
+    protected void updateTrades(ServerLevel level) {
+        MerchantOffers offers = this.getOffers();
+        offers.clear();
+
+        // ── Fixed trades: always shown, every sailor, every visit ────────────────
+        // Currency exchange — xp=0 prevents XP-exploit loop, trades still fully functional
+        offers.add(new MerchantOffer(new ItemCost(Items.EMERALD, 2),                      new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), 10, 0, 0.0F));
+        offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.EMERALD, 2),                  10, 0, 0.0F));
+
+        // ── Maritime Trade League Signature Deals (2 guaranteed specialty offers per league) ──
+        switch (this.getTradeLeague()) {
+            case 0 -> { // Golden Levant Company
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), 8, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),      6, 12, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 6, 8, 0.05F));
+            }
+            case 1 -> { // Boreal Amber Hanse
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),    6, 10, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), 5, 14, 0.05F));
+            }
+            case 2 -> { // Emerald Archipelago Guild
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),   6, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), 6, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 6, 10, 0.05F));
+            }
+            case 3 -> { // Imperial Jade Flotilla
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), 6, 10, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),  5, 14, 0.05F));
+            }
+            case 4 -> { // Crimson Privateer Syndicate
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),      5, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1), 6, 8, 0.05F));
+            }
+            default -> { // Azure Thalassocracy
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1), 4, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),     4, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),    5, 12, 0.05F));
+            }
+        }
+
+        // Small vanilla food provision (secondary role — keeps sailor flavour)
+        offers.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.COOKED_SALMON, 2),             8,  1, 0.05F));
+        // Reverse: sailor buys cooked fish from the player
+        offers.add(new MerchantOffer(new ItemCost(Items.COOKED_COD, 8),                   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  8,  3, 0.05F));
+
+        // ── Pool A: Market Cargo — common mod goods + 1 vanilla food option ─────
+        List<MerchantOffer> poolA = new ArrayList<>();
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 2),         8, 2,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),         6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),          6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),     6, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2),     5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1),       5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1),5, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
+        poolA.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
+        // Reverse: sailor buys nautilus shells
+        poolA.add(new MerchantOffer(new ItemCost(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),           4, 10, 0.05F));
+        // Small vanilla food option — intentionally placed last so it has lower draw chance
+        poolA.add(new MerchantOffer(new ItemCost(Items.EMERALD, 1),                   new ItemStack(Items.COOKED_SALMON, 3),                      6, 1,  0.05F));
+
+        // ── Pool B: Sailor's Rarities — rare & premium mod items ─────────────────
+        List<MerchantOffer> poolB = new ArrayList<>();
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),      3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),      3, 18, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),      3, 18, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),     3, 18, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
+        // Reverse: sailor buys ammonite fossils & sea ivory
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.NARWHAL_IVORY.get(), 1),   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),    3, 18, 0.05F));
+        // Premium/rare — low maxUses, high value
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 10), Optional.of(new ItemCost(Items.EMERALD, 4)),  new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1),  2, 25, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 26), Optional.of(new ItemCost(Items.EMERALD, 6)),  new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1),       1, 30, 0.05F));
+        poolB.add(new MerchantOffer(new ItemCost(CurrentsofTrade.DOUBLOON.get(), 18), Optional.of(new ItemCost(Items.EMERALD, 8)),  new ItemStack(Items.HEART_OF_THE_SEA, 1),                 1, 30, 0.05F));
+
+        // ── Shuffle both pools with a seed derived from this entity's ID ──────────
+        java.util.Random rng = new java.util.Random((long) this.getId() * 2654435761L);
+        Collections.shuffle(poolA, rng);
+        rng.setSeed((long) this.getId() * 2246822519L);
+        Collections.shuffle(poolB, rng);
+
+        // Add top 5 from Pool A and top 4 from Pool B
+        for (int i = 0; i < Math.min(5, poolA.size()); i++) offers.add(poolA.get(i));
+        for (int i = 0; i < Math.min(4, poolB.size()); i++) offers.add(poolB.get(i));
+    }
+
+    @Override
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        ItemStack itemstack = player.getItemInHand(hand);
+        if (itemstack.is(Items.NAME_TAG)) {
+            itemstack.interactLivingEntity(player, this, hand);
+            return InteractionResult.SUCCESS;
+        }
+        if (this.isAlive() && !this.isTrading() && !this.isBaby()) {
+            if (hand == InteractionHand.MAIN_HAND) {
+                this.setTradingPlayer(player);
+                this.openTradingScreen(player, this.getDisplayName(), 1);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return super.mobInteract(player, hand);
+    }
+
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (!this.level().isClientSide()) {
+            if (--this.sailorDespawnDelay <= 0) {
+                // Despawn gracefully with smoke particles
+                if (this.getVehicle() != null) {
+                    var vehicle = this.getVehicle();
+                    this.stopRiding();
+                    vehicle.discard();
+                }
+                if (this.mooredBoatUUID != null && this.level() instanceof ServerLevel serverLevel) {
+                    net.minecraft.world.entity.Entity boat = serverLevel.getEntity(this.mooredBoatUUID);
+                    if (boat != null && boat.isAlive()) {
+                        serverLevel.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                                boat.getX(), boat.getY() + 0.5, boat.getZ(),
+                                15, 0.4, 0.4, 0.4, 0.02);
+                        boat.discard();
+                    }
+                }
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                            this.getX(), this.getY() + 1.0, this.getZ(),
+                            20, 0.5, 0.5, 0.5, 0.02);
+                }
+                this.discard();
+            }
+        }
+    }
+
+    @Override
+    public void die(DamageSource damageSource) {
+        super.die(damageSource);
+        if (!this.level().isClientSide() && this.mooredBoatUUID != null && this.level() instanceof ServerLevel serverLevel) {
+            net.minecraft.world.entity.Entity boat = serverLevel.getEntity(this.mooredBoatUUID);
+            if (boat != null && boat.isAlive()) {
+                serverLevel.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                                boat.getX(), boat.getY() + 0.5, boat.getZ(),
+                                15, 0.4, 0.4, 0.4, 0.02);
+                boat.discard();
+            }
+        }
+    }
+
+    public int getSailorDespawnDelay() {
+        return this.sailorDespawnDelay;
+    }
+
+    public void setSailorDespawnDelay(int delay) {
+        this.sailorDespawnDelay = delay;
+    }
+
+    @Override
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putInt("SailorDespawnDelay", this.sailorDespawnDelay);
+        output.putInt("TradeLeague", this.getTradeLeague());
+        if (this.mooredBoatUUID != null) {
+            output.store("MooredBoatUUID", UUIDUtil.CODEC, this.mooredBoatUUID);
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.sailorDespawnDelay = input.getIntOr("SailorDespawnDelay", this.sailorDespawnDelay);
+        input.getInt("TradeLeague").ifPresent(league -> this.entityData.set(DATA_TRADE_LEAGUE, Mth.clamp(league, 0, LEAGUE_COUNT - 1)));
+        this.mooredBoatUUID = input.read("MooredBoatUUID", UUIDUtil.CODEC).orElse(this.mooredBoatUUID);
+    }
+
+    @Nullable
+    @Override
+    protected SoundEvent getAmbientSound() {
+        return this.isTrading() ? SoundEvents.WANDERING_TRADER_TRADE : SoundEvents.WANDERING_TRADER_AMBIENT;
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource damageSource) {
+        return SoundEvents.WANDERING_TRADER_HURT;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return SoundEvents.WANDERING_TRADER_DEATH;
+    }
+}

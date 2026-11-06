@@ -1,0 +1,249 @@
+package com.lexovian.currentsoftrade.block;
+
+import net.minecraft.core.Direction;
+
+import com.lexovian.currentsoftrade.CurrentsofTrade;
+import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
+import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
+
+public class AnchorPointBlock extends Block implements EntityBlock {
+
+    public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
+
+    public AnchorPointBlock(BlockBehaviour.Properties properties) {
+        super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(TRIGGERED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(TRIGGERED);
+    }
+
+    // --- Block Entity Lifecycle ---
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new AnchorPointBlockEntity(pos, state);
+    }
+
+    @Override
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel serverLevel, BlockPos pos, boolean movedByPiston) {
+        String harborName = "Harbor";
+        if (serverLevel.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+            harborName = anchor.getHarborName();
+        } else {
+            String savedName = com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getHarborName(pos);
+            if (savedName != null) harborName = savedName;
+        }
+        com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).removeHarbor(pos);
+
+        if (serverLevel.getServer() != null) {
+            for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
+                boolean removedAny = false;
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack item = player.getInventory().getItem(i);
+                    if (item.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem) {
+                        if (com.lexovian.currentsoftrade.item.RouteJournalItem.removeRoute(item, pos)) {
+                            removedAny = true;
+                        }
+                    }
+                }
+                if (removedAny) {
+                    player.sendSystemMessage(
+                            Component.translatable("message.currents_of_trade.journal_harbor_removed", harborName)
+                    );
+                }
+            }
+        }
+        super.affectNeighborsAfterRemoval(state, serverLevel, pos, movedByPiston);
+    }
+
+    // --- Redstone Automation & Comparator Output ---
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, @Nullable Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
+        if (level.isClientSide()) return;
+
+        boolean hasSignal = level.hasNeighborSignal(pos) || level.hasNeighborSignal(pos.above());
+        boolean wasTriggered = state.getValue(TRIGGERED);
+
+        if (hasSignal && !wasTriggered) {
+            level.setBlock(pos, state.setValue(TRIGGERED, true), 4);
+            if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                anchor.tryRedstoneAutoDispatch(serverLevel);
+            }
+        } else if (!hasSignal && wasTriggered) {
+            level.setBlock(pos, state.setValue(TRIGGERED, false), 4);
+        }
+    }
+
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+        if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+            return anchor.getComparatorSignal();
+        }
+        return 0;
+    }
+
+    // --- Placement & Setup ---
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (!level.isClientSide() && placer instanceof Player player) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof AnchorPointBlockEntity anchor) {
+                try {
+                    if (stack.has(DataComponents.CUSTOM_NAME)) {
+                        anchor.setHarborName(stack.getHoverName().getString());
+                    } else {
+                        anchor.setHarborName(AnchorPointBlockEntity.generateDynamicHarborName(level, pos));
+                    }
+                } catch (Throwable t) {
+                    CurrentsofTrade.LOGGER.error("Failed to initialize harbor name for anchor point at {}", pos, t);
+                }
+                anchor.seedRegionalTradesIfEmpty();
+
+                AnchorPointBlockEntity.HarborStatus status = anchor.getHarborStatus();
+                if (status != AnchorPointBlockEntity.HarborStatus.VALID) {
+                    Component warnMsg = switch (status) {
+                        case TOO_SMALL -> Component.translatable("message.currents_of_trade.harbor_too_small");
+                        case UNDERGROUND -> Component.translatable("message.currents_of_trade.harbor_underground");
+                        case TOO_SHALLOW -> Component.translatable("message.currents_of_trade.harbor_too_shallow");
+                        case WRONG_DIMENSION -> Component.translatable("message.currents_of_trade.overworld_only");
+                        default -> Component.translatable("message.currents_of_trade.anchor_placed_no_water");
+                    };
+                    player.sendOverlayMessage(warnMsg);
+                } else {
+                    player.sendOverlayMessage(Component.translatable("message.currents_of_trade.harbor_established", anchor.getHarborName()));
+                }
+            }
+        }
+    }
+
+    // --- Interaction ---
+
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (stack.is(Items.NAME_TAG) && stack.has(DataComponents.CUSTOM_NAME)) {
+            if (!level.isClientSide()) {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof AnchorPointBlockEntity anchor) {
+                    String newName = stack.getHoverName().getString();
+                    anchor.setHarborName(newName);
+                    if (!player.getAbilities().instabuild) {
+                        stack.shrink(1);
+                    }
+                    level.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.8F, 1.2F);
+                    player.sendOverlayMessage(Component.translatable("message.currents_of_trade.harbor_renamed", newName));
+                }
+            }
+            return InteractionResult.SUCCESS;
+        }
+        if (!stack.isEmpty()
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)
+                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.TradeLedgerItem)) {
+            if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                if (anchor.tryDeliverUrgentBounty(player, stack)) {
+                    return InteractionResult.SUCCESS;
+                }
+            }
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            int harborLevel = 1;
+            if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
+                harborLevel = anchor.getTradeLevel();
+            }
+            final int finalLevel = harborLevel;
+            serverPlayer.openMenu(new SimpleMenuProvider(
+                    (containerId, playerInventory, p) -> new AnchorPointMenu(containerId, playerInventory, ContainerLevelAccess.create(level, pos), pos),
+                    Component.translatable("gui.currents_of_trade.anchor_point")
+            ), buf -> {
+                buf.writeBlockPos(pos);
+                buf.writeVarInt(finalLevel);
+            });
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    // --- Visual & Ambient Effects ---
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        if (!level.isClientSide()) return;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof AnchorPointBlockEntity anchor)) return;
+
+        int lvl = anchor.getTradeLevel();
+        if (lvl <= 1) return;
+
+        double x = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+        double y = pos.getY() + 1.0 + random.nextDouble() * 0.2;
+        double z = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+
+        if (lvl == 2 && random.nextFloat() < 0.25F) {
+            level.addParticle(ParticleTypes.SPLASH, x, y, z, 0.0, 0.04, 0.0);
+        } else if (lvl == 3 && random.nextFloat() < 0.35F) {
+            level.addParticle(ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+        } else if (lvl == 4 && random.nextFloat() < 0.40F) {
+            if (random.nextBoolean()) {
+                level.addParticle(ParticleTypes.BUBBLE_POP, x, y, z, 0.0, 0.03, 0.0);
+            } else {
+                level.addParticle(ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+            }
+        } else if (lvl >= 5 && random.nextFloat() < 0.50F) {
+            float r = random.nextFloat();
+            if (r < 0.4F) {
+                level.addParticle(ParticleTypes.WAX_ON, x, y + 0.15, z, 0.0, 0.03, 0.0);
+            } else if (r < 0.75F) {
+                level.addParticle(ParticleTypes.GLOW, x, y + 0.1, z, 0.0, 0.02, 0.0);
+            } else {
+                level.addParticle(ParticleTypes.GLOW_SQUID_INK, x, y + 0.1, z, 0.0, 0.01, 0.0);
+            }
+        }
+    }
+}

@@ -1,0 +1,662 @@
+package com.lexovian.currentsoftrade.network;
+
+import com.lexovian.currentsoftrade.CurrentsofTrade;
+import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.item.RouteJournalItem;
+import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
+import com.lexovian.currentsoftrade.world.inventory.RequestTradeMenu;
+import com.lexovian.currentsoftrade.world.inventory.SendItemsMenu;
+import com.lexovian.currentsoftrade.world.inventory.TravelMenu;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+
+import java.util.List;
+
+public class ModPayloads {
+
+    // --- Helper Methods ---
+
+    public static BlockPos findAnchorPointNear(ServerPlayer player, BlockPos preferredPos) {
+        Level level = player.level();
+        if (preferredPos != null && !preferredPos.equals(BlockPos.ZERO)) {
+            if (level.getBlockEntity(preferredPos) instanceof AnchorPointBlockEntity) {
+                return preferredPos;
+            }
+        }
+        BlockPos playerPos = player.blockPosition();
+        for (BlockPos check : BlockPos.betweenClosed(playerPos.offset(-5, -3, -5), playerPos.offset(5, 3, 5))) {
+            if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+                return check.immutable();
+            }
+        }
+        return preferredPos != null ? preferredPos : playerPos;
+    }
+
+    // --- Open Travel GUI ---
+
+    public record OpenTravelPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<OpenTravelPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "open_travel"));
+        public static final StreamCodec<ByteBuf, OpenTravelPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, OpenTravelPayload::pos, OpenTravelPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL != null
+                            && !com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL.get()) {
+                        player.sendOverlayMessage(Component.translatable("tooltip.currents_of_trade.travel_disabled_config"));
+                        return;
+                    }
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    final BlockPos finalPos = targetPos;
+                    player.openMenu(new SimpleMenuProvider(
+                            (id, inv, p) -> new TravelMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
+                            Component.translatable("gui.currents_of_trade.travel")
+                    ));
+                    player.inventoryMenu.broadcastChanges();
+                }
+            });
+        }
+    }
+
+    // --- Execute Travel ---
+
+    public record ExecuteTravelPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<ExecuteTravelPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "execute_travel"));
+        public static final StreamCodec<ByteBuf, ExecuteTravelPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, ExecuteTravelPayload::pos, ExecuteTravelPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof TravelMenu travelMenu) {
+                        boolean success = travelMenu.executeTravel(player);
+                        if (success) {
+                            player.closeContainer();
+                            player.sendOverlayMessage(Component.translatable("message.currents_of_trade.travel_success"));
+                        } else {
+                            player.sendOverlayMessage(Component.translatable("message.currents_of_trade.travel_failed"));
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Open Send Items GUI ---
+
+    public record OpenSendItemsPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<OpenSendItemsPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "open_send_items"));
+        public static final StreamCodec<ByteBuf, OpenSendItemsPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, OpenSendItemsPayload::pos, OpenSendItemsPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    final BlockPos finalPos = targetPos;
+                    player.openMenu(new SimpleMenuProvider(
+                            (id, inv, p) -> new SendItemsMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
+                            Component.translatable("gui.currents_of_trade.send_items.title")
+                    ));
+                    player.inventoryMenu.broadcastChanges();
+                }
+            });
+        }
+    }
+
+    // --- Execute Send Cargo ---
+
+    public record ExecuteSendCargoPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<ExecuteSendCargoPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "execute_send_cargo"));
+        public static final StreamCodec<ByteBuf, ExecuteSendCargoPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, ExecuteSendCargoPayload::pos, ExecuteSendCargoPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof SendItemsMenu sendItemsMenu) {
+                        boolean success = sendItemsMenu.executeSendCargo(player);
+                        if (success) player.closeContainer();
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Open Anchor Point GUI (Back button) ---
+
+    public record OpenAnchorPointPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<OpenAnchorPointPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "open_anchor_point"));
+        public static final StreamCodec<ByteBuf, OpenAnchorPointPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, OpenAnchorPointPayload::pos, OpenAnchorPointPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+
+                    if (player.containerMenu instanceof TravelMenu travelMenu) {
+                        BlockPos serverPos = travelMenu.getCurrentPos();
+                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
+                    } else if (player.containerMenu instanceof SendItemsMenu sendItemsMenu) {
+                        BlockPos serverPos = sendItemsMenu.getCurrentPos();
+                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
+                    } else if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        BlockPos serverPos = requestMenu.getCurrentPos();
+                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
+                    }
+
+                    final BlockPos finalPos = targetPos;
+                    int harborLevel = 1;
+                    if (player.level().getBlockEntity(finalPos) instanceof AnchorPointBlockEntity anchor) {
+                        harborLevel = anchor.getTradeLevel();
+                    }
+                    final int finalLevel = harborLevel;
+                    player.openMenu(new SimpleMenuProvider(
+                            (id, inv, p) -> new AnchorPointMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
+                            Component.translatable("gui.currents_of_trade.anchor_point")
+                    ), buf -> {
+                        buf.writeBlockPos(finalPos);
+                        buf.writeVarInt(finalLevel);
+                    });
+                    player.inventoryMenu.broadcastChanges();
+                }
+            });
+        }
+
+        private static boolean isValidAnchorPos(ServerPlayer player, BlockPos pos) {
+            return pos != null && !pos.equals(BlockPos.ZERO)
+                    && player.level().getBlockEntity(pos) instanceof AnchorPointBlockEntity;
+        }
+    }
+
+    // --- Open Request Trade GUI ---
+
+    public record OpenRequestTradePayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<OpenRequestTradePayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "open_request_trade"));
+        public static final StreamCodec<ByteBuf, OpenRequestTradePayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, OpenRequestTradePayload::pos, OpenRequestTradePayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    final BlockPos finalPos = targetPos;
+                    player.openMenu(new SimpleMenuProvider(
+                            (id, inv, p) -> new RequestTradeMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
+                            Component.translatable("gui.currents_of_trade.request_trade.title")
+                    ));
+                    player.inventoryMenu.broadcastChanges();
+                }
+            });
+        }
+    }
+
+    // --- Execute Request Trade (dispatch ship) ---
+
+    public record ExecuteRequestTradePayload(BlockPos pos, int tradeIndex) implements CustomPacketPayload {
+        public static final Type<ExecuteRequestTradePayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "execute_request_trade"));
+        public static final StreamCodec<ByteBuf, ExecuteRequestTradePayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        BlockPos.STREAM_CODEC, ExecuteRequestTradePayload::pos,
+                        ByteBufCodecs.VAR_INT,  ExecuteRequestTradePayload::tradeIndex,
+                        ExecuteRequestTradePayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        boolean success = requestMenu.executeRequestTrade(player, tradeIndex);
+                        if (success) player.closeContainer();
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Add Trade to Order ---
+
+    public record AddTradeToOrderPayload(BlockPos pos, int tradeIndex, boolean maxAll) implements CustomPacketPayload {
+        public static final Type<AddTradeToOrderPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "add_trade_to_order"));
+        public static final StreamCodec<ByteBuf, AddTradeToOrderPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        BlockPos.STREAM_CODEC,  AddTradeToOrderPayload::pos,
+                        ByteBufCodecs.VAR_INT,  AddTradeToOrderPayload::tradeIndex,
+                        ByteBufCodecs.BOOL,     AddTradeToOrderPayload::maxAll,
+                        AddTradeToOrderPayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        requestMenu.addCurrentTradeToOrder(player, tradeIndex, maxAll);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Sync Selected Trade Index ---
+
+    public record SelectTradeIndexPayload(BlockPos pos, int tradeIndex) implements CustomPacketPayload {
+        public static final Type<SelectTradeIndexPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "select_trade_index"));
+        public static final StreamCodec<ByteBuf, SelectTradeIndexPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        BlockPos.STREAM_CODEC, SelectTradeIndexPayload::pos,
+                        ByteBufCodecs.VAR_INT,  SelectTradeIndexPayload::tradeIndex,
+                        SelectTradeIndexPayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        requestMenu.setSelectedTradeIndex(tradeIndex);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Reset Staged Order ---
+
+    public record ResetTradeOrderPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<ResetTradeOrderPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "reset_trade_order"));
+        public static final StreamCodec<ByteBuf, ResetTradeOrderPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, ResetTradeOrderPayload::pos, ResetTradeOrderPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        requestMenu.resetStagedOrder(player);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Rename Harbor ---
+
+    public record RenameHarborPayload(BlockPos pos, String newName) implements CustomPacketPayload {
+        public static final Type<RenameHarborPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "rename_harbor"));
+        public static final StreamCodec<ByteBuf, RenameHarborPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        BlockPos.STREAM_CODEC,       RenameHarborPayload::pos,
+                        ByteBufCodecs.STRING_UTF8,   RenameHarborPayload::newName,
+                        RenameHarborPayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    Level level = player.level();
+                    if (level.getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        String trimmed = (newName != null) ? newName.trim() : "";
+                        if (trimmed.isEmpty()) {
+                            trimmed = AnchorPointBlockEntity.generateDynamicHarborName(level, targetPos);
+                        }
+                        if (trimmed.length() > 32) {
+                            trimmed = trimmed.substring(0, 32);
+                        }
+                        anchor.setHarborName(trimmed);
+                        player.sendOverlayMessage(
+                                Component.translatable("message.currents_of_trade.harbor_renamed", trimmed));
+                        level.playSound(null, targetPos,
+                                SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.BLOCKS, 1.0F, 1.0F);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Upgrade Harbor ---
+
+    public record UpgradeHarborPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<UpgradeHarborPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "upgrade_harbor"));
+        public static final StreamCodec<ByteBuf, UpgradeHarborPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, UpgradeHarborPayload::pos, UpgradeHarborPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    Level level = player.level();
+                    if (level.getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        if (anchor.getTradeLevel() >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
+                            player.sendOverlayMessage(
+                                    Component.translatable("message.currents_of_trade.harbor_max_level"));
+                            return;
+                        }
+                        if (!anchor.canUpgrade(player)) {
+                            player.sendOverlayMessage(
+                                    Component.translatable("message.currents_of_trade.harbor_cannot_afford"));
+                            return;
+                        }
+                        anchor.executeUpgrade(player);
+                        int newLevel = anchor.getTradeLevel();
+                        String levelName = anchor.getHarborLevelName();
+                        player.sendOverlayMessage(
+                                Component.translatable("message.currents_of_trade.harbor_upgraded",
+                                        newLevel, levelName));
+                        level.playSound(null, targetPos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.9F, 1.2F);
+                        level.playSound(null, targetPos, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.6F, 1.4F);
+
+                        if (newLevel >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
+                            final BlockPos finalTargetPos = targetPos;
+                            final int finalLevel = newLevel;
+                            player.openMenu(new SimpleMenuProvider(
+                                    (id, inv, p) -> new AnchorPointMenu(id, inv, ContainerLevelAccess.create(level, finalTargetPos), finalTargetPos),
+                                    Component.translatable("gui.currents_of_trade.anchor_point")
+                            ), buf -> {
+                                buf.writeBlockPos(finalTargetPos);
+                                buf.writeVarInt(finalLevel);
+                            });
+                        } else {
+                            player.containerMenu.broadcastChanges();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Repeat Last Trade Order Preset ---
+
+    public record RepeatTradeOrderPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<RepeatTradeOrderPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "repeat_trade_order"));
+        public static final StreamCodec<ByteBuf, RepeatTradeOrderPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, RepeatTradeOrderPayload::pos, RepeatTradeOrderPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
+                        requestMenu.repeatLastTradeOrder(player);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Unload Ship Cargo to Nearby Harbor Depot ---
+
+    public record UnloadShipToHarborPayload(int entityId) implements CustomPacketPayload {
+        public static final Type<UnloadShipToHarborPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "unload_ship_to_harbor"));
+        public static final StreamCodec<ByteBuf, UnloadShipToHarborPayload> STREAM_CODEC =
+                StreamCodec.composite(ByteBufCodecs.VAR_INT, UnloadShipToHarborPayload::entityId, UnloadShipToHarborPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    Level level = player.level();
+                    net.minecraft.world.Container shipContainer = null;
+                    net.minecraft.world.entity.Entity shipEntity = null;
+
+                    if (entityId >= 0) {
+                        net.minecraft.world.entity.Entity e = level.getEntity(entityId);
+                        if (e instanceof net.minecraft.world.Container c && player.distanceToSqr(e) <= 256.0) {
+                            shipContainer = c;
+                            shipEntity = e;
+                        }
+                    }
+                    if (shipContainer == null && player.containerMenu instanceof net.minecraft.world.inventory.ChestMenu chestMenu) {
+                        if (chestMenu.getContainer() instanceof net.minecraft.world.entity.Entity e && player.distanceToSqr(e) <= 256.0) {
+                            shipContainer = chestMenu.getContainer();
+                            shipEntity = e;
+                        }
+                    }
+                    if (shipContainer == null && player.getVehicle() instanceof net.minecraft.world.Container c) {
+                        shipContainer = c;
+                        shipEntity = player.getVehicle();
+                    }
+                    if (shipContainer == null || shipEntity == null) return;
+
+                    BlockPos center = shipEntity.blockPosition();
+                    BlockPos nearestAnchor = null;
+                    double bestDistSq = Double.MAX_VALUE;
+                    for (BlockPos check : BlockPos.betweenClosed(center.offset(-16, -6, -16), center.offset(16, 6, 16))) {
+                        if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+                            double dSq = check.distSqr(center);
+                            if (dSq < bestDistSq) {
+                                bestDistSq = dSq;
+                                nearestAnchor = check.immutable();
+                            }
+                        }
+                    }
+
+                    if (nearestAnchor == null) {
+                        player.sendOverlayMessage(Component.translatable("message.currents_of_trade.ship_unload_no_harbor"));
+                        return;
+                    }
+
+                    String harborName = "Harbor";
+                    if (level.getBlockEntity(nearestAnchor) instanceof AnchorPointBlockEntity anchor) {
+                        harborName = anchor.getHarborName();
+                    }
+
+                    int transferred = com.lexovian.currentsoftrade.entity.TradeBoatEntity.unloadContainerToHarborStorage(
+                            level, nearestAnchor, shipContainer);
+                    if (transferred > 0) {
+                        level.playSound(null, nearestAnchor, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                                    nearestAnchor.getX() + 0.5, nearestAnchor.getY() + 1.2, nearestAnchor.getZ() + 0.5,
+                                    10, 0.35, 0.25, 0.35, 0.05);
+                        }
+                        player.sendOverlayMessage(
+                                Component.translatable("message.currents_of_trade.ship_unloaded_to_harbor", transferred, harborName)
+                        );
+                        player.containerMenu.broadcastChanges();
+                    } else {
+                        player.sendOverlayMessage(
+                                Component.translatable("message.currents_of_trade.ship_unload_no_storage", harborName)
+                        );
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Select Route Journal Entry from Nautical Atlas GUI ---
+
+    public record SelectJournalRoutePayload(boolean offhand, int routeIndex) implements CustomPacketPayload {
+        public static final Type<SelectJournalRoutePayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "select_journal_route"));
+        public static final StreamCodec<ByteBuf, SelectJournalRoutePayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.BOOL,    SelectJournalRoutePayload::offhand,
+                        ByteBufCodecs.VAR_INT, SelectJournalRoutePayload::routeIndex,
+                        SelectJournalRoutePayload::new
+                );
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    InteractionHand hand = offhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+                    ItemStack stack = player.getItemInHand(hand);
+                    if (!(stack.getItem() instanceof RouteJournalItem)) return;
+                    List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+                    if (routeIndex < 0) {
+                        int deleteIdx = -routeIndex - 1;
+                        if (deleteIdx >= 0 && deleteIdx < routes.size()) {
+                            RouteJournalItem.RouteEntry removed = routes.get(deleteIdx);
+                            RouteJournalItem.removeRouteByIndex(stack, deleteIdx);
+                            player.sendOverlayMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", removed.name()));
+                            player.inventoryMenu.broadcastChanges();
+                        }
+                    } else if (routeIndex >= 0 && routeIndex < routes.size()) {
+                        RouteJournalItem.setSelectedIndex(stack, routeIndex);
+                        RouteJournalItem.RouteEntry selected = routes.get(routeIndex);
+                        RouteJournalItem.syncActiveHarborTrades(stack, selected.pos(), player.level());
+                        player.sendOverlayMessage(Component.translatable(
+                                "message.currents_of_trade.journal_switched",
+                                selected.name(),
+                                selected.pos().getX(),
+                                selected.pos().getZ(),
+                                routeIndex + 1,
+                                routes.size()
+                        ));
+                        player.inventoryMenu.broadcastChanges();
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Deliver Daily Urgent Bounty directly at Anchor Point ---
+
+    public record DeliverBountyPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<DeliverBountyPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "deliver_bounty"));
+        public static final StreamCodec<ByteBuf, DeliverBountyPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, DeliverBountyPayload::pos, DeliverBountyPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
+                        BlockPos serverPos = anchorMenu.getBlockPos();
+                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
+                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
+                            targetPos = serverPos;
+                        }
+                    }
+                    if (player.level().getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        anchor.tryDeliverUrgentBounty(player, null);
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Payload registration ---
+
+    @EventBusSubscriber(modid = CurrentsofTrade.MODID)
+    public static class ModPayloadHandler {
+        @SubscribeEvent
+        public static void register(RegisterPayloadHandlersEvent event) {
+            PayloadRegistrar registrar = event.registrar("1.0.0");
+            registrar.playToServer(OpenTravelPayload.TYPE,          OpenTravelPayload.STREAM_CODEC,          OpenTravelPayload::handle);
+            registrar.playToServer(ExecuteTravelPayload.TYPE,       ExecuteTravelPayload.STREAM_CODEC,       ExecuteTravelPayload::handle);
+            registrar.playToServer(OpenSendItemsPayload.TYPE,       OpenSendItemsPayload.STREAM_CODEC,       OpenSendItemsPayload::handle);
+            registrar.playToServer(ExecuteSendCargoPayload.TYPE,    ExecuteSendCargoPayload.STREAM_CODEC,    ExecuteSendCargoPayload::handle);
+            registrar.playToServer(OpenAnchorPointPayload.TYPE,     OpenAnchorPointPayload.STREAM_CODEC,     OpenAnchorPointPayload::handle);
+            registrar.playToServer(OpenRequestTradePayload.TYPE,    OpenRequestTradePayload.STREAM_CODEC,    OpenRequestTradePayload::handle);
+            registrar.playToServer(ExecuteRequestTradePayload.TYPE, ExecuteRequestTradePayload.STREAM_CODEC, ExecuteRequestTradePayload::handle);
+            registrar.playToServer(AddTradeToOrderPayload.TYPE,     AddTradeToOrderPayload.STREAM_CODEC,     AddTradeToOrderPayload::handle);
+            registrar.playToServer(SelectTradeIndexPayload.TYPE,    SelectTradeIndexPayload.STREAM_CODEC,    SelectTradeIndexPayload::handle);
+            registrar.playToServer(ResetTradeOrderPayload.TYPE,     ResetTradeOrderPayload.STREAM_CODEC,     ResetTradeOrderPayload::handle);
+            registrar.playToServer(RenameHarborPayload.TYPE,        RenameHarborPayload.STREAM_CODEC,        RenameHarborPayload::handle);
+            registrar.playToServer(UpgradeHarborPayload.TYPE,       UpgradeHarborPayload.STREAM_CODEC,       UpgradeHarborPayload::handle);
+            registrar.playToServer(RepeatTradeOrderPayload.TYPE,    RepeatTradeOrderPayload.STREAM_CODEC,    RepeatTradeOrderPayload::handle);
+            registrar.playToServer(UnloadShipToHarborPayload.TYPE,  UnloadShipToHarborPayload.STREAM_CODEC,  UnloadShipToHarborPayload::handle);
+            registrar.playToServer(SelectJournalRoutePayload.TYPE,  SelectJournalRoutePayload.STREAM_CODEC,  SelectJournalRoutePayload::handle);
+            registrar.playToServer(DeliverBountyPayload.TYPE,       DeliverBountyPayload.STREAM_CODEC,       DeliverBountyPayload::handle);
+        }
+    }
+}

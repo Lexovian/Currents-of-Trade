@@ -1,0 +1,339 @@
+package com.lexovian.currentsoftrade.client.gui;
+
+import com.lexovian.currentsoftrade.CurrentsofTrade;
+import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.network.ModPayloads;
+import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
+import com.lexovian.currentsoftrade.world.inventory.RequestTradeMenu;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+
+import java.util.List;
+
+public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu> {
+
+    private static final Identifier GUI_TEXTURE =
+            Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/gui/send_items_gui.png");
+
+    private Button backButton;
+    private Button prevTradeButton;
+    private Button nextTradeButton;
+    private Button addTradeButton;
+    private Button clearOrderButton;
+    private Button repeatOrderButton;
+    private Button orderButton;
+
+    public RequestTradeScreen(RequestTradeMenu menu, Inventory playerInventory, Component title) {
+        super(menu, playerInventory, title, 196, 236);
+        this.titleLabelX = 48;
+        this.titleLabelY = 9;
+        this.inventoryLabelX = 18;
+        this.inventoryLabelY = 136;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        // Compact Back button at top-left
+        this.backButton = Button.builder(Component.translatable("gui.currents_of_trade.back"), b -> {
+            ClientPacketDistributor.sendToServer(new ModPayloads.OpenAnchorPointPayload(this.menu.getCurrentPos()));
+        }).bounds(this.leftPos + 7, this.topPos + 6, 36, 15).build();
+
+        // Prev trade button '<'
+        this.prevTradeButton = Button.builder(Component.literal("\u25c0"), b -> {
+            List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+            if (!trades.isEmpty()) {
+                int current = this.menu.getSelectedTradeIndex();
+                int next = (current - 1 + trades.size()) % trades.size();
+                this.menu.setSelectedTradeIndex(next);
+                ClientPacketDistributor.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
+            }
+        }).bounds(this.leftPos + 18, this.topPos + 66, 16, 18).build();
+
+        // Next trade button '>'
+        this.nextTradeButton = Button.builder(Component.literal("\u25b6"), b -> {
+            List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+            if (!trades.isEmpty()) {
+                int current = this.menu.getSelectedTradeIndex();
+                int next = (current + 1) % trades.size();
+                this.menu.setSelectedTradeIndex(next);
+                ClientPacketDistributor.sendToServer(new ModPayloads.SelectTradeIndexPayload(this.menu.getCurrentPos(), next));
+            }
+        }).bounds(this.leftPos + 162, this.topPos + 66, 16, 18).build();
+
+        // Add trade to batch order button
+        this.addTradeButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_add_trade"), b -> {
+            boolean maxAll = Minecraft.getInstance().hasShiftDown();
+            ClientPacketDistributor.sendToServer(new ModPayloads.AddTradeToOrderPayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex(), maxAll));
+        }).tooltip(Tooltip.create(Component.translatable("tooltip.currents_of_trade.add_trade_hint")))
+          .bounds(this.leftPos + 65, this.topPos + 86, 50, 18).build();
+
+        // Reset / Clear staged order button
+        this.clearOrderButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_clear_order"), b -> {
+            ClientPacketDistributor.sendToServer(new ModPayloads.ResetTradeOrderPayload(this.menu.getCurrentPos()));
+        }).bounds(this.leftPos + 117, this.topPos + 86, 39, 18).build();
+
+        // Repeat Last Order preset button
+        this.repeatOrderButton = Button.builder(Component.literal("\u21bb"), b -> {
+            ClientPacketDistributor.sendToServer(new ModPayloads.RepeatTradeOrderPayload(this.menu.getCurrentPos()));
+        }).tooltip(Tooltip.create(Component.translatable("tooltip.currents_of_trade.repeat_order")))
+          .bounds(this.leftPos + 158, this.topPos + 86, 20, 18).build();
+
+        // Centered Order trade ship button inside the dedicated 24px button band (y=108..131)
+        int orderBtnWidth = 140;
+        int orderBtnHeight = 18;
+        int orderBtnX = this.leftPos + (this.imageWidth - orderBtnWidth) / 2;
+        int orderBtnY = this.topPos + 111;
+
+        this.orderButton = Button.builder(Component.translatable("gui.currents_of_trade.btn_order_ship"), b -> {
+            ClientPacketDistributor.sendToServer(new ModPayloads.ExecuteRequestTradePayload(this.menu.getCurrentPos(), this.menu.getSelectedTradeIndex()));
+        }).bounds(orderBtnX, orderBtnY, orderBtnWidth, orderBtnHeight).build();
+
+        this.addRenderableWidget(this.backButton);
+        this.addRenderableWidget(this.prevTradeButton);
+        this.addRenderableWidget(this.nextTradeButton);
+        this.addRenderableWidget(this.addTradeButton);
+        this.addRenderableWidget(this.clearOrderButton);
+        this.addRenderableWidget(this.repeatOrderButton);
+        this.addRenderableWidget(this.orderButton);
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+
+        List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+        boolean hasTrades = !trades.isEmpty();
+
+        if (this.prevTradeButton != null) {
+            this.prevTradeButton.active = hasTrades && trades.size() > 1;
+        }
+        if (this.nextTradeButton != null) {
+            this.nextTradeButton.active = hasTrades && trades.size() > 1;
+        }
+
+        if (this.addTradeButton != null) {
+            this.addTradeButton.active = this.menu.hasValidChart() && this.menu.hasRequiredTradeItems();
+            if (Minecraft.getInstance().hasShiftDown()) {
+                this.addTradeButton.setMessage(Component.translatable("gui.currents_of_trade.btn_add_trade_all"));
+            } else {
+                this.addTradeButton.setMessage(Component.translatable("gui.currents_of_trade.btn_add_trade"));
+            }
+        }
+
+        if (this.clearOrderButton != null) {
+            this.clearOrderButton.active = this.menu.getStagedTradeCount() > 0;
+        }
+
+        if (this.repeatOrderButton != null) {
+            this.repeatOrderButton.active = this.menu.hasValidChart() && this.menu.hasSavedPreset();
+        }
+
+        if (this.orderButton != null) {
+            this.orderButton.active = this.menu.canRequestTrade();
+
+            AnchorPointBlockEntity.HarborStatus status = this.menu.getHarborStatus();
+            int stagedCount = this.menu.getStagedTradeCount();
+
+            if (status != AnchorPointBlockEntity.HarborStatus.VALID) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_invalid_harbor"));
+            } else if (this.menu.getCooldownSeconds() > 0) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_cooldown", this.menu.getCooldownSeconds()));
+            } else if (!this.menu.hasValidChart()) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_no_chart"));
+            } else if (stagedCount == 0 && !this.menu.hasRequiredTradeItems() && !hasTrades) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_no_trades"));
+            } else if (this.menu.isTooExpensive()) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_too_expensive"));
+            } else if (!this.menu.hasEnoughDoubloons()) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_no_fee"));
+            } else if (stagedCount > 0) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_order_ship_batch", stagedCount));
+            } else if (this.menu.hasRequiredTradeItems()) {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_order_ship"));
+            } else {
+                this.orderButton.setMessage(Component.translatable("gui.currents_of_trade.btn_missing_items"));
+            }
+        }
+    }
+
+    @Override
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        // Main container background
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, GUI_TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, 256, 256);
+
+        // Chart slot box (slot at x=24, y=36 -> box at 23, 35)
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, GUI_TEXTURE, this.leftPos + 23, this.topPos + 35, 17, 146, 18, 18, 256, 256);
+        // Fee slot box (slot at x=64, y=36 -> box at 63, 35)
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, GUI_TEXTURE, this.leftPos + 63, this.topPos + 35, 17, 146, 18, 18, 256, 256);
+
+        // Cost A slot box (slot at x=24, y=87 -> box at 23, 86)
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, GUI_TEXTURE, this.leftPos + 23, this.topPos + 86, 17, 146, 18, 18, 256, 256);
+        // Cost B slot box (slot at x=44, y=87 -> box at 43, 86)
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, GUI_TEXTURE, this.leftPos + 43, this.topPos + 86, 17, 146, 18, 18, 256, 256);
+
+        // Trade offer display frame plate in the middle
+        HarborTradeOffer selected = this.menu.getSelectedTrade();
+        boolean isBounty = selected != null && selected.isUrgentBounty();
+        int fillCol = isBounty ? 0x33D4AF37 : 0x22000000;
+        int outlineCol = isBounty ? 0xFFD4AF37 : 0xFF8B8B8B;
+        guiGraphics.fill(this.leftPos + 36, this.topPos + 66, this.leftPos + 160, this.topPos + 84, fillCol);
+        guiGraphics.outline(this.leftPos + 36, this.topPos + 66, 124, 18, outlineCol);
+    }
+
+    @Override
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        super.extractLabels(guiGraphics, mouseX, mouseY);
+
+        // Slot headers centered directly above Chart (x=23..41 -> center 32) and Fee (x=63..81 -> center 72)
+        Component chartLabel = Component.translatable("gui.currents_of_trade.slot_chart");
+        Component feeLabel = Component.translatable("gui.currents_of_trade.slot_fee");
+        guiGraphics.text(this.font, chartLabel, 32 - this.font.width(chartLabel) / 2, 24, 0xFF555555, false);
+        guiGraphics.text(this.font, feeLabel, 72 - this.font.width(feeLabel) / 2, 24, 0xFF555555, false);
+
+        // Destination Info to the right of Chart and Fee slots (x=86)
+        if (this.menu.hasValidChart()) {
+            String destHarbor = this.menu.getTargetHarborName();
+            int dist = (int) this.menu.getDistance();
+            int fee = this.menu.getRequiredFee();
+            int surcharge = this.menu.getCargoSurcharge();
+
+            Component destText = Component.literal("§2§l" + this.font.plainSubstrByWidth(destHarbor, 96));
+            guiGraphics.text(this.font, destText, 86, 19, 0xFF1B4D3E, false);
+
+            Component distText = Component.literal("§8Dist: §0" + dist + "m");
+            guiGraphics.text(this.font, distText, 86, 28, 0xFF404040, false);
+
+            if (this.menu.isTooExpensive()) {
+                guiGraphics.text(this.font, Component.literal("§cToo Far (> 64)"), 86, 37, 0xFFAA0000, false);
+            } else {
+                String surchargeStr = surcharge > 0 ? " §8(+§e" + surcharge + "§8)" : "";
+                Component feeText = Component.literal("§8Fee: §6" + fee + " Dbl" + surchargeStr);
+                guiGraphics.text(this.font, feeText, 86, 37, 0xFF8B5A00, false);
+            }
+
+            if (this.menu.isArbitrageRoute()) {
+                guiGraphics.text(this.font, Component.translatable("gui.currents_of_trade.arbitrage_badge"), 86, 46, 0xFF1E824C, false);
+            }
+        } else {
+            guiGraphics.text(this.font, Component.literal("§7No Chart"), 86, 28, 0xFF777777, false);
+            guiGraphics.text(this.font, Component.literal("§8Insert chart"), 86, 40, 0xFF999999, false);
+        }
+
+        // Section header: Harbor Offer
+        List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+        if (!trades.isEmpty()) {
+            int selectedIdx = this.menu.getSelectedTradeIndex();
+            if (selectedIdx >= trades.size()) {
+                selectedIdx = 0;
+            }
+            HarborTradeOffer currentOffer = trades.get(selectedIdx);
+            Component offerHeader = Component.translatable("gui.currents_of_trade.harbor_offer");
+            String counter = " §8(" + (selectedIdx + 1) + "/" + trades.size() + ")";
+            String arbitrageMarker = this.menu.isArbitrageRoute() ? " §6✦" : "";
+            String bountyMarker = (currentOffer != null && currentOffer.isUrgentBounty()) ? " §6§l[★ 2x]" : "";
+            guiGraphics.text(this.font, offerHeader.getString() + counter + arbitrageMarker + bountyMarker, 18, 56, 0xFF333333, false);
+        } else {
+            guiGraphics.text(this.font, Component.translatable("gui.currents_of_trade.harbor_offer"), 18, 56, 0xFF333333, false);
+        }
+
+        // Compact staged badge right-aligned on the header row (y=56) so it never overlaps the Order button
+        int stagedCount = this.menu.getStagedTradeCount();
+        int stagedItems = this.menu.getStagedItemCount();
+        if (stagedCount > 0) {
+            String badge = "§2\u2714 " + stagedCount + "x (§0" + stagedItems + "§2)";
+            guiGraphics.text(this.font, badge, 178 - this.font.width(badge), 56, 0xFF2E7D32, false);
+        }
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+
+        List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+        if (!trades.isEmpty()) {
+            int selectedIdx = this.menu.getSelectedTradeIndex();
+            if (selectedIdx >= trades.size()) {
+                selectedIdx = 0;
+                this.menu.setSelectedTradeIndex(0);
+            }
+
+            HarborTradeOffer offer = trades.get(selectedIdx);
+            ItemStack costA = offer.getCostA();
+            ItemStack costB = offer.getCostB();
+            ItemStack res = offer.getResult();
+
+            int baseX = this.leftPos + 40;
+            int baseY = this.topPos + 67;
+
+            // Render Cost A
+            if (!costA.isEmpty()) {
+                guiGraphics.item(costA, baseX, baseY);
+                guiGraphics.itemDecorations(this.font, costA, baseX, baseY);
+            }
+
+            int arrowX;
+            int resultX;
+
+            if (!costB.isEmpty()) {
+                // Cost B present
+                guiGraphics.text(this.font, "+", baseX + 19, baseY + 4, 0xFF555555, false);
+                guiGraphics.item(costB, baseX + 28, baseY);
+                guiGraphics.itemDecorations(this.font, costB, baseX + 28, baseY);
+
+                arrowX = baseX + 48;
+                resultX = baseX + 62;
+            } else {
+                arrowX = baseX + 22;
+                resultX = baseX + 36;
+            }
+
+            // Arrow
+            guiGraphics.text(this.font, "\u2794", arrowX, baseY + 4, 0xFF555555, false);
+
+            // Render Result
+            if (!res.isEmpty()) {
+                guiGraphics.item(res, resultX, baseY);
+                guiGraphics.itemDecorations(this.font, res, resultX, baseY);
+            }
+
+            if (offer.isUrgentBounty()) {
+                String bountyTag = "§6★2x";
+                guiGraphics.text(this.font, bountyTag, this.leftPos + 135, baseY + 4, 0xFFFFD700, false);
+                if (isHovering(132, 66, 26, 18, mouseX, mouseY)) {
+                    guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(
+                            Component.translatable("tooltip.currents_of_trade.urgent_bounty_title"),
+                            Component.translatable("tooltip.currents_of_trade.urgent_bounty_desc")
+                    ), mouseX, mouseY);
+                }
+            }
+
+            // Tooltips on hovering over trade offer items
+            if (isHovering(40, 67, 16, 16, mouseX, mouseY) && !costA.isEmpty()) {
+                guiGraphics.setTooltipForNextFrame(this.font, costA, mouseX, mouseY);
+            } else if (!costB.isEmpty() && isHovering(68, 67, 16, 16, mouseX, mouseY)) {
+                guiGraphics.setTooltipForNextFrame(this.font, costB, mouseX, mouseY);
+            } else if (isHovering(resultX - this.leftPos, 67, 16, 16, mouseX, mouseY) && !res.isEmpty()) {
+                guiGraphics.setTooltipForNextFrame(this.font, res, mouseX, mouseY);
+            }
+        }
+
+        if (this.menu.isArbitrageRoute() && isHovering(86, 45, 96, 9, mouseX, mouseY)) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(
+                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_title"),
+                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_desc")
+            ), mouseX, mouseY);
+        }
+    }
+}

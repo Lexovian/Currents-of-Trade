@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GCG",
+    "LBL",
+    " P "
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "C": "currents_of_trade:nautical_chart",
+    "L": "minecraft:leather",
+    "B": "minecraft:book",
+    "P": "minecraft:compass"
+  },
+  "result": {
+    "count": 1,
+    "id": "currents_of_trade:route_journal"
+  }
+}

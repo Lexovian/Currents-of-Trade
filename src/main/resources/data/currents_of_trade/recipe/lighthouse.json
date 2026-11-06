@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "CSC",
+    "PPP"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "S": "minecraft:sea_lantern",
+    "P": "minecraft:prismarine"
+  },
+  "result": {
+    "id": "currents_of_trade:lighthouse",
+    "count": 1
+  }
+}

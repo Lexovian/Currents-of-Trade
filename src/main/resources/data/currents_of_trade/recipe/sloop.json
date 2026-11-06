@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WFW",
+    "SCS",
+    "TBT"
+  ],
+  "key": {
+    "W": "minecraft:white_wool",
+    "F": "minecraft:oak_fence",
+    "S": "minecraft:stripped_oak_log",
+    "C": "minecraft:compass",
+    "T": "minecraft:stripped_oak_wood",
+    "B": "minecraft:oak_boat"
+  },
+  "result": {
+    "id": "currents_of_trade:sloop",
+    "count": 1
+  }
+}
