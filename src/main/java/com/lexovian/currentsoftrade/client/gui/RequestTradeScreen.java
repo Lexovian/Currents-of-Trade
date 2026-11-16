@@ -183,12 +183,58 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
         guiGraphics.blit(GUI_TEXTURE, this.leftPos + 43, this.topPos + 86, 17, 146, 18, 18);
 
         // Trade offer display frame plate in the middle
-        HarborTradeOffer selected = this.menu.getSelectedTrade();
+        List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+        HarborTradeOffer selected = null;
+        if (!trades.isEmpty()) {
+            int selectedIdx = this.menu.getSelectedTradeIndex();
+            if (selectedIdx >= trades.size()) {
+                selectedIdx = 0;
+                this.menu.setSelectedTradeIndex(0);
+            }
+            selected = trades.get(selectedIdx);
+        }
         boolean isBounty = selected != null && selected.isUrgentBounty();
         int fillCol = isBounty ? 0x33D4AF37 : 0x22000000;
         int outlineCol = isBounty ? 0xFFD4AF37 : 0xFF8B8B8B;
         guiGraphics.fill(this.leftPos + 36, this.topPos + 66, this.leftPos + 160, this.topPos + 84, fillCol);
         guiGraphics.renderOutline(this.leftPos + 36, this.topPos + 66, 124, 18, outlineCol);
+
+        if (selected != null) {
+            ItemStack costA = selected.getCostA();
+            ItemStack costB = selected.getCostB();
+            ItemStack res = this.menu.applyFreePortRewardBonus(costA, selected.getResult());
+
+            int baseX = this.leftPos + 40;
+            int baseY = this.topPos + 67;
+
+            if (!costA.isEmpty()) {
+                guiGraphics.renderItem(costA, baseX, baseY);
+                guiGraphics.renderItemDecorations(this.font, costA, baseX, baseY);
+            }
+
+            int arrowX;
+            int resultX;
+            if (!costB.isEmpty()) {
+                guiGraphics.drawString(this.font, "+", baseX + 19, baseY + 4, 0x555555, false);
+                guiGraphics.renderItem(costB, baseX + 28, baseY);
+                guiGraphics.renderItemDecorations(this.font, costB, baseX + 28, baseY);
+                arrowX = baseX + 48;
+                resultX = baseX + 62;
+            } else {
+                arrowX = baseX + 22;
+                resultX = baseX + 36;
+            }
+
+            guiGraphics.drawString(this.font, "\u2794", arrowX, baseY + 4, 0x555555, false);
+
+            if (!res.isEmpty()) {
+                guiGraphics.renderItem(res, resultX, baseY);
+                guiGraphics.renderItemDecorations(this.font, res, resultX, baseY);
+            }
+            if (isBounty) {
+                guiGraphics.drawString(this.font, "§6★2x", this.leftPos + 135, baseY + 4, 0xD4AF37, false);
+            }
+        }
     }
 
     @Override
@@ -212,14 +258,14 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
             Component destText = Component.literal("§2§l" + this.font.plainSubstrByWidth(destHarbor, 96));
             guiGraphics.drawString(this.font, destText, 86, 19, 0x1B4D3E, false);
 
-            Component distText = Component.literal("§8Dist: §0" + dist + "m");
+            Component distText = Component.translatable("gui.currents_of_trade.short_dist", dist);
             guiGraphics.drawString(this.font, distText, 86, 28, 0x404040, false);
 
             if (this.menu.isTooExpensive()) {
-                guiGraphics.drawString(this.font, Component.literal("§cToo Far (> 64)"), 86, 37, 0xAA0000, false);
+                guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.short_too_far", com.lexovian.currentsoftrade.world.inventory.TravelMenu.getMaxDoubloons()), 86, 37, 0xAA0000, false);
             } else {
                 String surchargeStr = surcharge > 0 ? " §8(+§e" + surcharge + "§8)" : "";
-                Component feeText = Component.literal("§8Fee: §6" + fee + " Dbl" + surchargeStr);
+                Component feeText = Component.translatable("gui.currents_of_trade.short_fee", fee, surchargeStr);
                 guiGraphics.drawString(this.font, feeText, 86, 37, 0x8B5A00, false);
             }
 
@@ -227,8 +273,8 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
                 guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.arbitrage_badge"), 86, 46, 0x1E824C, false);
             }
         } else {
-            guiGraphics.drawString(this.font, Component.literal("§7No Chart"), 86, 28, 0x777777, false);
-            guiGraphics.drawString(this.font, Component.literal("§8Insert chart"), 86, 40, 0x999999, false);
+            guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.short_no_chart"), 86, 28, 0x777777, false);
+            guiGraphics.drawString(this.font, Component.translatable("gui.currents_of_trade.short_insert_chart"), 86, 40, 0x999999, false);
         }
 
         // Section header: Harbor Offer
@@ -264,79 +310,43 @@ public class RequestTradeScreen extends AbstractContainerScreen<RequestTradeMenu
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        List<HarborTradeOffer> trades = this.menu.getHarborTrades();
-        if (!trades.isEmpty()) {
-            int selectedIdx = this.menu.getSelectedTradeIndex();
-            if (selectedIdx >= trades.size()) {
-                selectedIdx = 0;
-                this.menu.setSelectedTradeIndex(0);
-            }
+        if (this.menu.getCarried().isEmpty()) {
+            List<HarborTradeOffer> trades = this.menu.getHarborTrades();
+            if (!trades.isEmpty()) {
+                int selectedIdx = this.menu.getSelectedTradeIndex();
+                if (selectedIdx >= trades.size()) {
+                    selectedIdx = 0;
+                    this.menu.setSelectedTradeIndex(0);
+                }
 
-            HarborTradeOffer offer = trades.get(selectedIdx);
-            ItemStack costA = offer.getCostA();
-            ItemStack costB = offer.getCostB();
-            ItemStack res = offer.getResult();
+                HarborTradeOffer offer = trades.get(selectedIdx);
+                ItemStack costA = offer.getCostA();
+                ItemStack costB = offer.getCostB();
+                ItemStack res = this.menu.applyFreePortRewardBonus(costA, offer.getResult());
+                int resultRelX = !costB.isEmpty() ? 102 : 76;
 
-            int baseX = this.leftPos + 40;
-            int baseY = this.topPos + 67;
-
-            // Render Cost A
-            if (!costA.isEmpty()) {
-                guiGraphics.renderItem(costA, baseX, baseY);
-                guiGraphics.renderItemDecorations(this.font, costA, baseX, baseY);
-            }
-
-            int arrowX;
-            int resultX;
-
-            if (!costB.isEmpty()) {
-                // Cost B present
-                guiGraphics.drawString(this.font, "+", baseX + 19, baseY + 4, 0x555555, false);
-                guiGraphics.renderItem(costB, baseX + 28, baseY);
-                guiGraphics.renderItemDecorations(this.font, costB, baseX + 28, baseY);
-
-                arrowX = baseX + 48;
-                resultX = baseX + 62;
-            } else {
-                arrowX = baseX + 22;
-                resultX = baseX + 36;
-            }
-
-            // Arrow
-            guiGraphics.drawString(this.font, "\u2794", arrowX, baseY + 4, 0x555555, false);
-
-            // Render Result
-            if (!res.isEmpty()) {
-                guiGraphics.renderItem(res, resultX, baseY);
-                guiGraphics.renderItemDecorations(this.font, res, resultX, baseY);
-            }
-
-            if (offer.isUrgentBounty()) {
-                String bountyTag = "§6★2x";
-                guiGraphics.drawString(this.font, bountyTag, this.leftPos + 135, baseY + 4, 0xD4AF37, false);
-                if (isHovering(132, 66, 26, 18, mouseX, mouseY)) {
+                if (offer.isUrgentBounty() && isHovering(132, 66, 26, 18, mouseX, mouseY)) {
                     guiGraphics.renderTooltip(this.font, List.of(
                             Component.translatable("tooltip.currents_of_trade.urgent_bounty_title"),
                             Component.translatable("tooltip.currents_of_trade.urgent_bounty_desc")
                     ), java.util.Optional.empty(), mouseX, mouseY);
                 }
+
+                if (isHovering(40, 67, 16, 16, mouseX, mouseY) && !costA.isEmpty()) {
+                    guiGraphics.renderTooltip(this.font, costA, mouseX, mouseY);
+                } else if (!costB.isEmpty() && isHovering(68, 67, 16, 16, mouseX, mouseY)) {
+                    guiGraphics.renderTooltip(this.font, costB, mouseX, mouseY);
+                } else if (isHovering(resultRelX, 67, 16, 16, mouseX, mouseY) && !res.isEmpty()) {
+                    guiGraphics.renderTooltip(this.font, res, mouseX, mouseY);
+                }
             }
 
-            // Tooltips on hovering over trade offer items
-            if (isHovering(40, 67, 16, 16, mouseX, mouseY) && !costA.isEmpty()) {
-                guiGraphics.renderTooltip(this.font, costA, mouseX, mouseY);
-            } else if (!costB.isEmpty() && isHovering(68, 67, 16, 16, mouseX, mouseY)) {
-                guiGraphics.renderTooltip(this.font, costB, mouseX, mouseY);
-            } else if (isHovering(resultX - this.leftPos, 67, 16, 16, mouseX, mouseY) && !res.isEmpty()) {
-                guiGraphics.renderTooltip(this.font, res, mouseX, mouseY);
+            if (this.menu.isArbitrageRoute() && isHovering(86, 45, 96, 9, mouseX, mouseY)) {
+                guiGraphics.renderTooltip(this.font, List.of(
+                        Component.translatable("tooltip.currents_of_trade.arbitrage_active_title"),
+                        Component.translatable("tooltip.currents_of_trade.arbitrage_active_desc")
+                ), java.util.Optional.empty(), mouseX, mouseY);
             }
-        }
-
-        if (this.menu.isArbitrageRoute() && isHovering(86, 45, 96, 9, mouseX, mouseY)) {
-            guiGraphics.renderTooltip(this.font, List.of(
-                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_title"),
-                    Component.translatable("tooltip.currents_of_trade.arbitrage_active_desc")
-            ), java.util.Optional.empty(), mouseX, mouseY);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);

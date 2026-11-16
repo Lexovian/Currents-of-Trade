@@ -6,6 +6,7 @@ import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -46,8 +47,9 @@ public class TravelMenu extends AbstractContainerMenu {
     }
 
     private static ContainerData createClientContainerData() {
-        SimpleContainerData clientData = new SimpleContainerData(2);
+        SimpleContainerData clientData = new SimpleContainerData(3);
         clientData.set(1, AnchorPointBlockEntity.HarborStatus.VALID.ordinal());
+        clientData.set(2, 0);
         return clientData;
     }
 
@@ -111,6 +113,7 @@ public class TravelMenu extends AbstractContainerMenu {
                     if (be instanceof AnchorPointBlockEntity anchor) {
                         if (index == 0) return anchor.getRemainingCooldownSeconds();
                         if (index == 1) return anchor.getHarborStatus().ordinal();
+                        if (index == 2) return anchor.getSpecialization().getIndex();
                     }
                     return index == 1 ? AnchorPointBlockEntity.HarborStatus.NO_WATER.ordinal() : 0;
                 }, index == 1 ? AnchorPointBlockEntity.HarborStatus.NO_WATER.ordinal() : 0);
@@ -121,7 +124,7 @@ public class TravelMenu extends AbstractContainerMenu {
 
             @Override
             public int getCount() {
-                return 2;
+                return 3;
             }
         };
     }
@@ -166,12 +169,18 @@ public class TravelMenu extends AbstractContainerMenu {
         }
         if (this.player != null && this.player.level() != null) {
             BlockPos pPos = this.player.blockPosition();
-            for (BlockPos check : BlockPos.betweenClosed(pPos.offset(-5, -3, -5), pPos.offset(5, 3, 5))) {
+            BlockPos nearest = null;
+            double bestDistSq = Double.MAX_VALUE;
+            for (BlockPos check : BlockPos.betweenClosed(pPos.offset(-10, -6, -10), pPos.offset(10, 6, 10))) {
                 if (this.player.level().getBlockEntity(check) instanceof AnchorPointBlockEntity) {
-                    return check.immutable();
+                    double dSq = check.distToCenterSqr(this.player.position());
+                    if (dSq < bestDistSq) {
+                        bestDistSq = dSq;
+                        nearest = check.immutable();
+                    }
                 }
             }
-            return this.player.blockPosition();
+            return nearest != null ? nearest : pPos;
         }
         return BlockPos.ZERO;
     }
@@ -206,6 +215,13 @@ public class TravelMenu extends AbstractContainerMenu {
         return 0;
     }
 
+    public HarborSpecialization getOriginSpecialization() {
+        if (this.data != null && this.data.getCount() > 2) {
+            return HarborSpecialization.byIndex(this.data.get(2));
+        }
+        return HarborSpecialization.NONE;
+    }
+
     /** 1 Doubloon per 100 blocks, minimum 1. Wearing Captain's Tricorne grants a 10% discount. */
     public int getRequiredDoubloons() {
         int distance = getDistance();
@@ -213,6 +229,9 @@ public class TravelMenu extends AbstractContainerMenu {
         int fee = Math.max(1, (int) Math.ceil(distance / 100.0));
         if (this.player != null && this.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get())) {
             fee = Math.max(1, (int) Math.floor(fee * 0.9));
+        }
+        if (getOriginSpecialization() == HarborSpecialization.FREE_PORT) {
+            fee = Math.max(1, (int) Math.floor(fee * 0.75));
         }
         return fee;
     }
@@ -298,8 +317,11 @@ public class TravelMenu extends AbstractContainerMenu {
         boat.setYHeadRot(initialYaw);
         boat.yRotO = initialYaw;
         boat.setVoyageShip(true);
-        String originName = (player.level().getBlockEntity(origin) instanceof AnchorPointBlockEntity originAnchor)
-                ? originAnchor.getHarborName() : null;
+        String originName = null;
+        if (player.level().getBlockEntity(origin) instanceof AnchorPointBlockEntity originAnchor) {
+            originName = originAnchor.getHarborName();
+            originAnchor.applyOutboundShipSpecialization(boat);
+        }
         boat.setHomeHarbor(origin, originName);
         boat.setRouteWaypoints(NauticalChartItem.getWaypoints(chart));
         boat.setVoyageTarget(target, destHarbor);

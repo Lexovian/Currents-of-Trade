@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_crossbow": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:crossbow"
+          }
+        ]
+      }
+    },
+    "has_sloop": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:sloop"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:swivel_harpoon"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_crossbow",
+      "has_sloop"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:swivel_harpoon"
+    ]
+  }
+}

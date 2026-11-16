@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_sea_lantern": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:sea_lantern"
+          }
+        ]
+      }
+    },
+    "has_prismarine": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:prismarine"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:lighthouse"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_sea_lantern",
+      "has_prismarine"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:lighthouse"
+    ]
+  }
+}

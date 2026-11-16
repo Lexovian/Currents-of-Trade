@@ -90,6 +90,32 @@ public class CurrentsOfTradeJeiPlugin implements IModPlugin {
                 Component.translatable("jei.currents_of_trade.info.tyrian_purple"));
         registration.addIngredientInfo(new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get()), VanillaTypes.ITEM_STACK,
                 Component.translatable("jei.currents_of_trade.info.dragons_blood_resin"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.TRADE_CHARTER.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.trade_charter"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.GUILD_STRONGBOX.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.guild_strongbox"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.CAPTAINS_SPYGLASS.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.captains_spyglass"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.BOSUNS_WHISTLE.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.bosuns_whistle"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.swivel_harpoon"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.DOUBLOON.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.doubloon"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.TRADE_LEDGER.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.trade_ledger"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.captains_pipe"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.STORM_GLASS.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.storm_glass"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.brass_astrolabe"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.message_in_a_bottle"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.JADE_FIGURINE.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.jade_figurine"));
+        registration.addIngredientInfo(new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get()), VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.currents_of_trade.info.damascus_steel"));
     }
 
     private List<HarborTradeJeiRecipe> buildHarborTradeRecipes() {
@@ -175,56 +201,35 @@ public class CurrentsOfTradeJeiPlugin implements IModPlugin {
         List<UpgradeJeiRecipe> list = new ArrayList<>();
         ItemStack anchor = new ItemStack(CurrentsofTrade.ANCHOR_POINT_ITEM.get());
 
-        // 1. Harbor Upgrades (Lv.2 -> Lv.5)
+        // 1. Harbor Upgrades (Lv.2 -> Lv.5) — wired directly to HarborUpgradeCost
         list.add(new UpgradeJeiRecipe(
                 Component.literal("⬆ Lv.2 ").append(Component.translatable("harbor.currents_of_trade.level.2")),
-                Component.literal("§a27 Slots §7| §b45s CD §7| §d8 Offers"),
-                List.of(
-                        List.of(anchor),
-                        List.of(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8)),
-                        List.of(new ItemStack(Items.OAK_PLANKS, 32), new ItemStack(Items.SPRUCE_PLANKS, 32), new ItemStack(Items.BIRCH_PLANKS, 32)),
-                        List.of(new ItemStack(Items.IRON_INGOT, 16))
-                ),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 27, 45, 8),
+                com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost.LEVEL_2.buildJeiInputs(anchor),
                 anchor,
                 0x5BC0EB
         ));
 
         list.add(new UpgradeJeiRecipe(
                 Component.literal("⬆ Lv.3 ").append(Component.translatable("harbor.currents_of_trade.level.3")),
-                Component.literal("§a36 Slots §7| §b30s CD §7| §d10 Offers"),
-                List.of(
-                        List.of(anchor),
-                        List.of(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 20)),
-                        List.of(new ItemStack(Items.COPPER_INGOT, 16)),
-                        List.of(new ItemStack(Items.LANTERN, 4))
-                ),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 36, 30, 10),
+                com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost.LEVEL_3.buildJeiInputs(anchor),
                 anchor,
                 0x48A14D
         ));
 
         list.add(new UpgradeJeiRecipe(
                 Component.literal("⬆ Lv.4 ").append(Component.translatable("harbor.currents_of_trade.level.4")),
-                Component.literal("§a45 Slots §7| §b20s CD §7| §d12 Offers"),
-                List.of(
-                        List.of(anchor),
-                        List.of(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 40)),
-                        List.of(new ItemStack(Items.GOLD_INGOT, 8)),
-                        List.of(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 2)),
-                        List.of(new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2))
-                ),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 45, 20, 12),
+                com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost.LEVEL_4.buildJeiInputs(anchor),
                 anchor,
                 0xE69A28
         ));
 
         list.add(new UpgradeJeiRecipe(
                 Component.literal("⬆ Lv.5 ").append(Component.translatable("harbor.currents_of_trade.level.5")),
-                Component.literal("§a54 Slots §7| §b10s CD §7| §d14 Offers"),
-                List.of(
-                        List.of(anchor),
-                        List.of(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 64)),
-                        List.of(new ItemStack(Items.EMERALD_BLOCK, 4)),
-                        List.of(new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1))
-                ),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 54, 10, 14),
+                com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost.LEVEL_5.buildJeiInputs(anchor),
                 anchor,
                 0xFFD700
         ));
@@ -282,6 +287,29 @@ public class CurrentsOfTradeJeiPlugin implements IModPlugin {
                 ),
                 new ItemStack(CurrentsofTrade.SLOOP_ITEM.get()),
                 0xFF8A65
+        ));
+
+        list.add(new UpgradeJeiRecipe(
+                Component.translatable("jei.currents_of_trade.shipwright.swivel_harpoon"),
+                Component.translatable("jei.currents_of_trade.shipwright.swivel_harpoon.desc"),
+                List.of(
+                        ships,
+                        List.of(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get())),
+                        List.of(new ItemStack(Items.SHEARS))
+                ),
+                new ItemStack(CurrentsofTrade.SLOOP_ITEM.get()),
+                0xFFB74D
+        ));
+
+        list.add(new UpgradeJeiRecipe(
+                Component.translatable("jei.currents_of_trade.harbor_spec"),
+                Component.translatable("jei.currents_of_trade.harbor_spec.desc"),
+                List.of(
+                        List.of(anchor),
+                        List.of(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8))
+                ),
+                anchor,
+                0xFFD700
         ));
 
         return list;

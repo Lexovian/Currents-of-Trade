@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_black_wool": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:black_wool"
+          }
+        ]
+      }
+    },
+    "has_doubloon": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "currents_of_trade:doubloon"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:captains_tricorne"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_black_wool",
+      "has_doubloon"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:captains_tricorne"
+    ]
+  }
+}

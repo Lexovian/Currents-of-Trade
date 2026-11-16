@@ -3,6 +3,7 @@ package com.lexovian.currentsoftrade.item;
 import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
@@ -76,6 +77,9 @@ public class NauticalChartItem extends Item {
             final MaritimeTradeRegion region = be instanceof AnchorPointBlockEntity aBe
                     ? aBe.getTradeRegion()
                     : MaritimeTradeRegion.fromLevelAndPos(level, pos);
+            final HarborSpecialization spec = be instanceof AnchorPointBlockEntity aBe
+                    ? aBe.getSpecialization()
+                    : HarborSpecialization.NONE;
             final List<HarborTradeOffer> trades =
                     be instanceof AnchorPointBlockEntity aBe ? aBe.getHarborTrades() : List.of();
 
@@ -85,6 +89,7 @@ public class NauticalChartItem extends Item {
                 tag.putInt("TargetZ", pos.getZ());
                 tag.putString("HarborName", finalName);
                 tag.putString("RegionId", region.getId());
+                tag.putString("Specialization", spec.getId());
                 tag.putBoolean("Bound", true);
                 tag.remove("Waypoints");
 
@@ -98,6 +103,15 @@ public class NauticalChartItem extends Item {
             // Immediately sync the chart data to the client inventory
             if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
                 serverPlayer.inventoryMenu.broadcastChanges();
+                if (serverPlayer.getServer() != null) {
+                    net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
+                            .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.lexovian.currentsoftrade.CurrentsofTrade.MODID, "first_chart"));
+                    if (adv != null) {
+                        for (String criterion : adv.value().criteria().keySet()) {
+                            serverPlayer.getAdvancements().award(adv, criterion);
+                        }
+                    }
+                }
             }
 
             level.playSound(null, pos, SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -266,6 +280,10 @@ public class NauticalChartItem extends Item {
             String regionId = tag.getString("RegionId");
             MaritimeTradeRegion region = MaritimeTradeRegion.byId(regionId);
             tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.chart_region", region.getDisplayName()));
+            HarborSpecialization spec = HarborSpecialization.byId(tag.getString("Specialization"));
+            if (spec != HarborSpecialization.NONE) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.spec_active", spec.getShortBadge()));
+            }
             tooltipComponents.add(region.getExportDescription());
             tooltipComponents.add(region.getImportDescription());
         } else {
@@ -387,6 +405,25 @@ public class NauticalChartItem extends Item {
                     region = MaritimeTradeRegion.byId(tag.getString("RegionId"));
                 } else {
                     region = MaritimeTradeRegion.fromLevelAndPos(level, targetPos);
+                }
+                HarborSpecialization destSpec = HarborSpecialization.NONE;
+                if (level instanceof ServerLevel serverLevel) {
+                    destSpec = HarborSavedData.get(serverLevel).getHarborSpecialization(targetPos);
+                } else if (stack.getItem() instanceof RouteJournalItem) {
+                    List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+                    int idx = RouteJournalItem.getSelectedIndex(stack);
+                    if (idx >= 0 && idx < routes.size()) {
+                        destSpec = routes.get(idx).specialization();
+                    }
+                } else if (tag.contains("Specialization")) {
+                    destSpec = HarborSpecialization.byId(tag.getString("Specialization"));
+                }
+
+                if (destSpec == HarborSpecialization.GUILD_DEPOT) {
+                    HarborTradeOffer secondBounty = region.getSecondaryUrgentBountyOffer(level, targetPos);
+                    if (secondBounty != null) {
+                        baseList.add(0, secondBounty);
+                    }
                 }
                 HarborTradeOffer bounty = region.getUrgentBountyOffer(level, targetPos);
                 if (bounty != null) {

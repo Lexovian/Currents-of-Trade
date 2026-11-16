@@ -28,6 +28,11 @@ sourceSets.main.resources {
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        name = "Jared's maven (JEI)"
+        url = "https://maven.blamejared.com/"
+        content { includeGroup "mezz.jei" }
+    }
 }
 
 base {
@@ -116,7 +121,9 @@ configurations {
 }
 
 dependencies {
-    compileOnly files("C:/Users/Lexo/curseforge/minecraft/Instances/sadasda/mods/jei-1.21.1-neoforge-19.64.0.455.jar")
+    // JEI integration (optional at runtime, compile-time API only)
+    compileOnly "mezz.jei:jei-1.21.1-common-api:19.64.0.455"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.64.0.455"
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

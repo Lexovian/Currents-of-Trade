@@ -29,6 +29,7 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
@@ -62,7 +63,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     public static final int CARGO_SLOTS = 54;
     public static final float MAX_SHIP_HEALTH = 100.0F;
-    private static final double CARGO_MAX_SPEED = 1.0;
+    private static final double CARGO_MAX_SPEED = 1.35;
     private static final int[] DETOUR_OFFSETS_DEG = { 20, 32, 45, 60, 75, 90, 105, 120, 135, 150, 165 };
 
     protected BlockPos targetPos;
@@ -126,6 +127,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     protected int blockedTicks = 0;
 
     private boolean voyageShip = false;
+    protected boolean drydockReinforced = false;
     private int tailwindTicks = 0;
 
     public void applyTailwind(int ticks) {
@@ -145,19 +147,31 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     // Synced so the client renders travel ships with the plain sloop look instead of the striped trade-ship look
     private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> IS_VOYAGE_SHIP =
             net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> HAS_SWIVEL_HARPOON =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<String> SYNCED_DEST_HARBOR =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.STRING);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Float> SYNCED_SHIP_HEALTH =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> SYNCED_DRYDOCK_REINFORCED =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Integer> SYNCED_CARGO_STACKS =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(TradeBoatEntity.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
 
     /** Ticks a travel ship may go without any progress before it is treated as blocked (2 minutes). */
     private static final int VOYAGE_GIVE_UP_TICKS = 2400;
 
     // --- Constructors & Setup ---
 
+    @SuppressWarnings("unchecked")
     public TradeBoatEntity(EntityType<? extends Boat> entityType, Level level) {
         super(entityType, level);
         this.setNoGravity(false);
-        this.sternPart = new ShipPart<>(this, 2.2F, 0.85F);
-        this.prowPart = new ShipPart<>(this, 2.0F, 0.85F);
-        this.subEntities = new ShipPart<?>[]{ this.sternPart, this.prowPart };
-        this.setCustomName(Component.literal("Trade Ship"));
+        ShipPart<TradeBoatEntity>[] parts = ShipPart.createShipDeckParts(this);
+        this.sternPart = parts[0];
+        this.prowPart = parts[3];
+        this.subEntities = parts;
+        this.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
         this.setCustomNameVisible(true);
     }
 
@@ -176,6 +190,35 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         super.defineSynchedData(builder);
         builder.define(IS_WANDERING_TRADER_SHIP, false);
         builder.define(IS_VOYAGE_SHIP, false);
+        builder.define(HAS_SWIVEL_HARPOON, false);
+        builder.define(SYNCED_DEST_HARBOR, "");
+        builder.define(SYNCED_SHIP_HEALTH, MAX_SHIP_HEALTH);
+        builder.define(SYNCED_DRYDOCK_REINFORCED, false);
+        builder.define(SYNCED_CARGO_STACKS, 0);
+    }
+
+    public String getSyncedDestHarbor() {
+        return this.entityData.get(SYNCED_DEST_HARBOR);
+    }
+
+    public float getSyncedShipHealth() {
+        return this.entityData.get(SYNCED_SHIP_HEALTH);
+    }
+
+    public boolean isSyncedDrydockReinforced() {
+        return this.entityData.get(SYNCED_DRYDOCK_REINFORCED);
+    }
+
+    public int getSyncedCargoStacks() {
+        return this.entityData.get(SYNCED_CARGO_STACKS);
+    }
+
+    public boolean hasSwivelHarpoon() {
+        return this.entityData.get(HAS_SWIVEL_HARPOON);
+    }
+
+    public void setSwivelHarpoon(boolean swivelHarpoon) {
+        this.entityData.set(HAS_SWIVEL_HARPOON, swivelHarpoon);
     }
 
     public boolean isWanderingTraderShip() {
@@ -184,6 +227,10 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     public void setWanderingTraderShip(boolean wanderingTraderShip) {
         this.entityData.set(IS_WANDERING_TRADER_SHIP, wanderingTraderShip);
+    }
+
+    public void setSenderUUID(@Nullable java.util.UUID uuid) {
+        this.senderUUID = uuid;
     }
 
     @Override
@@ -206,7 +253,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     @Override
     public void remove(Entity.RemovalReason reason) {
-        this.releaseAllForcedChunks();
+        if (reason.shouldDestroy()) {
+            this.releaseAllForcedChunks();
+        }
         super.remove(reason);
         for (var part : this.subEntities) {
             part.remove(reason);
@@ -215,13 +264,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     @Override
     public boolean canCollideWith(Entity entity) {
-        // Never collide with our own stern/prow multipart hitboxes (they would clip forward motion every tick)
+        // Never collide with our own multipart deck sections or let players stall ship navigation
         if (entity instanceof ShipPart<?> part && part.getParent() == this) return false;
-        // Do not trap players inside the hull
-        if (entity instanceof Player && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
-                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
-            return false;
-        }
+        if (entity instanceof Player) return false;
         return super.canCollideWith(entity);
     }
 
@@ -375,6 +420,89 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         }
     }
 
+    @Nullable
+    public java.util.UUID getSenderUUID() {
+        return this.senderUUID;
+    }
+
+    public double getCruiseSpeed() {
+        return this.cruiseSpeed;
+    }
+
+    public void setCruiseSpeed(double cruiseSpeed) {
+        this.cruiseSpeed = Mth.clamp(cruiseSpeed, 0.2D, CARGO_MAX_SPEED);
+    }
+
+    public boolean isDrydockReinforced() {
+        return this.drydockReinforced;
+    }
+
+    public void setDrydockReinforced(boolean drydockReinforced) {
+        this.drydockReinforced = drydockReinforced;
+    }
+
+    public float getShipHealth() {
+        return this.shipHealth;
+    }
+
+    public boolean healShipHull(float amount) {
+        if (amount <= 0.0F || this.shipHealth >= MAX_SHIP_HEALTH) return false;
+        this.shipHealth = Math.min(MAX_SHIP_HEALTH, this.shipHealth + amount);
+        return true;
+    }
+
+    @Nullable
+    public BlockPos getHomeHarborPos() {
+        return this.homeHarborPos;
+    }
+
+    public String getHomeHarborName() {
+        return this.homeHarborName;
+    }
+
+    /**
+     * Redirects an outbound autonomous Cargo Boat or Trade Ship back to its home harbor with its cargo intact.
+     */
+    public boolean recallToHomeHarbor(ServerLevel serverLevel) {
+        if (serverLevel == null || this.homeHarborPos == null || this.cargoDelivered || this.voyageShip || this.isWanderingTraderShip()) {
+            return false;
+        }
+        if (this instanceof CargoBoatEntity cb && cb.isPlayerControlled()) {
+            return false;
+        }
+        if (this.isTradeMission && this.missionPhase == TradeMissionPhase.RETURNING) {
+            return false;
+        }
+        if (this.targetPos != null && this.targetPos.equals(this.homeHarborPos)) {
+            return false;
+        }
+
+        if (this.isTradeMission && this.missionPhase == TradeMissionPhase.OUTBOUND) {
+            // Cancel trade exchange and bring payment cargo back home
+            this.isTradeMission = false;
+            this.missionPhase = TradeMissionPhase.NONE;
+            this.tradeRewards.clear();
+        }
+
+        if (!this.routeWaypoints.isEmpty() && this.currentWaypointIndex > 0) {
+            List<BlockPos> backWaypoints = new ArrayList<>(
+                    this.routeWaypoints.subList(0, Math.min(this.currentWaypointIndex, this.routeWaypoints.size()))
+            );
+            java.util.Collections.reverse(backWaypoints);
+            this.routeWaypoints.clear();
+            this.routeWaypoints.addAll(backWaypoints);
+        } else {
+            this.routeWaypoints.clear();
+        }
+        this.currentWaypointIndex = 0;
+        this.arrived = false;
+        this.routePlanner = null;
+        this.plannedGoal = null;
+        this.setVoyageTarget(this.homeHarborPos, this.homeHarborName != null ? this.homeHarborName : "Home Harbor");
+        this.applyTailwind(200);
+        return true;
+    }
+
     public void setHomeHarbor(@Nullable BlockPos homePos, @Nullable String homeName) {
         this.homeHarborPos = homePos != null ? homePos.immutable() : null;
         if (homeName != null) this.homeHarborName = homeName;
@@ -385,7 +513,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         this.missionPhase = TradeMissionPhase.OUTBOUND;
         this.homeHarborPos = homePos.immutable();
         this.homeHarborName = homeName;
-        this.setCustomName(Component.literal("Trade Ship"));
+        this.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
         this.setCustomNameVisible(true);
         this.tradeRewards.clear();
         for (ItemStack reward : rewards) {
@@ -460,6 +588,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             if (player.getMainHandItem().getItem() instanceof net.minecraft.world.item.AxeItem) {
                 effectiveDmg *= 2.0F;
             }
+            if (this.drydockReinforced) {
+                effectiveDmg *= 0.5F;
+            }
             this.shipHealth = Math.max(0.0F, this.shipHealth - effectiveDmg);
             this.lastHurtTick = this.tickCount;
             this.markHurt();
@@ -494,8 +625,21 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     public void destroy(Item dropItem) {
         this.releaseAllForcedChunks();
         Containers.dropContents(this.level(), this, this);
-        if (dropItem != Items.AIR && this.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_DOENTITYDROPS)) {
-            this.spawnAtLocation(dropItem);
+        if (this.isTradeMission && this.missionPhase == TradeMissionPhase.RETURNING && !this.tradeRewards.isEmpty()) {
+            for (ItemStack overflow : this.tradeRewards) {
+                if (!overflow.isEmpty()) {
+                    Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), overflow.copy());
+                }
+            }
+            this.tradeRewards.clear();
+        }
+        if (this.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_DOENTITYDROPS)) {
+            if (dropItem != Items.AIR) {
+                this.spawnAtLocation(dropItem);
+            }
+            if (this.hasSwivelHarpoon() && !(this instanceof CargoBoatEntity cb && cb.isPlayerControlled())) {
+                this.spawnAtLocation(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()));
+            }
         }
         this.discard();
     }
@@ -516,13 +660,54 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (this.isVoyageShip()) {
             return Component.translatable("entity.currents_of_trade.sloop");
         }
-        return Component.literal(this.isTradeMission ? "Trade Ship" : "Trade Boat");
+        return Component.translatable("entity.currents_of_trade.trade_boat");
     }
 
     @Override
     public Component getDisplayName() {
         Component customName = this.getCustomName();
         return customName != null ? customName : this.getTypeName();
+    }
+
+    public InteractionResult tryApplyHarpoonCustomization(Player player, InteractionHand hand) {
+        if (this.isWanderingTraderShip() || this.voyageShip) return InteractionResult.PASS;
+        ItemStack held = player.getItemInHand(hand);
+        if (held.isEmpty()) return InteractionResult.PASS;
+
+        if (held.is(CurrentsofTrade.SWIVEL_HARPOON.get()) && !this.hasSwivelHarpoon()) {
+            if (!this.level().isClientSide) {
+                this.setSwivelHarpoon(true);
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                }
+                this.level().playSound(null, this.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.75F, 1.3F);
+                this.level().playSound(null, this.blockPosition(), SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.harpoon_mounted"), true);
+                SloopEntity.awardFlagshipAdvancement(player);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        if (held.is(Items.SHEARS) && this.hasSwivelHarpoon() && player.isSecondaryUseActive()) {
+            if (this.senderUUID != null && !player.getUUID().equals(this.senderUUID) && !player.getAbilities().instabuild) {
+                return InteractionResult.PASS;
+            }
+            if (!this.level().isClientSide) {
+                if (!player.getAbilities().instabuild) {
+                    player.getInventory().placeItemBackInInventory(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()));
+                }
+                this.setSwivelHarpoon(false);
+                this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.harpoon_removed"), true);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        return InteractionResult.PASS;
+    }
+
+    public boolean isOutboundTradeMission() {
+        return this.isTradeMission && this.missionPhase == TradeMissionPhase.OUTBOUND && !this.cargoDelivered;
     }
 
     @Override
@@ -536,6 +721,13 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (this.voyageShip) {
             return super.interact(player, hand);
         }
+        InteractionResult harpoonRes = this.tryApplyHarpoonCustomization(player, hand);
+        if (harpoonRes.consumesAction()) {
+            return harpoonRes;
+        }
+        if (this.isOutboundTradeMission()) {
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
         if (player.isSecondaryUseActive() || this.cargoDelivered) {
             return this.interactWithContainerVehicle(player);
         }
@@ -544,6 +736,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     @Override
     public void openCustomInventoryScreen(Player player) {
+        if (this.isOutboundTradeMission()) {
+            return;
+        }
         player.openMenu(this);
     }
 
@@ -553,9 +748,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
     @Override public void clearItemStacks() { this.itemStacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY); }
     @Override public int getContainerSize() { return CARGO_SLOTS; }
     @Override public ItemStack getItem(int slot) { return this.getChestVehicleItem(slot); }
-    @Override public ItemStack removeItem(int slot, int amount) { return this.removeChestVehicleItem(slot, amount); }
-    @Override public ItemStack removeItemNoUpdate(int slot) { return this.removeChestVehicleItemNoUpdate(slot); }
+    @Override public ItemStack removeItem(int slot, int amount) { return this.isOutboundTradeMission() ? ItemStack.EMPTY : this.removeChestVehicleItem(slot, amount); }
+    @Override public ItemStack removeItemNoUpdate(int slot) { return this.isOutboundTradeMission() ? ItemStack.EMPTY : this.removeChestVehicleItemNoUpdate(slot); }
     @Override public void setItem(int slot, ItemStack stack) { this.setChestVehicleItem(slot, stack); }
+    @Override public boolean canPlaceItem(int slot, ItemStack stack) { return !this.isOutboundTradeMission(); }
+    @Override public boolean canTakeItem(Container target, int slot, ItemStack stack) { return !this.isOutboundTradeMission(); }
     @Override public SlotAccess getSlot(int slot) { return this.getChestVehicleSlot(slot); }
     @Override public void setChanged() {}
     @Override public boolean stillValid(Player player) { return this.isChestVehicleStillValid(player); }
@@ -651,10 +848,11 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
             returnBoat.cargoDelivered = true;
             returnBoat.setDeltaMovement(0.0, 0.0, 0.0);
-            returnBoat.setCustomName(Component.literal(this.isTradeMission ? "Trade Ship" : "Cargo Ship"));
+            returnBoat.setCustomName(Component.translatable(this.isTradeMission ? "entity.currents_of_trade.trade_boat" : "entity.currents_of_trade.cargo_boat"));
             returnBoat.setCustomNameVisible(true);
             if (this.senderUUID != null) returnBoat.senderUUID = this.senderUUID;
             if (this.senderName != null) returnBoat.senderName = this.senderName;
+            if (this.hasSwivelHarpoon()) returnBoat.setSwivelHarpoon(true);
 
             for (int i = 0; i < this.getContainerSize(); i++) {
                 ItemStack stack = this.getItem(i);
@@ -664,10 +862,41 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
             this.clearContent();
             serverLevel.addFreshEntity(returnBoat);
+            if (this.isTradeMission && this.missionPhase == TradeMissionPhase.RETURNING && !this.tradeRewards.isEmpty()) {
+                if (this.homeHarborPos != null) {
+                    returnBoat.tryUnloadCargoToHarborStorage(this.homeHarborPos);
+                }
+                for (ItemStack overflow : this.tradeRewards) {
+                    if (overflow.isEmpty()) continue;
+                    boolean placed = false;
+                    for (int slot = 0; slot < returnBoat.getContainerSize(); slot++) {
+                        if (returnBoat.getItem(slot).isEmpty()) {
+                            returnBoat.setItem(slot, overflow.copy());
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) {
+                        Containers.dropItemStack(serverLevel, returnBoat.getX(), returnBoat.getY() + 0.5, returnBoat.getZ(), overflow.copy());
+                    }
+                }
+                this.tradeRewards.clear();
+            }
 
             serverLevel.playSound(null, returnPos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1.0F, 1.0F);
         } else {
             Containers.dropContents(serverLevel, this, this);
+            if (this.isTradeMission && this.missionPhase == TradeMissionPhase.RETURNING && !this.tradeRewards.isEmpty()) {
+                for (ItemStack overflow : this.tradeRewards) {
+                    if (!overflow.isEmpty()) {
+                        Containers.dropItemStack(serverLevel, this.getX(), this.getY() + 0.5, this.getZ(), overflow.copy());
+                    }
+                }
+                this.tradeRewards.clear();
+            }
+            if (this.hasSwivelHarpoon() && serverLevel.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_DOENTITYDROPS)) {
+                this.spawnAtLocation(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()));
+            }
         }
 
         String targetName = this.getHarborName() != null ? this.getHarborName() : "Destination";
@@ -711,28 +940,10 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
-        float yawRad = (float) Math.toRadians(this.getYRot());
-        double sin = Math.sin(yawRad);
-        double cos = Math.cos(yawRad);
-
-        double[][] sideOffsets = new double[][]{
-                { cos * 2.2, sin * 2.2 },   // Starboard side
-                { -cos * 2.2, -sin * 2.2 }, // Port side
-                { -sin * 3.2, cos * 3.2 },  // Stern (behind)
-                { sin * 3.2, -cos * 3.2 }   // Prow (in front)
-        };
-
-        for (double[] offset : sideOffsets) {
-            double testX = this.getX() + offset[0];
-            double testZ = this.getZ() + offset[1];
-            double testY = this.getY() + 0.2;
-            BlockPos testPos = BlockPos.containing(testX, testY, testZ);
-            if (this.level().getFluidState(testPos).is(FluidTags.WATER)
-                    || this.level().getBlockState(testPos).isAir()) {
-                return new Vec3(testX, testY, testZ);
-            }
+        Vec3 deckSpot = ShipPart.findDeckDismountLocation(this, passenger);
+        if (deckSpot != null) {
+            return deckSpot;
         }
-
         return super.getDismountLocationForPassenger(passenger);
     }
 
@@ -741,34 +952,49 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         double half = 0.68;
         return new AABB(
                 this.getX() - half, this.getY(), this.getZ() - half,
-                this.getX() + half, this.getY() + 0.85, this.getZ() + half
+                this.getX() + half, this.getY() + 0.82, this.getZ() + half
         );
     }
 
+    protected ShipPart<?>[] getShipParts() {
+        return this.subEntities;
+    }
+
     public void updateParts() {
-        double yawRad = Math.toRadians(this.getYRot());
-        double sin = Math.sin(yawRad);
-        double cos = Math.cos(yawRad);
-
-        double sternX = this.getX() + 1.90 * sin;
-        double sternZ = this.getZ() - 1.90 * cos;
-        this.sternPart.moveTo(sternX, this.getY(), sternZ);
-
-        double prowX = this.getX() - 2.10 * sin;
-        double prowZ = this.getZ() + 2.10 * cos;
-        this.prowPart.moveTo(prowX, this.getY(), prowZ);
+        ShipPart.updateShipDeckParts(this, this.subEntities);
     }
 
     // --- Tick & Navigation Cycle ---
 
     @Override
     public void tick() {
+        double prevShipX = this.getX();
+        double prevShipY = this.getY();
+        double prevShipZ = this.getZ();
+        float prevShipYaw = this.getYRot();
+        boolean handleDeckHere = !(this instanceof CargoBoatEntity cb && cb.isPlayerControlled());
+
         if (!this.isEmpty()) {
             this.hadInitialCargo = true;
         }
 
         if (!this.level().isClientSide && this.shipHealth < MAX_SHIP_HEALTH && this.tickCount - this.lastHurtTick > 100) {
             this.shipHealth = Math.min(MAX_SHIP_HEALTH, this.shipHealth + 0.1F);
+        }
+
+        if (!this.level().isClientSide && this.hasSwivelHarpoon()) {
+            com.lexovian.currentsoftrade.item.SwivelHarpoonItem.tickShipHarpoonDefense(this);
+        }
+
+        if (!this.level().isClientSide && this.tickCount % 10 == 0) {
+            this.entityData.set(SYNCED_DEST_HARBOR, (!this.cargoDelivered && this.targetPos != null && this.harborName != null) ? this.harborName : "");
+            this.entityData.set(SYNCED_SHIP_HEALTH, this.shipHealth);
+            this.entityData.set(SYNCED_DRYDOCK_REINFORCED, this.drydockReinforced);
+            int used = 0;
+            for (int i = 0; i < this.getContainerSize(); i++) {
+                if (!this.getItem(i).isEmpty()) used++;
+            }
+            this.entityData.set(SYNCED_CARGO_STACKS, used);
         }
 
         // Despawn whenever all cargo is taken out (both after arrival AND if looted mid-voyage while stuck)
@@ -780,6 +1006,19 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             if (this.isEmpty()) {
                 this.emptyTicks++;
                 if (this.emptyTicks >= 20) {
+                    if (this.hasSwivelHarpoon()) {
+                        ItemStack harpoonDrop = new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get());
+                        if (this.targetPos != null) {
+                            SimpleContainer temp = new SimpleContainer(1);
+                            temp.setItem(0, harpoonDrop);
+                            unloadContainerToHarborStorage(this.level(), this.targetPos, temp);
+                            if (!temp.getItem(0).isEmpty()) {
+                                this.spawnAtLocation(temp.getItem(0));
+                            }
+                        } else {
+                            this.spawnAtLocation(harpoonDrop);
+                        }
+                    }
                     this.releaseAllForcedChunks();
                     if (this.level() instanceof ServerLevel serverLevel) {
                         serverLevel.sendParticles(ParticleTypes.SPLASH,
@@ -799,6 +1038,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
         if (this.cargoDelivered) {
             this.updateParts();
+            if (handleDeckHere) {
+                ShipPart.supportDeckEntities(this, this.subEntities, prevShipX, prevShipY, prevShipZ, prevShipYaw);
+            }
             if (this.level().isClientSide) return;
             this.setDeltaMovement(0.0, 0.0, 0.0);
             return;
@@ -854,6 +1096,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (!this.level().isClientSide) {
             if (this.targetPos == null) {
                 this.setNoGravity(false);
+                if (handleDeckHere) {
+                    ShipPart.supportDeckEntities(this, this.subEntities, prevShipX, prevShipY, prevShipZ, prevShipYaw);
+                }
                 return;
             }
             this.setNoGravity(true);
@@ -1150,6 +1395,8 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
             this.setDeltaMovement(velX, velY, velZ);
             this.move(MoverType.SELF, this.getDeltaMovement());
+            this.setBoundingBox(this.makeBoundingBox());
+            this.updateParts();
 
             if (this.level() instanceof ServerLevel serverLevel) {
                 int splashCount = this.level().isThundering() ? 14 : 5;
@@ -1178,7 +1425,12 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
             if (this.blockedTicks >= MAX_BLOCKED_TICKS || this.noProgressTicks >= MAX_NO_PROGRESS_TICKS) {
                 this.abortAndReturnCargo(serverLevel);
+                return;
             }
+        }
+
+        if (handleDeckHere) {
+            ShipPart.supportDeckEntities(this, this.subEntities, prevShipX, prevShipY, prevShipZ, prevShipYaw);
         }
     }
 
@@ -1221,11 +1473,37 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 if (this.level().getBlockEntity(this.targetPos) instanceof AnchorPointBlockEntity targetAnchor) {
                     targetAnchor.triggerTravelCooldown();
                 }
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    com.lexovian.currentsoftrade.item.TradeCharterItem.tryFulfillFromShipHold(
+                            serverLevel, this.targetPos, this.homeHarborPos, this, this.tradeRewards, this.senderUUID, false);
+                }
+            }
+
+            List<ItemStack> mergedRewards = new ArrayList<>();
+            for (ItemStack rew : this.tradeRewards) {
+                if (rew == null || rew.isEmpty()) continue;
+                ItemStack copy = rew.copy();
+                for (ItemStack existing : mergedRewards) {
+                    if (ItemStack.isSameItemSameComponents(existing, copy) && existing.getCount() < existing.getMaxStackSize()) {
+                        int move = Math.min(copy.getCount(), existing.getMaxStackSize() - existing.getCount());
+                        existing.grow(move);
+                        copy.shrink(move);
+                        if (copy.isEmpty()) break;
+                    }
+                }
+                if (!copy.isEmpty()) {
+                    mergedRewards.add(copy);
+                }
             }
 
             this.clearContent();
-            for (int i = 0; i < this.tradeRewards.size() && i < this.getContainerSize(); i++) {
-                this.itemStacks.set(i, this.tradeRewards.get(i).copy());
+            this.tradeRewards.clear();
+            for (int i = 0; i < mergedRewards.size(); i++) {
+                if (i < this.getContainerSize()) {
+                    this.itemStacks.set(i, mergedRewards.get(i));
+                } else {
+                    this.tradeRewards.add(mergedRewards.get(i));
+                }
             }
 
             if (this.level().getServer() != null && this.senderUUID != null) {
@@ -1245,7 +1523,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             }
             this.currentWaypointIndex = 0;
             this.setVoyageTarget(this.homeHarborPos, this.homeHarborName);
-            this.setCustomName(Component.literal("Trade Ship"));
+            this.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
             this.setCustomNameVisible(true);
             return;
         }
@@ -1253,7 +1531,6 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         if (this.cargoDelivered) return;
         this.cargoDelivered = true;
         this.setDeltaMovement(0.0, 0.0, 0.0);
-        this.releaseAllForcedChunks();
 
         boolean anyDeposited = false;
         boolean allDeposited = false;
@@ -1263,8 +1540,35 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             if (this.level().getBlockEntity(this.targetPos) instanceof AnchorPointBlockEntity targetAnchor) {
                 targetAnchor.triggerTravelCooldown();
             }
+            if (this.level() instanceof ServerLevel serverLevel) {
+                com.lexovian.currentsoftrade.item.TradeCharterItem.tryFulfillFromShipHold(
+                        serverLevel, this.targetPos, this.homeHarborPos, this, null, this.senderUUID, false);
+            }
 
             anyDeposited = this.tryUnloadCargoToHarborStorage(this.targetPos);
+            if (!this.tradeRewards.isEmpty()) {
+                while (!this.tradeRewards.isEmpty()) {
+                    boolean placedInHold = false;
+                    for (int slot = 0; slot < this.getContainerSize() && !this.tradeRewards.isEmpty(); slot++) {
+                        if (this.itemStacks.get(slot).isEmpty()) {
+                            this.itemStacks.set(slot, this.tradeRewards.remove(0));
+                            placedInHold = true;
+                        }
+                    }
+                    if (!placedInHold) break;
+                    if (this.tryUnloadCargoToHarborStorage(this.targetPos)) {
+                        anyDeposited = true;
+                    } else {
+                        break;
+                    }
+                }
+                for (ItemStack leftover : this.tradeRewards) {
+                    if (!leftover.isEmpty()) {
+                        Containers.dropItemStack(this.level(), this.getX(), this.getY() + 0.5, this.getZ(), leftover);
+                    }
+                }
+                this.tradeRewards.clear();
+            }
             allDeposited = this.isEmpty();
 
             if (anyDeposited) {
@@ -1276,6 +1580,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 }
             }
         }
+        this.releaseAllForcedChunks();
 
         Component senderMsg;
         Component receiverMsg;
@@ -1341,37 +1646,15 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
 
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = anchorPos.relative(dir);
-            if (!checkedPositions.add(neighborPos)) continue;
+            collectStorageAt(level, neighborPos, dir.getOpposite(), checkedPositions, targetHandlers, fallbackContainers);
+        }
 
-            BlockState state = level.getBlockState(neighborPos);
-            // Explicitly ignore Ender Chest
-            if (state.is(Blocks.ENDER_CHEST)) {
-                continue;
-            }
-
-            // A. NeoForge IItemHandler capability (handles double chests, barrels, hoppers, modded containers)
-            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, dir.getOpposite());
-            if (handler == null) {
-                handler = level.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, null);
-            }
-
-            if (handler != null) {
-                targetHandlers.add(handler);
-            } else {
-                // B. Fallback: Vanilla Container block entity or double chest
-                Container container = null;
-                if (state.getBlock() instanceof ChestBlock chestBlock) {
-                    container = ChestBlock.getContainer(chestBlock, state, level, neighborPos, true);
-                } else {
-                    BlockEntity be = level.getBlockEntity(neighborPos);
-                    if (be instanceof Container c) {
-                        container = c;
-                    }
-                }
-                if (container != null) {
-                    fallbackContainers.add(container);
-                }
-            }
+        boolean guildDepot = AnchorPointBlockEntity.isGuildDepotAt(level, anchorPos);
+        BlockPos minScan = guildDepot ? anchorPos.offset(-8, -3, -8) : anchorPos.offset(-4, -2, -4);
+        BlockPos maxScan = guildDepot ? anchorPos.offset(8, 4, 8) : anchorPos.offset(4, 3, 4);
+        for (BlockPos scanPos : BlockPos.betweenClosed(minScan, maxScan)) {
+            if (scanPos.equals(anchorPos)) continue;
+            collectStorageAt(level, scanPos.immutable(), null, checkedPositions, targetHandlers, fallbackContainers);
         }
 
         if (targetHandlers.isEmpty() && fallbackContainers.isEmpty()) {
@@ -1404,6 +1687,52 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         }
 
         return totalDeposited;
+    }
+
+    private static void collectStorageAt(Level level, BlockPos pos, @Nullable Direction preferredSide,
+                                         Set<BlockPos> checkedPositions, List<IItemHandler> targetHandlers,
+                                         List<Container> fallbackContainers) {
+        if (!level.isLoaded(pos) || !checkedPositions.add(pos)) return;
+        BlockState state = level.getBlockState(pos);
+        if (state.isAir() || state.is(Blocks.ENDER_CHEST)) return;
+        BlockEntity existingBe = level.getBlockEntity(pos);
+        if (existingBe instanceof AnchorPointBlockEntity
+                || existingBe instanceof net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity
+                || existingBe instanceof net.minecraft.world.level.block.entity.BrewingStandBlockEntity) {
+            return;
+        }
+        if (state.getBlock() instanceof ChestBlock
+                && state.hasProperty(ChestBlock.TYPE)
+                && state.getValue(ChestBlock.TYPE) != net.minecraft.world.level.block.state.properties.ChestType.SINGLE) {
+            checkedPositions.add(pos.relative(ChestBlock.getConnectedDirection(state)));
+        }
+
+        IItemHandler handler = preferredSide != null
+                ? level.getCapability(Capabilities.ItemHandler.BLOCK, pos, preferredSide)
+                : null;
+        if (handler == null) {
+            handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
+        }
+        if (handler == null && preferredSide == null) {
+            handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, Direction.UP);
+        }
+
+        if (handler != null) {
+            targetHandlers.add(handler);
+        } else {
+            Container container = null;
+            if (state.getBlock() instanceof ChestBlock chestBlock) {
+                container = ChestBlock.getContainer(chestBlock, state, level, pos, true);
+            } else {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof Container c) {
+                    container = c;
+                }
+            }
+            if (container != null) {
+                fallbackContainers.add(container);
+            }
+        }
     }
 
     private static ItemStack insertIntoVanillaContainer(Container container, ItemStack stack) {
@@ -3336,6 +3665,8 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
         tag.putInt("AvoidanceSide", this.avoidanceSide);
         tag.putBoolean("IsWanderingTraderShip", this.isWanderingTraderShip());
         tag.putBoolean("VoyageShip", this.voyageShip);
+        tag.putBoolean("SwivelHarpoon", this.hasSwivelHarpoon());
+        tag.putBoolean("DrydockReinforced", this.drydockReinforced);
         tag.putFloat("ShipHealth", this.shipHealth);
         tag.putBoolean("HadInitialCargo", this.hadInitialCargo);
 
@@ -3356,6 +3687,14 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 rewardList.add(reward.save(this.registryAccess()));
             }
             tag.put("TradeRewards", rewardList);
+        }
+        if (!this.activeForcedChunks.isEmpty()) {
+            long[] forced = new long[this.activeForcedChunks.size()];
+            int idx = 0;
+            for (ChunkPos cp : this.activeForcedChunks) {
+                forced[idx++] = cp.toLong();
+            }
+            tag.putLongArray("ActiveForcedChunks", forced);
         }
     }
 
@@ -3396,6 +3735,8 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             this.voyageShip = tag.getBoolean("VoyageShip");
             this.entityData.set(IS_VOYAGE_SHIP, this.voyageShip);
         }
+        if (tag.contains("SwivelHarpoon")) this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
+        if (tag.contains("DrydockReinforced")) this.drydockReinforced = tag.getBoolean("DrydockReinforced");
         if (tag.contains("ShipHealth")) this.shipHealth = tag.getFloat("ShipHealth");
         this.hadInitialCargo = tag.getBoolean("HadInitialCargo");
 
@@ -3423,13 +3764,19 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                         .ifPresent(this.tradeRewards::add);
             }
         }
+        this.activeForcedChunks.clear();
+        if (tag.contains("ActiveForcedChunks", Tag.TAG_LONG_ARRAY)) {
+            for (long packed : tag.getLongArray("ActiveForcedChunks")) {
+                this.activeForcedChunks.add(new ChunkPos(packed));
+            }
+        }
 
         if (this.getCustomName() == null) {
             if (this.isVoyageShip()) {
                 this.setCustomName(Component.translatable("entity.currents_of_trade.sloop"));
                 this.setCustomNameVisible(false);
             } else {
-                this.setCustomName(Component.literal(this.isTradeMission ? "Trade Ship" : "Trade Boat"));
+                this.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
                 this.setCustomNameVisible(true);
             }
         }

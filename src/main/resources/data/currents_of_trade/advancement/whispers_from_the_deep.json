@@ -16,26 +16,8 @@
   },
   "parent": "currents_of_trade:root",
   "criteria": {
-    "open_bottle": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:glass_bottle"
-          }
-        ]
-      }
-    },
-    "had_bottle": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "currents_of_trade:message_in_a_bottle"
-          }
-        ]
-      }
+    "uncorked_bottle": {
+      "trigger": "minecraft:impossible"
     }
-  },
-  "requirements": [["had_bottle"], ["open_bottle"]]
+  }
 }

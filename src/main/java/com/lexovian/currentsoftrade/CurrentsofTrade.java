@@ -33,6 +33,11 @@ import com.lexovian.currentsoftrade.item.DragonsBloodResinItem;
 import com.lexovian.currentsoftrade.item.MessageInABottleItem;
 import com.lexovian.currentsoftrade.item.StormGlassItem;
 import com.lexovian.currentsoftrade.item.CaptainsPipeItem;
+import com.lexovian.currentsoftrade.item.TradeCharterItem;
+import com.lexovian.currentsoftrade.item.GuildStrongboxItem;
+import com.lexovian.currentsoftrade.item.CaptainsSpyglassItem;
+import com.lexovian.currentsoftrade.item.BosunsWhistleItem;
+import com.lexovian.currentsoftrade.item.SwivelHarpoonItem;
 import com.lexovian.currentsoftrade.world.inventory.AnchorPointMenu;
 import com.lexovian.currentsoftrade.world.inventory.RequestTradeMenu;
 import com.lexovian.currentsoftrade.world.inventory.SendItemsMenu;
@@ -116,7 +121,51 @@ public class CurrentsofTrade {
                     .strength(2.5f, 3.0f)
                     .sound(SoundType.WOOD)
     );
-    public static final DeferredItem<BlockItem> ANCHOR_POINT_ITEM = ITEMS.registerSimpleBlockItem("anchor_point", ANCHOR_POINT);
+    public static final DeferredItem<BlockItem> ANCHOR_POINT_ITEM = ITEMS.registerItem("anchor_point",
+            props -> new BlockItem(ANCHOR_POINT.get(), props) {
+                @Override
+                public boolean isFoil(net.minecraft.world.item.ItemStack stack) {
+                    net.minecraft.world.item.component.CustomData cd = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                    if (cd != null) {
+                        net.minecraft.nbt.CompoundTag root = cd.copyTag();
+                        if (root.contains("SavedHarborData", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                            net.minecraft.nbt.CompoundTag h = root.getCompound("SavedHarborData");
+                            if (h.getInt("TradeLevel") > 1 || h.getBoolean("SpecializationChosen")) {
+                                return true;
+                            }
+                        }
+                    }
+                    return super.isFoil(stack);
+                }
+
+                @Override
+                public void appendHoverText(net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.Item.TooltipContext context, java.util.List<net.minecraft.network.chat.Component> tooltipComponents, net.minecraft.world.item.TooltipFlag tooltipFlag) {
+                    net.minecraft.world.item.component.CustomData cd = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                    if (cd != null) {
+                        net.minecraft.nbt.CompoundTag root = cd.copyTag();
+                        if (root.contains("SavedHarborData", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                            net.minecraft.nbt.CompoundTag h = root.getCompound("SavedHarborData");
+                            String name = h.getString("HarborName");
+                            int lvl = Math.max(1, h.getInt("TradeLevel"));
+                            com.lexovian.currentsoftrade.world.harbor.HarborSpecialization spec =
+                                    com.lexovian.currentsoftrade.world.harbor.HarborSpecialization.byId(h.getString("Specialization"));
+                            if (!name.isEmpty() && (h.getBoolean("CustomNamed") || lvl > 1 || spec != com.lexovian.currentsoftrade.world.harbor.HarborSpecialization.NONE)) {
+                                tooltipComponents.add(net.minecraft.network.chat.Component.translatable("tooltip.currents_of_trade.anchor_saved_harbor", name));
+                            }
+                            if (lvl > 1) {
+                                tooltipComponents.add(net.minecraft.network.chat.Component.translatable(
+                                        "tooltip.currents_of_trade.anchor_saved_level",
+                                        lvl,
+                                        net.minecraft.network.chat.Component.translatable("harbor.currents_of_trade.level." + lvl)));
+                            }
+                            if (spec != com.lexovian.currentsoftrade.world.harbor.HarborSpecialization.NONE) {
+                                tooltipComponents.add(net.minecraft.network.chat.Component.translatable("tooltip.currents_of_trade.spec_active", spec.getShortBadge()));
+                            }
+                        }
+                    }
+                    super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+                }
+            });
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AnchorPointBlockEntity>> ANCHOR_POINT_BE =
             BLOCK_ENTITIES.register("anchor_point", () ->
@@ -259,6 +308,26 @@ public class CurrentsofTrade {
     public static final DeferredItem<DragonsBloodResinItem> DRAGONS_BLOOD_RESIN =
             ITEMS.registerItem("dragons_blood_resin", DragonsBloodResinItem::new, new Item.Properties().stacksTo(16));
 
+    /** Sealed Guild Trade Charter — merchant contract fulfilled at regional Anchor Points or via Cargo/Trade Ships. */
+    public static final DeferredItem<TradeCharterItem> TRADE_CHARTER =
+            ITEMS.registerItem("trade_charter", TradeCharterItem::new, new Item.Properties().stacksTo(1));
+
+    /** Guild Strongbox — ornate lockbox rewarded for completing Sealed Trade Charters. */
+    public static final DeferredItem<GuildStrongboxItem> GUILD_STRONGBOX =
+            ITEMS.registerItem("guild_strongbox", GuildStrongboxItem::new, new Item.Properties().stacksTo(16));
+
+    /** Captain's Brass Spyglass — naval telescope with live ship, harbor & maritime region Recon HUD. */
+    public static final DeferredItem<CaptainsSpyglassItem> CAPTAINS_SPYGLASS =
+            ITEMS.registerItem("captains_spyglass", CaptainsSpyglassItem::new, new Item.Properties().stacksTo(1));
+
+    /** Bosun's Whistle — summons nearby Sloops/Cargo Boats or recalls outbound autonomous ships. */
+    public static final DeferredItem<BosunsWhistleItem> BOSUNS_WHISTLE =
+            ITEMS.registerItem("bosuns_whistle", BosunsWhistleItem::new, new Item.Properties().stacksTo(1));
+
+    /** Brass Swivel Harpoon — bow-mounted shipwright defense turret repelling aquatic threats. */
+    public static final DeferredItem<SwivelHarpoonItem> SWIVEL_HARPOON =
+            ITEMS.registerItem("swivel_harpoon", SwivelHarpoonItem::new, new Item.Properties().stacksTo(16));
+
     // --- Menu Types ---
     public static final DeferredHolder<MenuType<?>, MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create(AnchorPointMenu::new));
@@ -276,7 +345,7 @@ public class CurrentsofTrade {
     public static final DeferredHolder<EntityType<?>, EntityType<TradeBoatEntity>> TRADE_BOAT =
             ENTITY_TYPES.register("trade_boat", () ->
                     EntityType.Builder.<TradeBoatEntity>of(TradeBoatEntity::new, MobCategory.MISC)
-                            .sized(2.6F, 0.85F)
+                            .sized(2.45F, 0.82F)
                             .clientTrackingRange(12)
                             .build("trade_boat")
             );
@@ -284,7 +353,7 @@ public class CurrentsofTrade {
     public static final DeferredHolder<EntityType<?>, EntityType<CargoBoatEntity>> CARGO_BOAT =
             ENTITY_TYPES.register("cargo_boat", () ->
                     EntityType.Builder.<CargoBoatEntity>of(CargoBoatEntity::new, MobCategory.MISC)
-                            .sized(2.6F, 0.85F)
+                            .sized(2.45F, 0.82F)
                             .clientTrackingRange(12)
                             .build("cargo_boat")
             );
@@ -292,7 +361,7 @@ public class CurrentsofTrade {
     public static final DeferredHolder<EntityType<?>, EntityType<SloopEntity>> SLOOP =
             ENTITY_TYPES.register("sloop", () ->
                     EntityType.Builder.<SloopEntity>of(SloopEntity::new, MobCategory.MISC)
-                            .sized(2.6F, 0.85F)
+                            .sized(2.45F, 0.82F)
                             .clientTrackingRange(12)
                             .build("sloop")
             );
@@ -361,6 +430,11 @@ public class CurrentsofTrade {
                                 output.accept(BRASS_ASTROLABE.get());
                                 output.accept(STORM_GLASS.get());
                                 output.accept(CAPTAINS_PIPE.get());
+                                output.accept(CAPTAINS_SPYGLASS.get());
+                                output.accept(BOSUNS_WHISTLE.get());
+                                output.accept(SWIVEL_HARPOON.get());
+                                output.accept(TRADE_CHARTER.get());
+                                output.accept(GUILD_STRONGBOX.get());
                                 output.accept(TRADE_LEDGER.get());
                                 output.accept(SLOOP_ITEM.get());
                                 output.accept(CARGO_BOAT_ITEM.get());
@@ -405,11 +479,17 @@ public class CurrentsofTrade {
         }
         if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(CAPTAINS_TRICORNE);
+            event.accept(SWIVEL_HARPOON);
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(NAUTICAL_CHART);
             event.accept(ROUTE_JOURNAL);
             event.accept(CAPTAINS_TRICORNE);
+            event.accept(CAPTAINS_SPYGLASS);
+            event.accept(BOSUNS_WHISTLE);
+            event.accept(SWIVEL_HARPOON);
+            event.accept(TRADE_CHARTER);
+            event.accept(GUILD_STRONGBOX);
             event.accept(SALVAGE_DREDGE);
             event.accept(BRASS_ASTROLABE);
             event.accept(STORM_GLASS);

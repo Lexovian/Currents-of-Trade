@@ -3,6 +3,7 @@ package com.lexovian.currentsoftrade.client.gui;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.network.ModPayloads;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.client.Minecraft;
@@ -61,10 +62,6 @@ public class NauticalAtlasScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        ItemStack journal = getJournalStack();
-        if (!journal.isEmpty() && this.minecraft != null && this.minecraft.level != null) {
-            RouteJournalItem.pruneBrokenHarbors(journal, this.minecraft.level);
-        }
         this.leftPos = (this.width - GUI_WIDTH) / 2;
         this.topPos = (this.height - GUI_HEIGHT) / 2;
 
@@ -105,7 +102,8 @@ public class NauticalAtlasScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(g, mouseX, mouseY, partialTick);
         // Outer naval frame & warm parchment interior
         g.fill(this.leftPos - 2, this.topPos - 2, this.leftPos + GUI_WIDTH + 2, this.topPos + GUI_HEIGHT + 2, 0xFF1A2634);
         g.fill(this.leftPos, this.topPos, this.leftPos + GUI_WIDTH, this.topPos + GUI_HEIGHT, 0xFFF2E6CE);
@@ -114,7 +112,10 @@ public class NauticalAtlasScreen extends Screen {
         // Dark Navy Header Bar
         g.fill(this.leftPos + 4, this.topPos + 4, this.leftPos + GUI_WIDTH - 4, this.topPos + 20, 0xFF1B2D3E);
         g.drawCenteredString(this.font, this.title, this.leftPos + GUI_WIDTH / 2, this.topPos + 8, 0xFFFFD700);
+    }
 
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
 
         if (this.currentTab == 0) {
@@ -154,41 +155,34 @@ public class NauticalAtlasScreen extends Screen {
         BlockPos playerPos = (this.minecraft != null && this.minecraft.player != null)
                 ? this.minecraft.player.blockPosition() : BlockPos.ZERO;
 
-        // Calculate dynamic bounds across player + all logged harbors
-        double minX = playerPos.getX() - 300;
-        double maxX = playerPos.getX() + 300;
-        double minZ = playerPos.getZ() - 300;
-        double maxZ = playerPos.getZ() + 300;
+        // Compute dynamic player-centered scale to fit player + all harbors inside the radar box
+        double maxDist = 250.0;
         for (RouteJournalItem.RouteEntry entry : routes) {
-            minX = Math.min(minX, entry.pos().getX() - 150);
-            maxX = Math.max(maxX, entry.pos().getX() + 150);
-            minZ = Math.min(minZ, entry.pos().getZ() - 150);
-            maxZ = Math.max(maxZ, entry.pos().getZ() + 150);
+            double dx = Math.abs(entry.pos().getX() - playerPos.getX());
+            double dz = Math.abs(entry.pos().getZ() - playerPos.getZ());
+            maxDist = Math.max(maxDist, Math.max(dx, dz) * 1.25);
         }
-        double span = Math.max(400.0, Math.max(maxX - minX, maxZ - minZ));
-        double centerX = (minX + maxX) * 0.5;
-        double centerZ = (minZ + maxZ) * 0.5;
 
-        int px = mapX + mapW / 2 + (int) Math.round(((playerPos.getX() - centerX) / span) * (mapW - 24));
-        int pz = mapY + mapH / 2 + (int) Math.round(((playerPos.getZ() - centerZ) / span) * (mapH - 24));
-        px = Mth.clamp(px, mapX + 8, mapX + mapW - 8);
-        pz = Mth.clamp(pz, mapY + 8, mapY + mapH - 8);
+        int centerX = mapX + mapW / 2;
+        int centerY = mapY + mapH / 2;
+        double scale = (mapW / 2.0 - 14.0) / maxDist;
 
         // Draw active voyage line from player to selected harbor
         if (!routes.isEmpty() && selectedIdx >= 0 && selectedIdx < routes.size()) {
             RouteJournalItem.RouteEntry sel = routes.get(selectedIdx);
-            int tx = Mth.clamp(mapX + mapW / 2 + (int) Math.round(((sel.pos().getX() - centerX) / span) * (mapW - 24)), mapX + 8, mapX + mapW - 8);
-            int tz = Mth.clamp(mapY + mapH / 2 + (int) Math.round(((sel.pos().getZ() - centerZ) / span) * (mapH - 24)), mapY + 8, mapY + mapH - 8);
+            int tx = Mth.clamp(centerX + (int) ((sel.pos().getX() - playerPos.getX()) * scale), mapX + 8, mapX + mapW - 8);
+            int tz = Mth.clamp(centerY + (int) ((sel.pos().getZ() - playerPos.getZ()) * scale), mapY + 8, mapY + mapH - 8);
             for (int step = 0; step <= 24; step += 2) {
-                int lx = px + (tx - px) * step / 24;
-                int lz = pz + (tz - pz) * step / 24;
+                int lx = centerX + (tx - centerX) * step / 24;
+                int lz = centerY + (tz - centerY) * step / 24;
                 g.fill(lx - 1, lz - 1, lx + 1, lz + 1, 0xFFFFD700);
             }
         }
 
-        // Draw Player marker
-        g.fill(px - 3, pz - 3, px + 3, pz + 3, 0xFFFFFFFF);
-        g.fill(px - 2, pz - 2, px + 2, pz + 2, 0xFF00E5FF);
+        // Draw Player marker at center + scale footer
+        g.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, 0xFFFFFFFF);
+        g.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, 0xFF00E5FF);
+        g.drawString(this.font, "§7±" + (int) maxDist + "m", mapX + 4, mapY + mapH - 11, 0xAAAAAA, false);
 
         // Right-side Harbor List (x=192..338)
         int listX = this.leftPos + 192;
@@ -203,8 +197,8 @@ public class NauticalAtlasScreen extends Screen {
         for (int i = 0; i < routes.size(); i++) {
             RouteJournalItem.RouteEntry entry = routes.get(i);
             MaritimeTradeRegion region = MaritimeTradeRegion.byId(entry.regionId());
-            int hx = Mth.clamp(mapX + mapW / 2 + (int) Math.round(((entry.pos().getX() - centerX) / span) * (mapW - 24)), mapX + 8, mapX + mapW - 8);
-            int hz = Mth.clamp(mapY + mapH / 2 + (int) Math.round(((entry.pos().getZ() - centerZ) / span) * (mapH - 24)), mapY + 8, mapY + mapH - 8);
+            int hx = Mth.clamp(centerX + (int) ((entry.pos().getX() - playerPos.getX()) * scale), mapX + 8, mapX + mapW - 8);
+            int hz = Mth.clamp(centerY + (int) ((entry.pos().getZ() - playerPos.getZ()) * scale), mapY + 8, mapY + mapH - 8);
 
             boolean isSelected = (i == selectedIdx);
             int markerCol = (0xFF << 24) | region.getColor();
@@ -220,7 +214,7 @@ public class NauticalAtlasScreen extends Screen {
 
             // Right-side clickable dark slate row
             int rowY = listY + 13 + i * 16;
-            boolean rowHover = mouseX >= listX && mouseX <= listX + listW && mouseY >= rowY && mouseY <= rowY + 14;
+            boolean rowHover = mouseX >= listX && mouseX <= listX + listW - 14 && mouseY >= rowY && mouseY <= rowY + 14;
             int rowBg = isSelected ? 0xFF2B4C65 : (rowHover ? 0xFF243B52 : 0xFF182838);
             g.fill(listX, rowY, listX + listW, rowY + 14, rowBg);
             g.renderOutline(listX, rowY, listW, 14, isSelected ? 0xFFD4AF37 : 0xFF3A536B);
@@ -229,7 +223,9 @@ public class NauticalAtlasScreen extends Screen {
             int dist = (int) Math.sqrt(playerPos.distSqr(entry.pos()));
             String distStr = dist + "m";
             int distW = this.font.width(distStr);
-            String label = this.font.plainSubstrByWidth(entry.name(), listW - distW - 34) + " §7L" + entry.level();
+            HarborSpecialization spec = entry.specialization();
+            String specPrefix = spec != HarborSpecialization.NONE ? (spec.getIcon() + " ") : "";
+            String label = specPrefix + this.font.plainSubstrByWidth(entry.name(), listW - distW - 34 - this.font.width(specPrefix)) + " §7L" + entry.level();
             g.drawString(this.font, label, listX + 9, rowY + 3, isSelected ? 0xFFFFD700 : 0xFFE8EEF5, false);
             g.drawString(this.font, distStr, listX + listW - distW - 15, rowY + 3, isSelected ? 0xFF80DEEA : 0xFF90A4AE, false);
 
@@ -240,7 +236,11 @@ public class NauticalAtlasScreen extends Screen {
             g.renderOutline(delX, delY, 11, 12, delHover ? 0xFFFF5252 : 0xFF6B2222);
             g.drawString(this.font, "✕", delX + 3, delY + 2, delHover ? 0xFFFFFFFF : 0xFFE57373, false);
 
-            if (rowHover) {
+            if (delHover) {
+                g.renderTooltip(this.font, List.of(
+                        Component.translatable("gui.currents_of_trade.atlas.delete_harbor_tooltip", entry.name())
+                ), Optional.empty(), mouseX, mouseY);
+            } else if (rowHover) {
                 hoveredEntry = entry;
                 hoveredIndex = i;
             }
@@ -256,7 +256,10 @@ public class NauticalAtlasScreen extends Screen {
             int dist = (int) Math.sqrt(playerPos.distSqr(hoveredEntry.pos()));
             List<Component> tip = new ArrayList<>();
             tip.add(Component.literal("§e§l⚓ " + hoveredEntry.name() + " §7(Lv." + hoveredEntry.level() + ")"));
-            tip.add(Component.literal("§7Coords: §f" + hoveredEntry.pos().getX() + ", " + hoveredEntry.pos().getZ() + " §8(" + dist + "m)"));
+            if (hoveredEntry.specialization() != HarborSpecialization.NONE) {
+                tip.add(Component.translatable("tooltip.currents_of_trade.spec_active", hoveredEntry.specialization().getShortBadge()));
+            }
+            tip.add(Component.translatable("gui.currents_of_trade.atlas.coords", hoveredEntry.pos().getX(), hoveredEntry.pos().getZ(), dist));
             tip.add(Component.translatable("tooltip.currents_of_trade.chart_region", reg.getDisplayName()));
             tip.add(reg.getExportDescription());
             tip.add(reg.getImportDescription());
@@ -353,32 +356,32 @@ public class NauticalAtlasScreen extends Screen {
         g.drawString(this.font, Component.translatable("gui.currents_of_trade.atlas.upgrades_header"), startX, startY, 0x1B2D3E, false);
 
         String[] names = {
-                "Lv.1 Fishing Wharf",
-                "Lv.2 Trading Post",
-                "Lv.3 Harbor",
-                "Lv.4 Grand Port",
-                "Lv.5 Royal Dockyard"
+                "Lv.1 " + Component.translatable("harbor.currents_of_trade.level.1").getString(),
+                "Lv.2 " + Component.translatable("harbor.currents_of_trade.level.2").getString(),
+                "Lv.3 " + Component.translatable("harbor.currents_of_trade.level.3").getString(),
+                "Lv.4 " + Component.translatable("harbor.currents_of_trade.level.4").getString(),
+                "Lv.5 " + Component.translatable("harbor.currents_of_trade.level.5").getString()
         };
         String[] stats = {
-                "§a18 Slots §7| §b60s CD §7| §d6 Offers",
-                "§a27 Slots §7| §b45s CD §7| §d8 Offers",
-                "§a36 Slots §7| §b30s CD §7| §d10 Offers",
-                "§a45 Slots §7| §b20s CD §7| §d12 Offers",
-                "§a54 Slots §7| §b10s CD §7| §d14 Offers"
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 18, 60, 6).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 27, 45, 8).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 36, 30, 10).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 45, 20, 12).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 54, 10, 14).getString()
         };
         String[] costs = {
-                "§7Starter Port",
-                "§e8 Dbl + 32 Planks + 16 Iron",
-                "§e20 Dbl + 16 Copper + 4 Lanterns",
-                "§e40 Dbl + 8 Gold + 2 Silk + 2 Spice",
-                "§664 Dbl + 4 Emerald Blk + Astrolabe"
+                Component.translatable("gui.currents_of_trade.atlas.cost_1").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_2").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_3").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_4").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_5").getString()
         };
         ItemStack[] icons = {
                 new ItemStack(Items.OAK_BOAT),
+                new ItemStack(Items.OAK_PLANKS),
                 new ItemStack(Items.IRON_INGOT),
-                new ItemStack(Items.LANTERN),
                 new ItemStack(CurrentsofTrade.SILK_BALE.get()),
-                new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get())
+                new ItemStack(Items.HEART_OF_THE_SEA)
         };
 
         int y = startY + 12;
@@ -425,24 +428,20 @@ public class NauticalAtlasScreen extends Screen {
                 int listY = this.topPos + 44;
                 int listW = 146;
 
-                double minX = playerPos.getX() - 300;
-                double maxX = playerPos.getX() + 300;
-                double minZ = playerPos.getZ() - 300;
-                double maxZ = playerPos.getZ() + 300;
+                double maxDist = 250.0;
                 for (RouteJournalItem.RouteEntry entry : routes) {
-                    minX = Math.min(minX, entry.pos().getX() - 150);
-                    maxX = Math.max(maxX, entry.pos().getX() + 150);
-                    minZ = Math.min(minZ, entry.pos().getZ() - 150);
-                    maxZ = Math.max(maxZ, entry.pos().getZ() + 150);
+                    double dx = Math.abs(entry.pos().getX() - playerPos.getX());
+                    double dz = Math.abs(entry.pos().getZ() - playerPos.getZ());
+                    maxDist = Math.max(maxDist, Math.max(dx, dz) * 1.25);
                 }
-                double span = Math.max(400.0, Math.max(maxX - minX, maxZ - minZ));
-                double centerX = (minX + maxX) * 0.5;
-                double centerZ = (minZ + maxZ) * 0.5;
+                int centerX = mapX + mapW / 2;
+                int centerY = mapY + mapH / 2;
+                double scale = (mapW / 2.0 - 14.0) / maxDist;
 
                 for (int i = 0; i < routes.size(); i++) {
                     RouteJournalItem.RouteEntry entry = routes.get(i);
-                    int hx = Mth.clamp(mapX + mapW / 2 + (int) Math.round(((entry.pos().getX() - centerX) / span) * (mapW - 24)), mapX + 8, mapX + mapW - 8);
-                    int hz = Mth.clamp(mapY + mapH / 2 + (int) Math.round(((entry.pos().getZ() - centerZ) / span) * (mapH - 24)), mapY + 8, mapY + mapH - 8);
+                    int hx = Mth.clamp(centerX + (int) ((entry.pos().getX() - playerPos.getX()) * scale), mapX + 8, mapX + mapW - 8);
+                    int hz = Mth.clamp(centerY + (int) ((entry.pos().getZ() - playerPos.getZ()) * scale), mapY + 8, mapY + mapH - 8);
                     int rowY = listY + 13 + i * 16;
 
                     int delX = listX + listW - 13;

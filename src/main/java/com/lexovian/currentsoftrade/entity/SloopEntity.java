@@ -72,22 +72,27 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
     private ResourceKey<LootTable> lootTable;
     private long lootTableSeed;
 
+    @SuppressWarnings("unchecked")
     public SloopEntity(EntityType<? extends Boat> entityType, Level level) {
         super(entityType, level);
-        this.sternPart = new ShipPart<>(this, 2.2F, 0.85F);
-        this.prowPart = new ShipPart<>(this, 2.0F, 0.85F);
-        this.subEntities = new ShipPart<?>[]{ this.sternPart, this.prowPart };
+        ShipPart<SloopEntity>[] parts = ShipPart.createShipDeckParts(this);
+        this.sternPart = parts[0];
+        this.prowPart = parts[3];
+        this.subEntities = parts;
     }
 
+    @SuppressWarnings("unchecked")
     public SloopEntity(Level level, double x, double y, double z) {
         super(CurrentsofTrade.SLOOP.get(), level);
         this.setPos(x, y, z);
         this.xo = x;
         this.yo = y;
         this.zo = z;
-        this.sternPart = new ShipPart<>(this, 2.2F, 0.85F);
-        this.prowPart = new ShipPart<>(this, 2.0F, 0.85F);
-        this.subEntities = new ShipPart<?>[]{ this.sternPart, this.prowPart };
+        ShipPart<SloopEntity>[] parts = ShipPart.createShipDeckParts(this);
+        this.sternPart = parts[0];
+        this.prowPart = parts[3];
+        this.subEntities = parts;
+        ShipPart.updateShipDeckParts(this, this.subEntities);
     }
 
     @Override
@@ -149,6 +154,10 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> COPPER_HULL =
             SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> HAS_SWIVEL_HARPOON =
+            SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> SYNCED_CARGO_STACKS =
+            SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.INT);
 
     public boolean isMerchantShip() {
         return this.entityData.get(IS_MERCHANT_SHIP);
@@ -191,6 +200,18 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         this.entityData.set(COPPER_HULL, copperHull);
     }
 
+    public boolean hasSwivelHarpoon() {
+        return this.entityData.get(HAS_SWIVEL_HARPOON);
+    }
+
+    public void setSwivelHarpoon(boolean harpoon) {
+        this.entityData.set(HAS_SWIVEL_HARPOON, harpoon);
+    }
+
+    public int getSyncedCargoStacks() {
+        return this.entityData.get(SYNCED_CARGO_STACKS);
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
@@ -199,6 +220,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         builder.define(BANNER_STACK, ItemStack.EMPTY);
         builder.define(BOW_LANTERN_TYPE, 0);
         builder.define(COPPER_HULL, false);
+        builder.define(HAS_SWIVEL_HARPOON, false);
+        builder.define(SYNCED_CARGO_STACKS, 0);
     }
 
     @Override
@@ -211,6 +234,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         }
         tag.putInt("BowLanternType", this.getBowLanternType());
         tag.putBoolean("CopperHull", this.hasCopperHull());
+        tag.putBoolean("SwivelHarpoon", this.hasSwivelHarpoon());
         this.addChestVehicleSaveData(tag, this.registryAccess());
     }
 
@@ -234,6 +258,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         if (tag.contains("CopperHull")) {
             this.setCopperHull(tag.getBoolean("CopperHull"));
         }
+        if (tag.contains("SwivelHarpoon")) {
+            this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
+        }
         this.readChestVehicleSaveData(tag, this.registryAccess());
     }
 
@@ -243,7 +270,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             stack.set(DataComponents.CUSTOM_NAME, this.getCustomName());
         }
         if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()
-                || this.getBowLanternType() > 0 || this.hasCopperHull()) {
+                || this.getBowLanternType() > 0 || this.hasCopperHull() || this.hasSwivelHarpoon()) {
             CustomData existing = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = existing.copyTag();
             tag.putInt("SailColor", this.getSailColor());
@@ -252,6 +279,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             }
             tag.putInt("BowLanternType", this.getBowLanternType());
             tag.putBoolean("CopperHull", this.hasCopperHull());
+            tag.putBoolean("SwivelHarpoon", this.hasSwivelHarpoon());
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
         return stack;
@@ -276,10 +304,13 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             if (tag.contains("CopperHull")) {
                 this.setCopperHull(tag.getBoolean("CopperHull"));
             }
+            if (tag.contains("SwivelHarpoon")) {
+                this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
+            }
         }
     }
 
-    private void awardFlagshipAdvancement(Player player) {
+    public static void awardFlagshipAdvancement(Player player) {
         if (player instanceof ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
             net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
                     .get(ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "flagship_armada"));
@@ -335,7 +366,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 || stack.is(Items.LANTERN)
                 || stack.is(Items.SOUL_LANTERN)
                 || stack.is(Items.COPPER_BLOCK)
-                || stack.is(Items.WAXED_COPPER_BLOCK);
+                || stack.is(Items.WAXED_COPPER_BLOCK)
+                || stack.is(CurrentsofTrade.SWIVEL_HARPOON.get());
     }
 
     /**
@@ -361,7 +393,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
         java.util.List<Entity> candidates = player.level().getEntities(player, searchArea,
                 e -> (e instanceof SloopEntity s && !s.isMerchantShip())
-                        || (e instanceof CargoBoatEntity c && c.isPlayerControlled()));
+                        || (e instanceof CargoBoatEntity c && c.isPlayerControlled())
+                        || (e instanceof TradeBoatEntity tb && !tb.isWanderingTraderShip() && !tb.isVoyageShip()
+                                && (held.is(CurrentsofTrade.SWIVEL_HARPOON.get()) || (held.is(Items.SHEARS) && tb.hasSwivelHarpoon()))));
 
         Entity bestShip = null;
         double bestDistSq = Double.MAX_VALUE;
@@ -372,7 +406,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                     candidate.getX() + 3.0, candidate.getY() + 17.5, candidate.getZ() + 3.0
             );
             boolean hitRay = sailAndHullBox.clip(eye, reachEnd).isPresent() || sailAndHullBox.contains(eye);
-            boolean standingOnDeck = candidate.getBoundingBox().inflate(1.35, 1.5, 1.35).contains(player.position());
+            boolean standingOnDeck = candidate.getBoundingBox().inflate(3.8, 2.2, 3.8).contains(player.position());
             if (hitRay || standingOnDeck) {
                 double dSq = candidate.distanceToSqr(player);
                 if (dSq < bestDistSq) {
@@ -385,8 +419,11 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         if (bestShip instanceof SloopEntity sloop) {
             return sloop.tryApplyCustomization(player, hand).consumesAction();
         }
-        if (bestShip instanceof CargoBoatEntity cargo) {
+        if (bestShip instanceof CargoBoatEntity cargo && cargo.isPlayerControlled()) {
             return cargo.tryApplyCustomization(player, hand).consumesAction();
+        }
+        if (bestShip instanceof TradeBoatEntity tradeBoat) {
+            return tradeBoat.tryApplyHarpoonCustomization(player, hand).consumesAction();
         }
         return false;
     }
@@ -452,10 +489,17 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
 
-        // 4. Remove Banner or Bow Lantern with Shears
-        if (held.is(Items.SHEARS) && (!this.getBannerStack().isEmpty() || this.getBowLanternType() > 0)) {
+        // 4. Remove Swivel Harpoon (Sneak + Shears), Banner, or Bow Lantern with Shears
+        if (held.is(Items.SHEARS) && ((this.hasSwivelHarpoon() && player.isSecondaryUseActive()) || !this.getBannerStack().isEmpty() || this.getBowLanternType() > 0)) {
             if (!this.level().isClientSide) {
-                if (!this.getBannerStack().isEmpty()) {
+                if (this.hasSwivelHarpoon() && player.isSecondaryUseActive()) {
+                    if (!player.getAbilities().instabuild) {
+                        player.getInventory().placeItemBackInInventory(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()));
+                    }
+                    this.setSwivelHarpoon(false);
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.harpoon_removed"), true);
+                } else if (!this.getBannerStack().isEmpty()) {
                     if (!player.getAbilities().instabuild) {
                         player.getInventory().placeItemBackInInventory(this.getBannerStack().copy());
                     }
@@ -480,6 +524,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             int newType = held.is(Items.SOUL_LANTERN) ? 2 : 1;
             if (this.getBowLanternType() != newType) {
                 if (!this.level().isClientSide) {
+                    Component lanternName = held.getHoverName();
                     if (this.getBowLanternType() > 0 && !player.getAbilities().instabuild) {
                         Item prevLantern = this.getBowLanternType() == 2 ? Items.SOUL_LANTERN : Items.LANTERN;
                         player.getInventory().placeItemBackInInventory(new ItemStack(prevLantern));
@@ -490,7 +535,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                     }
                     this.level().playSound(null, this.blockPosition(), SoundEvents.LANTERN_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
                     player.displayClientMessage(Component.translatable("message.currents_of_trade.sloop_lantern_mounted",
-                            held.getHoverName()), true);
+                            lanternName), true);
                     this.awardFlagshipAdvancement(player);
                 }
                 return InteractionResult.sidedSuccess(this.level().isClientSide);
@@ -507,6 +552,21 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 this.level().playSound(null, this.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.8F, 1.25F);
                 this.level().playSound(null, this.blockPosition(), SoundEvents.COPPER_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
                 player.displayClientMessage(Component.translatable("message.currents_of_trade.sloop_copper_sheathed"), true);
+                this.awardFlagshipAdvancement(player);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 7. Mount Brass Swivel Harpoon on Foredeck
+        if (held.is(CurrentsofTrade.SWIVEL_HARPOON.get()) && !this.hasSwivelHarpoon()) {
+            if (!this.level().isClientSide) {
+                this.setSwivelHarpoon(true);
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                }
+                this.level().playSound(null, this.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.75F, 1.3F);
+                this.level().playSound(null, this.blockPosition(), SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.harpoon_mounted"), true);
                 this.awardFlagshipAdvancement(player);
             }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
@@ -550,13 +610,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     public boolean canCollideWith(Entity entity) {
-        // Never collide with our own stern/prow multipart hitboxes (they would clip forward motion every tick)
+        // Never collide with our own multipart deck sections or let players stall ship motion
         if (entity instanceof ShipPart<?> part && part.getParent() == this) return false;
-        // Do not trap players inside the hull
-        if (entity instanceof Player && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
-                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
-            return false;
-        }
+        if (entity instanceof Player) return false;
         return super.canCollideWith(entity);
     }
 
@@ -618,6 +674,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     public void tick() {
+        double prevShipX = this.getX();
+        double prevShipY = this.getY();
+        double prevShipZ = this.getZ();
         float prevYaw = this.getYRot();
         super.tick();
 
@@ -630,35 +689,44 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             this.yRotO = prevYaw;
         }
 
-        // 2. Synchronize multi-part hitboxes along ship's spine (Stern & Prow):
-        // Enables walking on the entire ship deck (helm to bow) WITHOUT sticking out into water when diagonal!
+        // 2. Forward vector for bow effects:
         double yawRad = Math.toRadians(this.getYRot());
         double sin = Math.sin(yawRad);
         double cos = Math.cos(yawRad);
-
-        // Stern Part (-1.90m aft under helm & quarterdeck)
-        double sternX = this.getX() + 1.90 * sin;
-        double sternZ = this.getZ() - 1.90 * cos;
-        this.sternPart.moveTo(sternX, this.getY(), sternZ);
-
-        // Prow Part (+2.10m forward under foredeck & bow)
         double prowX = this.getX() - 2.10 * sin;
         double prowZ = this.getZ() + 2.10 * cos;
-        this.prowPart.moveTo(prowX, this.getY(), prowZ);
 
         // 3. Anti-sinking buoyancy protection:
-        // Guarantees the ship always floats gracefully at the water surface and can never sink!
+        // Guarantees the ship always floats gracefully at the true water surface and can never sink!
         BlockPos pos = this.blockPosition();
-        FluidState fluid = this.level().getFluidState(pos);
-        if (fluid.is(FluidTags.WATER) || this.level().getFluidState(pos.below()).is(FluidTags.WATER)) {
-            double waterSurfaceY = pos.getY() + (fluid.is(FluidTags.WATER) ? fluid.getHeight(this.level(), pos) : 0.0);
-            if (!fluid.is(FluidTags.WATER)) {
-                FluidState belowFluid = this.level().getFluidState(pos.below());
-                waterSurfaceY = pos.below().getY() + belowFluid.getHeight(this.level(), pos.below());
+        BlockPos surfacePos = null;
+        if (this.level().getFluidState(pos).is(FluidTags.WATER)) {
+            surfacePos = pos;
+        } else if (this.level().getFluidState(pos.below()).is(FluidTags.WATER)) {
+            surfacePos = pos.below();
+        }
+        if (surfacePos != null) {
+            for (int up = 0; up < 16; up++) {
+                BlockPos above = surfacePos.above();
+                if (this.level().getFluidState(above).is(FluidTags.WATER)) {
+                    surfacePos = above;
+                } else {
+                    break;
+                }
             }
+            FluidState topFluid = this.level().getFluidState(surfacePos);
+            double waterSurfaceY = surfacePos.getY() + topFluid.getHeight(this.level(), surfacePos);
 
-            double targetY = waterSurfaceY - 0.45;
-            if (this.getY() < targetY) {
+            double targetY = waterSurfaceY - 0.35;
+            if (this.getY() < waterSurfaceY - 0.75) {
+                BlockPos floatPos = BlockPos.containing(this.getX(), waterSurfaceY + 0.05, this.getZ());
+                if (this.level().getBlockState(floatPos).getCollisionShape(this.level(), floatPos).isEmpty()) {
+                    this.setPos(this.getX(), waterSurfaceY - 0.10, this.getZ());
+                    Vec3 motion = this.getDeltaMovement();
+                    this.setDeltaMovement(motion.x, Math.max(0.0, motion.y), motion.z);
+                    this.setOnGround(false);
+                }
+            } else if (this.getY() < targetY) {
                 Vec3 motion = this.getDeltaMovement();
                 double upwardCorrection = Math.min(0.25, (targetY - this.getY()) * 0.6);
                 this.setDeltaMovement(motion.x, Math.max(motion.y, upwardCorrection), motion.z);
@@ -728,11 +796,71 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             }
         }
 
-        // Keep center bounding box synchronized
+        // 6. Brass Swivel Harpoon defense & Bosun's Whistle shoreline glide
+        if (!this.level().isClientSide) {
+            if (this.tickCount % 10 == 0) {
+                int used = 0;
+                for (int i = 0; i < this.getContainerSize(); i++) {
+                    if (!this.getItem(i).isEmpty()) used++;
+                }
+                this.entityData.set(SYNCED_CARGO_STACKS, used);
+            }
+            if (this.hasSwivelHarpoon()) {
+                com.lexovian.currentsoftrade.item.SwivelHarpoonItem.tickShipHarpoonDefense(this);
+            }
+            this.tickSummonGlide();
+        }
+
+        // Keep center bounding box and multi-part deck sections synchronized
         this.setBoundingBox(this.makeBoundingBox());
+        ShipPart.updateShipDeckParts(this, this.subEntities);
+        ShipPart.supportDeckEntities(this, this.subEntities, prevShipX, prevShipY, prevShipZ, prevYaw);
     }
 
     private int tailwindTicks = 0;
+    @Nullable private Vec3 summonTarget = null;
+    private int summonTicks = 0;
+
+    public void summonToward(Vec3 target) {
+        this.summonTarget = target;
+        this.summonTicks = 120;
+    }
+
+    private void tickSummonGlide() {
+        if (this.summonTicks <= 0 || this.summonTarget == null) return;
+        if (this.isVehicle() || this.isMerchantShip()) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        this.summonTicks--;
+        double dx = this.summonTarget.x - this.getX();
+        double dz = this.summonTarget.z - this.getZ();
+        double dist = Math.hypot(dx, dz);
+        if (dist <= 2.3D || this.summonTicks <= 0) {
+            Vec3 cur = this.getDeltaMovement();
+            this.setDeltaMovement(cur.x * 0.25D, cur.y, cur.z * 0.25D);
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        double nx = dx / dist;
+        double nz = dz / dist;
+        BlockPos ahead = BlockPos.containing(this.getX() + nx * 1.5D, this.getY(), this.getZ() + nz * 1.5D);
+        if (!this.level().getFluidState(ahead).is(FluidTags.WATER)
+                && !this.level().getFluidState(ahead.below()).is(FluidTags.WATER)) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        float desiredYaw = (float) (Mth.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F;
+        float diff = Mth.wrapDegrees(desiredYaw - this.getYRot());
+        this.setYRot(this.getYRot() + Mth.clamp(diff, -8.0F, 8.0F));
+        double speed = Math.min(0.24D, Math.max(0.08D, dist * 0.05D));
+        Vec3 cur = this.getDeltaMovement();
+        this.setDeltaMovement(nx * speed, cur.y, nz * speed);
+        this.hasImpulse = true;
+    }
 
     public void applyTailwind(int ticks) {
         this.tailwindTicks = Math.max(this.tailwindTicks, ticks);
@@ -744,8 +872,15 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     public void push(Entity entity) {
-        // Prevent swimming mobs, monsters, and animals from automatically climbing aboard on collision
-        if (!this.isPassengerOfSameVehicle(entity) && !entity.noPhysics && !this.noPhysics) {
+        // Prevent swimming mobs, monsters, and animals from automatically climbing aboard on collision,
+        // while never shoving players or crew standing on top of the deck
+        if (entity == this || entity instanceof ShipPart<?> || this.isPassengerOfSameVehicle(entity) || entity.noPhysics || this.noPhysics) {
+            return;
+        }
+        if (entity.getBoundingBox().minY > this.getBoundingBox().minY + 0.15D) {
+            return;
+        }
+        if (true) {
             double d0 = entity.getX() - this.getX();
             double d1 = entity.getZ() - this.getZ();
             double d2 = Mth.absMax(d0, d1);
@@ -861,29 +996,10 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
-        float yawRad = (float) Math.toRadians(this.getYRot());
-        double sin = Math.sin(yawRad);
-        double cos = Math.cos(yawRad);
-
-        // Try starboard (+cos, +sin) and port (-cos, -sin) side escape locations:
-        double[][] sideOffsets = new double[][]{
-                { cos * 2.2, sin * 2.2 },   // Starboard side
-                { -cos * 2.2, -sin * 2.2 }, // Port side
-                { -sin * 3.2, cos * 3.2 },  // Stern (behind)
-                { sin * 3.2, -cos * 3.2 }   // Prow (in front)
-        };
-
-        for (double[] offset : sideOffsets) {
-            double testX = this.getX() + offset[0];
-            double testZ = this.getZ() + offset[1];
-            double testY = this.getY() + 0.2;
-            BlockPos testPos = BlockPos.containing(testX, testY, testZ);
-            if (this.level().getFluidState(testPos).is(FluidTags.WATER)
-                    || this.level().getBlockState(testPos).isAir()) {
-                return new Vec3(testX, testY, testZ);
-            }
+        Vec3 deckSpot = ShipPart.findDeckDismountLocation(this, passenger);
+        if (deckSpot != null) {
+            return deckSpot;
         }
-
         return super.getDismountLocationForPassenger(passenger);
     }
 }

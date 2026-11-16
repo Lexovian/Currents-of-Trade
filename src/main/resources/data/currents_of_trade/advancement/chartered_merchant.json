@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:trade_charter"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.chartered_merchant.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.chartered_merchant.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:sealed_contract",
+  "criteria": {
+    "fulfilled_charter": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -2,11 +2,14 @@ package com.lexovian.currentsoftrade.block.entity;
 
 import com.lexovian.currentsoftrade.Config;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
+import com.lexovian.currentsoftrade.entity.SloopEntity;
 import com.lexovian.currentsoftrade.entity.TradeBoatEntity;
 import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
+import com.lexovian.currentsoftrade.item.TradeCharterItem;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
@@ -73,15 +76,65 @@ public class AnchorPointBlockEntity extends BlockEntity {
     }
 
     // Harbor state
+    public static final int MAX_DAILY_BOUNTY_CLAIMS = 3;
+
     private int tradeLevel = 1;
     private String harborName = "";
+    private boolean customNamed = false;
+    private boolean hasCustomTrades = false;
     private long lastTravelTime = 0;
+    private HarborSpecialization specialization = HarborSpecialization.NONE;
+    private boolean specializationChosen = false;
+    @Nullable
+    private java.util.UUID ownerUUID = null;
+    private long bountyClaimDay = -1L;
+    private int primaryBountyClaims = 0;
+    private int secondaryBountyClaims = 0;
     private final List<HarborTradeOffer> harborTrades = new ArrayList<>();
     private final List<TradePresetEntry> savedTradePreset = new ArrayList<>();
     @Nullable
     private BlockPos savedTargetPos = null;
     private String savedTargetHarborName = "";
     private final List<BlockPos> savedWaypoints = new ArrayList<>();
+
+    public void setOwnerUUID(@Nullable java.util.UUID ownerUUID) {
+        this.ownerUUID = ownerUUID;
+        setChanged();
+    }
+
+    @Nullable
+    public java.util.UUID getOwnerUUID() {
+        return this.ownerUUID;
+    }
+
+    public int getRemainingPrimaryBountyClaims() {
+        long today = this.level != null ? (this.level.getDayTime() / 24000L) : 0L;
+        if (this.bountyClaimDay != today) return MAX_DAILY_BOUNTY_CLAIMS;
+        return Math.max(0, MAX_DAILY_BOUNTY_CLAIMS - this.primaryBountyClaims);
+    }
+
+    public int getRemainingSecondaryBountyClaims() {
+        long today = this.level != null ? (this.level.getDayTime() / 24000L) : 0L;
+        if (this.bountyClaimDay != today) return MAX_DAILY_BOUNTY_CLAIMS;
+        return Math.max(0, MAX_DAILY_BOUNTY_CLAIMS - this.secondaryBountyClaims);
+    }
+
+    private void recordBountyClaim(boolean isSecondary) {
+        if (this.level == null) return;
+        long today = this.level.getDayTime() / 24000L;
+        if (this.bountyClaimDay != today) {
+            this.bountyClaimDay = today;
+            this.primaryBountyClaims = 0;
+            this.secondaryBountyClaims = 0;
+        }
+        if (isSecondary) {
+            this.secondaryBountyClaims++;
+        } else {
+            this.primaryBountyClaims++;
+        }
+        setChanged();
+        this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+    }
 
     public AnchorPointBlockEntity(BlockPos pos, BlockState state) {
         super(CurrentsofTrade.ANCHOR_POINT_BE.get(), pos, state);
@@ -134,14 +187,30 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     // --- Harbor Depot Container Helpers & Redstone Automation ---
 
+    public static boolean isGuildDepotAt(Level level, BlockPos anchorPos) {
+        return level != null && anchorPos != null
+                && level.getBlockEntity(anchorPos) instanceof AnchorPointBlockEntity a
+                && a.getSpecialization() == HarborSpecialization.GUILD_DEPOT;
+    }
+
     public static List<Container> findNearbyDepotContainers(Level level, BlockPos anchorPos) {
         List<Container> containers = new ArrayList<>();
         if (level == null || anchorPos == null) return containers;
+        boolean expanded = isGuildDepotAt(level, anchorPos);
+        int rx = expanded ? 8 : 4;
+        int ryDown = expanded ? 3 : 2;
+        int ryUp = expanded ? 4 : 3;
         Set<BlockPos> seen = new HashSet<>();
-        for (BlockPos check : BlockPos.betweenClosed(anchorPos.offset(-4, -2, -4), anchorPos.offset(4, 3, 4))) {
-            if (!seen.add(check.immutable())) continue;
+        for (BlockPos check : BlockPos.betweenClosed(anchorPos.offset(-rx, -ryDown, -rx), anchorPos.offset(rx, ryUp, rx))) {
+            if (!seen.add(check.immutable()) || !level.isLoaded(check)) continue;
             BlockEntity be = level.getBlockEntity(check);
-            if (be == null || be instanceof EnderChestBlockEntity || be instanceof AnchorPointBlockEntity) continue;
+            if (be == null
+                    || be instanceof EnderChestBlockEntity
+                    || be instanceof AnchorPointBlockEntity
+                    || be instanceof net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity
+                    || be instanceof net.minecraft.world.level.block.entity.BrewingStandBlockEntity) {
+                continue;
+            }
             BlockState state = level.getBlockState(check);
             if (be instanceof ChestBlockEntity && state.getBlock() instanceof ChestBlock chestBlock) {
                 Container chestContainer = ChestBlock.getContainer(chestBlock, state, level, check, true);
@@ -198,21 +267,74 @@ public class AnchorPointBlockEntity extends BlockEntity {
         return needed - remaining;
     }
 
+    public List<HarborTradeOffer> getActiveUrgentBounties() {
+        List<HarborTradeOffer> list = new ArrayList<>();
+        if (this.level == null) return list;
+        MaritimeTradeRegion region = getTradeRegion();
+        if (getRemainingPrimaryBountyClaims() > 0) {
+            HarborTradeOffer primary = region.getUrgentBountyOffer(this.level, this.worldPosition);
+            if (primary != null && !primary.getCostA().isEmpty()) {
+                list.add(primary);
+            }
+        }
+        if (this.specialization == HarborSpecialization.GUILD_DEPOT && getRemainingSecondaryBountyClaims() > 0) {
+            HarborTradeOffer secondary = region.getSecondaryUrgentBountyOffer(this.level, this.worldPosition);
+            if (secondary != null && !secondary.getCostA().isEmpty()) {
+                list.add(secondary);
+            }
+        }
+        return list;
+    }
+
     /**
-     * Allows a player to directly deliver the port's Daily Urgent Bounty (or a High-Demand regional import commodity)
-     * at the Anchor Point without needing to dispatch a ship from a second port.
+     * Allows a player to directly deliver a Sealed Trade Charter, the port's Daily Urgent Bounty,
+     * or a High-Demand regional import commodity at the Anchor Point without needing a second port.
      */
     public boolean tryDeliverUrgentBounty(net.minecraft.world.entity.player.Player player, @Nullable ItemStack heldStack) {
         if (this.level == null || player == null) return false;
 
+        // 1. Check Sealed Guild Trade Charter delivery first (includes HarborStatus.VALID check)
+        if (TradeCharterItem.tryFulfillAtHarbor(player, heldStack, this)) {
+            return true;
+        }
+
+        HarborStatus status = getHarborStatus();
+        if (status != HarborStatus.VALID) {
+            if (heldStack == null) {
+                if (!this.level.isClientSide) {
+                    Component warnMsg = switch (status) {
+                        case TOO_SMALL -> Component.translatable("message.currents_of_trade.harbor_too_small");
+                        case UNDERGROUND -> Component.translatable("message.currents_of_trade.harbor_underground");
+                        case TOO_SHALLOW -> Component.translatable("message.currents_of_trade.harbor_too_shallow");
+                        case WRONG_DIMENSION -> Component.translatable("message.currents_of_trade.overworld_only");
+                        default -> Component.translatable("message.currents_of_trade.anchor_placed_no_water");
+                    };
+                    this.level.playSound(null, this.worldPosition, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 0.8F, 1.0F);
+                    player.displayClientMessage(warnMsg, true);
+                }
+                return true;
+            }
+            return false;
+        }
+
         MaritimeTradeRegion region = getTradeRegion();
-        HarborTradeOffer bounty = region.getUrgentBountyOffer(this.level, this.worldPosition);
+        HarborTradeOffer primaryBounty = getRemainingPrimaryBountyClaims() > 0
+                ? region.getUrgentBountyOffer(this.level, this.worldPosition) : null;
+        HarborTradeOffer secondaryBounty = (this.specialization == HarborSpecialization.GUILD_DEPOT && getRemainingSecondaryBountyClaims() > 0)
+                ? region.getSecondaryUrgentBountyOffer(this.level, this.worldPosition) : null;
+        List<HarborTradeOffer> activeBounties = getActiveUrgentBounties();
 
         HarborTradeOffer matchedOffer = null;
+        int matchedBountyType = 0;
         if (heldStack != null && !heldStack.isEmpty()) {
-            if (bounty != null && !bounty.getCostA().isEmpty() && isStackMatchingTradeRequirement(heldStack, bounty.getCostA())) {
-                matchedOffer = bounty;
-            } else if (!heldStack.is(CurrentsofTrade.DOUBLOON.get())) {
+            if (primaryBounty != null && !primaryBounty.getCostA().isEmpty() && isStackMatchingTradeRequirement(heldStack, primaryBounty.getCostA())) {
+                matchedOffer = primaryBounty;
+                matchedBountyType = 1;
+            } else if (secondaryBounty != null && !secondaryBounty.getCostA().isEmpty() && isStackMatchingTradeRequirement(heldStack, secondaryBounty.getCostA())) {
+                matchedOffer = secondaryBounty;
+                matchedBountyType = 2;
+            }
+            if (matchedOffer == null && !heldStack.is(CurrentsofTrade.DOUBLOON.get())) {
                 for (HarborTradeOffer offer : region.generateDefaultHarborTrades(MAX_HARBOR_LEVEL)) {
                     if (offer.getCostB().isEmpty()
                             && offer.getResult().is(CurrentsofTrade.DOUBLOON.get())
@@ -230,8 +352,25 @@ public class AnchorPointBlockEntity extends BlockEntity {
                 return false;
             }
         } else {
-            matchedOffer = bounty;
-            if (matchedOffer == null || matchedOffer.getCostA().isEmpty()) {
+            if (primaryBounty != null && !primaryBounty.getCostA().isEmpty()
+                    && countPlayerMatchingItems(player, primaryBounty.getCostA()) >= primaryBounty.getCostA().getCount()) {
+                matchedOffer = primaryBounty;
+                matchedBountyType = 1;
+            } else if (secondaryBounty != null && !secondaryBounty.getCostA().isEmpty()
+                    && countPlayerMatchingItems(player, secondaryBounty.getCostA()) >= secondaryBounty.getCostA().getCount()) {
+                matchedOffer = secondaryBounty;
+                matchedBountyType = 2;
+            } else if (!activeBounties.isEmpty()) {
+                matchedOffer = activeBounties.get(0);
+                matchedBountyType = (matchedOffer == secondaryBounty) ? 2 : 1;
+            } else {
+                HarborTradeOffer exhausted = region.getUrgentBountyOffer(this.level, this.worldPosition);
+                if (exhausted != null && !exhausted.getCostA().isEmpty()) {
+                    if (!this.level.isClientSide) {
+                        this.level.playSound(null, this.worldPosition, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 0.8F, 1.0F);
+                    }
+                    return true;
+                }
                 return false;
             }
         }
@@ -239,6 +378,10 @@ public class AnchorPointBlockEntity extends BlockEntity {
         ItemStack required = matchedOffer.getCostA();
         int needed = required.getCount();
         int available = countPlayerMatchingItems(player, required);
+        ItemStack baseReward = matchedOffer.getResult().copy();
+        if (this.specialization == HarborSpecialization.FREE_PORT && baseReward.is(CurrentsofTrade.DOUBLOON.get())) {
+            baseReward.setCount(Math.max(baseReward.getCount() + 1, Math.round(baseReward.getCount() * 1.25F)));
+        }
 
         if (available < needed) {
             if (!this.level.isClientSide) {
@@ -247,8 +390,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
                         "message.currents_of_trade.bounty_missing_items",
                         needed,
                         required.getHoverName(),
-                        matchedOffer.getResult().getCount(),
-                        matchedOffer.getResult().getHoverName()
+                        baseReward.getCount(),
+                        baseReward.getHoverName()
                 ), true);
             }
             return true;
@@ -258,9 +401,19 @@ public class AnchorPointBlockEntity extends BlockEntity {
             if (!player.getAbilities().instabuild) {
                 consumeFromPlayerInventory(player, heldStack, required, needed);
             }
-            ItemStack reward = matchedOffer.getResult().copy();
-            if (!player.getInventory().add(reward)) {
-                player.drop(reward, false);
+            if (matchedBountyType == 1) {
+                recordBountyClaim(false);
+            } else if (matchedBountyType == 2) {
+                recordBountyClaim(true);
+            }
+            int remReward = baseReward.getCount();
+            while (remReward > 0) {
+                int batch = Math.min(baseReward.getMaxStackSize(), remReward);
+                ItemStack rewardPart = baseReward.copyWithCount(batch);
+                if (!player.getInventory().add(rewardPart)) {
+                    player.drop(rewardPart, false);
+                }
+                remReward -= batch;
             }
             player.getInventory().setChanged();
             player.inventoryMenu.broadcastChanges();
@@ -283,8 +436,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
                     needed,
                     required.getHoverName(),
                     getHarborName(),
-                    matchedOffer.getResult().getCount(),
-                    matchedOffer.getResult().getHoverName()
+                    baseReward.getCount(),
+                    baseReward.getHoverName()
             ), true);
         }
         return true;
@@ -393,7 +546,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
         double dz = this.worldPosition.getZ() - target.getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
         if (dist <= 0) return false;
-        int baseFee = Math.max(1, (int) Math.ceil(dist / 200.0));
+        int rawBaseFee = Math.max(1, (int) Math.ceil(dist / 200.0));
+        int baseFee = applyShippingFeeSpecialization(rawBaseFee);
 
         // Check Doubloon availability in depot containers
         ItemStack doubloonReq = new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1);
@@ -405,14 +559,59 @@ public class AnchorPointBlockEntity extends BlockEntity {
         List<ItemStack> stagedRewards = new ArrayList<>();
         int stagedTradeCount = 0;
 
+        var savedData = HarborSavedData.get(serverLevel);
+        if (!savedData.hasHarbor(target)) {
+            return false;
+        }
+        List<HarborTradeOffer> validTargetOffers = new ArrayList<>(savedData.getTrades(target));
+        MaritimeTradeRegion destRegion = MaritimeTradeRegion.fromLevelAndPos(serverLevel, target);
+        HarborTradeOffer liveUrgent1 = destRegion.getUrgentBountyOffer(serverLevel, target);
+        if (liveUrgent1 != null) validTargetOffers.add(liveUrgent1);
+        if (savedData.getHarborSpecialization(target) == HarborSpecialization.GUILD_DEPOT) {
+            HarborTradeOffer liveUrgent2 = destRegion.getSecondaryUrgentBountyOffer(serverLevel, target);
+            if (liveUrgent2 != null) validTargetOffers.add(liveUrgent2);
+        }
+
+        boolean destIsFreePort = savedData.getHarborSpecialization(target) == HarborSpecialization.FREE_PORT;
+        boolean bonusFreePort = (this.specialization == HarborSpecialization.FREE_PORT) || destIsFreePort;
+
         for (TradePresetEntry entry : this.savedTradePreset) {
-            HarborTradeOffer offer = entry.offer();
+            HarborTradeOffer offer = findMatchingLiveOffer(entry.offer(), validTargetOffers);
+            if (offer == null) continue;
             ItemStack costA = offer.getCostA();
             ItemStack costB = offer.getCostB();
-            ItemStack result = offer.getResult();
+            ItemStack result = offer.getResult().copy();
+            if (bonusFreePort && result.is(CurrentsofTrade.DOUBLOON.get()) && !costA.is(CurrentsofTrade.DOUBLOON.get())) {
+                result.setCount(Math.max(result.getCount() + 1, Math.round(result.getCount() * 1.25F)));
+            }
 
-            for (int c = 0; c < entry.count(); c++) {
-                if (stagedPayments.size() + 2 > maxSlots || stagedRewards.size() + 1 > maxSlots) break;
+            int tradeDoubloonCost = 0;
+            if (costA.is(CurrentsofTrade.DOUBLOON.get())) tradeDoubloonCost += costA.getCount();
+            if (!costB.isEmpty() && costB.is(CurrentsofTrade.DOUBLOON.get())) tradeDoubloonCost += costB.getCount();
+
+            int maxAllowedCount = offer.isUrgentBounty() ? Math.min(entry.count(), MAX_DAILY_BOUNTY_CLAIMS) : entry.count();
+            for (int c = 0; c < maxAllowedCount; c++) {
+                List<ItemStack> nextPayments = new ArrayList<>(stagedPayments.size() + 2);
+                for (ItemStack s : stagedPayments) nextPayments.add(s.copy());
+                List<ItemStack> nextRewards = new ArrayList<>(stagedRewards.size() + 1);
+                for (ItemStack s : stagedRewards) nextRewards.add(s.copy());
+
+                mergeStackIntoList(nextPayments, costA.copy());
+                if (!costB.isEmpty()) {
+                    mergeStackIntoList(nextPayments, costB.copy());
+                }
+                mergeStackIntoList(nextRewards, result.copy());
+
+                if (nextPayments.size() > maxSlots || nextRewards.size() > maxSlots) break;
+
+                int nextStacks = 0;
+                for (ItemStack s : nextPayments) nextStacks += (int) Math.ceil(s.getCount() / (double) s.getMaxStackSize());
+                for (ItemStack s : nextRewards) nextStacks += (int) Math.ceil(s.getCount() / (double) s.getMaxStackSize());
+                int nextSurcharge = nextStacks > 0 ? (int) Math.ceil(nextStacks / 3.0) : 0;
+                int nextTotalFee = applyShippingFeeSpecialization(rawBaseFee + nextSurcharge);
+
+                int currentDoubloons = countDepotMatchingItems(serverLevel, this.worldPosition, doubloonReq);
+                if (currentDoubloons - tradeDoubloonCost < nextTotalFee) break;
 
                 boolean hasA = costA.isEmpty() || countDepotMatchingItems(serverLevel, this.worldPosition, costA) >= costA.getCount();
                 boolean hasB = costB.isEmpty() || countDepotMatchingItems(serverLevel, this.worldPosition, costB) >= costB.getCount();
@@ -426,11 +625,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
                     consumeFromDepotContainers(serverLevel, this.worldPosition, costB, costB.getCount());
                 }
 
-                mergeStackIntoList(stagedPayments, costA.copy());
-                if (!costB.isEmpty()) {
-                    mergeStackIntoList(stagedPayments, costB.copy());
-                }
-                mergeStackIntoList(stagedRewards, result.copy());
+                stagedPayments = nextPayments;
+                stagedRewards = nextRewards;
                 stagedTradeCount++;
             }
         }
@@ -441,7 +637,7 @@ public class AnchorPointBlockEntity extends BlockEntity {
         for (ItemStack s : stagedPayments) totalStacks += (int) Math.ceil(s.getCount() / (double) s.getMaxStackSize());
         for (ItemStack s : stagedRewards) totalStacks += (int) Math.ceil(s.getCount() / (double) s.getMaxStackSize());
         int surcharge = totalStacks > 0 ? (int) Math.ceil(totalStacks / 3.0) : 0;
-        int totalFee = Math.min(availableDoubloons, baseFee + surcharge);
+        int totalFee = applyShippingFeeSpecialization(rawBaseFee + surcharge);
         consumeFromDepotContainers(serverLevel, this.worldPosition, doubloonReq, totalFee);
 
         triggerTravelCooldown();
@@ -457,9 +653,13 @@ public class AnchorPointBlockEntity extends BlockEntity {
         tradeBoat.yRotO = initialYaw;
         tradeBoat.setRouteWaypoints(waypoints);
         tradeBoat.setVoyageTarget(target, destHarbor);
-        tradeBoat.setCustomName(Component.literal("Trade Ship"));
+        if (this.ownerUUID != null) {
+            tradeBoat.setSenderUUID(this.ownerUUID);
+        }
+        tradeBoat.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
         tradeBoat.setCustomNameVisible(true);
         tradeBoat.setTradeMission(this.worldPosition, getHarborName(), stagedRewards);
+        applyOutboundShipSpecialization(tradeBoat);
 
         for (int i = 0; i < stagedPayments.size() && i < tradeBoat.getContainerSize(); i++) {
             tradeBoat.setItem(i, stagedPayments.get(i).copy());
@@ -470,6 +670,22 @@ public class AnchorPointBlockEntity extends BlockEntity {
         serverLevel.playSound(null, this.worldPosition, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 0.9F, 1.2F);
         serverLevel.updateNeighbourForOutputSignal(this.worldPosition, getBlockState().getBlock());
         return true;
+    }
+
+    @Nullable
+    private static HarborTradeOffer findMatchingLiveOffer(HarborTradeOffer presetOffer, List<HarborTradeOffer> liveOffers) {
+        if (presetOffer == null) return null;
+        for (HarborTradeOffer live : liveOffers) {
+            if (isStackMatchingTradeRequirement(live.getCostA(), presetOffer.getCostA())
+                    && live.getCostA().getCount() == presetOffer.getCostA().getCount()
+                    && ((live.getCostB().isEmpty() && presetOffer.getCostB().isEmpty())
+                        || (isStackMatchingTradeRequirement(live.getCostB(), presetOffer.getCostB())
+                            && live.getCostB().getCount() == presetOffer.getCostB().getCount()))
+                    && ItemStack.isSameItem(live.getResult(), presetOffer.getResult())) {
+                return live;
+            }
+        }
+        return null;
     }
 
     private static void mergeStackIntoList(List<ItemStack> list, ItemStack toAdd) {
@@ -533,6 +749,7 @@ public class AnchorPointBlockEntity extends BlockEntity {
         int maxTrades = getMaxTradeOffers();
         if (this.harborTrades.size() < maxTrades) {
             this.harborTrades.add(trade);
+            this.hasCustomTrades = true;
             setChanged();
             syncToSavedData();
             return true;
@@ -550,13 +767,14 @@ public class AnchorPointBlockEntity extends BlockEntity {
         return false;
     }
 
-    /** Pushes current name, level, and trade list into the global HarborSavedData. */
+    /** Pushes current name, level, specialization, and trade list into the global HarborSavedData. */
     public void syncToSavedData() {
         if (this.level instanceof ServerLevel serverLevel) {
             HarborSavedData data = HarborSavedData.get(serverLevel);
             data.setTrades(this.getBlockPos(), this.harborTrades);
             data.setHarborName(this.getBlockPos(), this.getHarborName());
             data.setHarborLevel(this.getBlockPos(), this.tradeLevel);
+            data.setHarborSpecialization(this.getBlockPos(), this.specialization);
         }
     }
 
@@ -620,24 +838,152 @@ public class AnchorPointBlockEntity extends BlockEntity {
         };
     }
 
+    public HarborSpecialization getSpecialization() {
+        return this.specialization != null ? this.specialization : HarborSpecialization.NONE;
+    }
+
+    public boolean isSpecializationChosen() {
+        return this.specializationChosen;
+    }
+
+    public int applyShippingFeeSpecialization(int rawFee) {
+        if (rawFee <= 0) return 0;
+        if (this.specialization == HarborSpecialization.FREE_PORT) {
+            return Math.max(1, (int) Math.floor(rawFee * 0.75D));
+        }
+        return rawFee;
+    }
+
+    public void applyOutboundShipSpecialization(TradeBoatEntity boat) {
+        if (boat == null) return;
+        if (this.specialization == HarborSpecialization.ROYAL_DRYDOCK) {
+            boat.setCruiseSpeed(boat.getCruiseSpeed() * 1.20D);
+            boat.setDrydockReinforced(true);
+        }
+    }
+
+    public boolean tryCycleSpecialization(net.minecraft.world.entity.player.Player player) {
+        if (player == null || this.level == null) return false;
+        if (this.tradeLevel < HarborSpecialization.UNLOCK_LEVEL) {
+            if (!this.level.isClientSide) {
+                player.displayClientMessage(
+                        Component.translatable("message.currents_of_trade.spec_locked", HarborSpecialization.UNLOCK_LEVEL),
+                        true
+                );
+            }
+            return false;
+        }
+
+        HarborSpecialization next = getSpecialization().nextActive();
+        boolean needsFee = this.specializationChosen && !player.getAbilities().instabuild;
+        ItemStack doubloonTemplate = new ItemStack(CurrentsofTrade.DOUBLOON.get());
+
+        if (needsFee) {
+            int have = countPlayerMatchingItems(player, doubloonTemplate);
+            if (have < HarborSpecialization.SWITCH_COST_DOUBLOONS) {
+                if (!this.level.isClientSide) {
+                    this.level.playSound(null, this.worldPosition, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 0.85F, 1.0F);
+                    player.displayClientMessage(Component.translatable(
+                            "message.currents_of_trade.spec_need_doubloons",
+                            HarborSpecialization.SWITCH_COST_DOUBLOONS,
+                            have
+                    ), true);
+                }
+                return false;
+            }
+            if (!this.level.isClientSide) {
+                consumeFromPlayerInventory(player, null, doubloonTemplate, HarborSpecialization.SWITCH_COST_DOUBLOONS);
+                player.inventoryMenu.broadcastChanges();
+                if (player.containerMenu != null) player.containerMenu.broadcastChanges();
+            }
+        }
+
+        if (!this.level.isClientSide) {
+            this.specialization = next;
+            this.specializationChosen = true;
+            setChanged();
+            syncToSavedData();
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+
+            this.level.playSound(null, this.worldPosition, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.15F);
+            this.level.playSound(null, this.worldPosition, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.55F, 1.35F);
+            if (this.level instanceof ServerLevel serverLevel) {
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON,
+                        this.worldPosition.getX() + 0.5, this.worldPosition.getY() + 1.15, this.worldPosition.getZ() + 0.5,
+                        16, 0.35, 0.3, 0.35, 0.08);
+            }
+
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.getServer() != null) {
+                net.minecraft.advancements.AdvancementHolder adv = serverPlayer.getServer().getAdvancements()
+                        .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(CurrentsofTrade.MODID, "harbor_specialist"));
+                if (adv != null) {
+                    for (String criterion : adv.value().criteria().keySet()) {
+                        serverPlayer.getAdvancements().award(adv, criterion);
+                    }
+                }
+            }
+
+            player.displayClientMessage(
+                    Component.translatable("message.currents_of_trade.spec_selected", getHarborName(), next.getShortBadge()),
+                    true
+            );
+        }
+        return true;
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, AnchorPointBlockEntity anchor) {
+        if (level.isClientSide || anchor.getSpecialization() != HarborSpecialization.ROYAL_DRYDOCK) return;
+        if ((level.getGameTime() + pos.asLong()) % 40L != 0L) return;
+
+        AABB dockRepairBox = new AABB(pos).inflate(14.0, 5.0, 14.0);
+        boolean repairedAny = false;
+
+        for (SloopEntity sloop : level.getEntitiesOfClass(SloopEntity.class, dockRepairBox, SloopEntity::isAlive)) {
+            if (sloop.getDamage() > 0.0F) {
+                sloop.setDamage(Math.max(0.0F, sloop.getDamage() - 4.0F));
+                repairedAny = true;
+            }
+        }
+        for (TradeBoatEntity boat : level.getEntitiesOfClass(TradeBoatEntity.class, dockRepairBox, TradeBoatEntity::isAlive)) {
+            if (boat.healShipHull(5.0F)) {
+                repairedAny = true;
+            }
+        }
+
+        if (repairedAny && level instanceof ServerLevel serverLevel) {
+            serverLevel.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.35F, 1.5F);
+            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON,
+                    pos.getX() + 0.5, pos.getY() + 1.15, pos.getZ() + 0.5,
+                    6, 0.3, 0.25, 0.3, 0.04);
+        }
+    }
+
     public int getLevelCooldownSeconds() {
-        return switch (this.tradeLevel) {
+        int base = switch (this.tradeLevel) {
             case 2 -> 45;
             case 3 -> 30;
             case 4 -> 20;
             case 5 -> 10;
             default -> 60;
         };
+        if (this.specialization == HarborSpecialization.ROYAL_DRYDOCK) {
+            return Math.max(5, base / 2);
+        }
+        return base;
     }
 
     public int getCargoSlotCount() {
-        return switch (this.tradeLevel) {
+        int base = switch (this.tradeLevel) {
             case 2 -> 27;
             case 3 -> 36;
             case 4 -> 45;
             case 5 -> 54;
             default -> 18;
         };
+        if (this.specialization == HarborSpecialization.GUILD_DEPOT) {
+            return Math.min(54, base + 9);
+        }
+        return base;
     }
 
     public int getMaxTradeOffers() {
@@ -724,7 +1070,17 @@ public class AnchorPointBlockEntity extends BlockEntity {
         return harborName;
     }
 
+    public void initDefaultHarborName(String generatedName) {
+        this.customNamed = false;
+        applyHarborNameInternal(generatedName);
+    }
+
     public void setHarborName(String harborName) {
+        this.customNamed = true;
+        applyHarborNameInternal(harborName);
+    }
+
+    private void applyHarborNameInternal(String harborName) {
         if (harborName == null || harborName.trim().isEmpty()) {
             harborName = (this.level != null)
                     ? generateDynamicHarborName(this.level, this.worldPosition)
@@ -743,6 +1099,85 @@ public class AnchorPointBlockEntity extends BlockEntity {
             }
             this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
         }
+    }
+
+    public boolean hasPersistentUpgradeState() {
+        return this.tradeLevel > 1
+                || this.specializationChosen
+                || this.customNamed
+                || this.hasCustomTrades
+                || this.hasSavedTradePreset()
+                || getRemainingCooldownSeconds() > 0
+                || getRemainingPrimaryBountyClaims() < MAX_DAILY_BOUNTY_CLAIMS
+                || getRemainingSecondaryBountyClaims() < MAX_DAILY_BOUNTY_CLAIMS;
+    }
+
+    public CompoundTag saveToItemTag(HolderLookup.Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("TradeLevel", this.tradeLevel);
+        tag.putString("HarborName", this.harborName);
+        tag.putBoolean("CustomNamed", this.customNamed);
+        tag.putBoolean("HasCustomTrades", this.hasCustomTrades);
+        tag.putLong("LastTravelTime", this.lastTravelTime);
+        tag.putString("Specialization", getSpecialization().getId());
+        tag.putBoolean("SpecializationChosen", this.specializationChosen);
+        tag.putLong("BountyClaimDay", this.bountyClaimDay);
+        tag.putInt("PrimaryBountyClaims", this.primaryBountyClaims);
+        tag.putInt("SecondaryBountyClaims", this.secondaryBountyClaims);
+
+        if (this.hasCustomTrades && !this.harborTrades.isEmpty()) {
+            ListTag tradesList = new ListTag();
+            for (HarborTradeOffer offer : this.harborTrades) {
+                tradesList.add(offer.toTag(registries));
+            }
+            tag.put("HarborTrades", tradesList);
+        }
+        if (!this.savedTradePreset.isEmpty()) {
+            ListTag presetList = new ListTag();
+            for (TradePresetEntry entry : this.savedTradePreset) {
+                presetList.add(entry.toTag(registries));
+            }
+            tag.put("SavedTradePreset", presetList);
+        }
+        return tag;
+    }
+
+    public void loadFromItemTag(CompoundTag tag, HolderLookup.Provider registries) {
+        if (tag.contains("TradeLevel")) {
+            this.tradeLevel = Math.max(1, Math.min(MAX_HARBOR_LEVEL, tag.getInt("TradeLevel")));
+        }
+        if (tag.contains("HarborName")) {
+            this.harborName = tag.getString("HarborName");
+        }
+        this.customNamed = tag.getBoolean("CustomNamed");
+        this.hasCustomTrades = tag.getBoolean("HasCustomTrades");
+        if (tag.contains("LastTravelTime")) {
+            this.lastTravelTime = tag.getLong("LastTravelTime");
+        }
+        if (tag.contains("Specialization")) {
+            this.specialization = HarborSpecialization.byId(tag.getString("Specialization"));
+        }
+        this.specializationChosen = tag.getBoolean("SpecializationChosen");
+        this.bountyClaimDay = tag.contains("BountyClaimDay") ? tag.getLong("BountyClaimDay") : -1L;
+        this.primaryBountyClaims = tag.getInt("PrimaryBountyClaims");
+        this.secondaryBountyClaims = tag.getInt("SecondaryBountyClaims");
+
+        this.harborTrades.clear();
+        if (this.hasCustomTrades && tag.contains("HarborTrades", Tag.TAG_LIST)) {
+            ListTag tradesList = tag.getList("HarborTrades", Tag.TAG_COMPOUND);
+            for (int i = 0; i < tradesList.size(); i++) {
+                this.harborTrades.add(HarborTradeOffer.fromTag(tradesList.getCompound(i), registries));
+            }
+        }
+        this.savedTradePreset.clear();
+        if (tag.contains("SavedTradePreset", Tag.TAG_LIST)) {
+            ListTag presetList = tag.getList("SavedTradePreset", Tag.TAG_COMPOUND);
+            for (int i = 0; i < presetList.size(); i++) {
+                this.savedTradePreset.add(TradePresetEntry.fromTag(presetList.getCompound(i), registries));
+            }
+        }
+        setChanged();
+        syncToSavedData();
     }
 
     // --- Harbor Validation ---
@@ -838,7 +1273,17 @@ public class AnchorPointBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
         tag.putInt("TradeLevel", this.tradeLevel);
         tag.putString("HarborName", this.harborName);
+        tag.putBoolean("CustomNamed", this.customNamed);
+        tag.putBoolean("HasCustomTrades", this.hasCustomTrades);
         tag.putLong("LastTravelTime", this.lastTravelTime);
+        tag.putString("Specialization", getSpecialization().getId());
+        tag.putBoolean("SpecializationChosen", this.specializationChosen);
+        if (this.ownerUUID != null) {
+            tag.putUUID("OwnerUUID", this.ownerUUID);
+        }
+        tag.putLong("BountyClaimDay", this.bountyClaimDay);
+        tag.putInt("PrimaryBountyClaims", this.primaryBountyClaims);
+        tag.putInt("SecondaryBountyClaims", this.secondaryBountyClaims);
 
         ListTag tradesList = new ListTag();
         for (HarborTradeOffer offer : this.harborTrades) {
@@ -878,7 +1323,19 @@ public class AnchorPointBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
         if (tag.contains("TradeLevel"))     this.tradeLevel     = tag.getInt("TradeLevel");
         if (tag.contains("HarborName"))     this.harborName     = tag.getString("HarborName");
+        this.customNamed = tag.getBoolean("CustomNamed");
+        this.hasCustomTrades = tag.getBoolean("HasCustomTrades");
         if (tag.contains("LastTravelTime")) this.lastTravelTime = tag.getLong("LastTravelTime");
+        if (tag.contains("Specialization")) {
+            this.specialization = HarborSpecialization.byId(tag.getString("Specialization"));
+        } else {
+            this.specialization = HarborSpecialization.NONE;
+        }
+        this.specializationChosen = tag.getBoolean("SpecializationChosen");
+        this.ownerUUID = tag.hasUUID("OwnerUUID") ? tag.getUUID("OwnerUUID") : null;
+        this.bountyClaimDay = tag.contains("BountyClaimDay") ? tag.getLong("BountyClaimDay") : -1L;
+        this.primaryBountyClaims = tag.getInt("PrimaryBountyClaims");
+        this.secondaryBountyClaims = tag.getInt("SecondaryBountyClaims");
 
         this.harborTrades.clear();
         if (tag.contains("HarborTrades", Tag.TAG_LIST)) {
