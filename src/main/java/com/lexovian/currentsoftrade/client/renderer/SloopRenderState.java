@@ -24,6 +24,8 @@ public class SloopRenderState extends EntityRenderState {
     public boolean hasCopperHull;
     public boolean hasBowLantern;
     public boolean hasBanner;
+    public boolean hasSwivelHarpoon;
+    public float swivelHarpoonYRot;
 
     public int sailColorId = -1;
     public int bowLantern = 0;

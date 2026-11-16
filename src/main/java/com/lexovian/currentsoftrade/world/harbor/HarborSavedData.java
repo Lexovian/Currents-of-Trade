@@ -13,11 +13,12 @@ import java.util.*;
 
 public class HarborSavedData extends SavedData {
 
-    private record HarborEntry(long posLong, Optional<String> name, int level, List<HarborTradeOffer> trades) {
+    private record HarborEntry(long posLong, Optional<String> name, int level, String specialization, List<HarborTradeOffer> trades) {
         static final Codec<HarborEntry> CODEC = RecordCodecBuilder.create(inst -> inst.group(
                 Codec.LONG.fieldOf("Pos").forGetter(HarborEntry::posLong),
                 Codec.STRING.optionalFieldOf("Name").forGetter(HarborEntry::name),
                 Codec.INT.optionalFieldOf("Level", 1).forGetter(HarborEntry::level),
+                Codec.STRING.optionalFieldOf("Specialization", "none").forGetter(HarborEntry::specialization),
                 HarborTradeOffer.CODEC.listOf().optionalFieldOf("Trades", List.of()).forGetter(HarborEntry::trades)
         ).apply(inst, HarborEntry::new));
     }
@@ -35,6 +36,7 @@ public class HarborSavedData extends SavedData {
     private final Map<BlockPos, List<HarborTradeOffer>> harborTradesMap = new HashMap<>();
     private final Map<BlockPos, String> harborNamesMap = new HashMap<>();
     private final Map<BlockPos, Integer> harborLevelsMap = new HashMap<>();
+    private final Map<BlockPos, HarborSpecialization> harborSpecializationsMap = new HashMap<>();
 
     // --- Persistence & Access ---
 
@@ -79,21 +81,37 @@ public class HarborSavedData extends SavedData {
         setDirty();
     }
 
+    public HarborSpecialization getHarborSpecialization(BlockPos pos) {
+        return harborSpecializationsMap.getOrDefault(pos, HarborSpecialization.NONE);
+    }
+
+    public void setHarborSpecialization(BlockPos pos, HarborSpecialization spec) {
+        if (spec != null && spec != HarborSpecialization.NONE) {
+            harborSpecializationsMap.put(pos.immutable(), spec);
+        } else {
+            harborSpecializationsMap.remove(pos);
+        }
+        setDirty();
+    }
+
     public Set<BlockPos> getAllHarborPositions() {
         Set<BlockPos> all = new HashSet<>(harborTradesMap.keySet());
         all.addAll(harborNamesMap.keySet());
         all.addAll(harborLevelsMap.keySet());
+        all.addAll(harborSpecializationsMap.keySet());
         return all;
     }
 
     public boolean hasHarbor(BlockPos pos) {
-        return harborNamesMap.containsKey(pos) || harborTradesMap.containsKey(pos) || harborLevelsMap.containsKey(pos);
+        return harborNamesMap.containsKey(pos) || harborTradesMap.containsKey(pos)
+                || harborLevelsMap.containsKey(pos) || harborSpecializationsMap.containsKey(pos);
     }
 
     public void removeHarbor(BlockPos pos) {
         boolean changed = harborTradesMap.remove(pos) != null;
         if (harborNamesMap.remove(pos) != null) changed = true;
         if (harborLevelsMap.remove(pos) != null) changed = true;
+        if (harborSpecializationsMap.remove(pos) != null) changed = true;
         if (changed) setDirty();
     }
 
@@ -107,6 +125,10 @@ public class HarborSavedData extends SavedData {
             if (entry.level() > 1) {
                 data.harborLevelsMap.put(pos, entry.level());
             }
+            HarborSpecialization spec = HarborSpecialization.byId(entry.specialization());
+            if (spec != HarborSpecialization.NONE) {
+                data.harborSpecializationsMap.put(pos, spec);
+            }
             data.harborTradesMap.put(pos, new ArrayList<>(entry.trades()));
         }
         return data;
@@ -118,11 +140,13 @@ public class HarborSavedData extends SavedData {
         for (BlockPos pos : allPositions) {
             String name = harborNamesMap.get(pos);
             int level = harborLevelsMap.getOrDefault(pos, 1);
+            HarborSpecialization spec = harborSpecializationsMap.getOrDefault(pos, HarborSpecialization.NONE);
             List<HarborTradeOffer> trades = harborTradesMap.getOrDefault(pos, List.of());
             result.add(new HarborEntry(
                     pos.asLong(),
                     name != null ? Optional.of(name) : Optional.empty(),
                     level,
+                    spec.getId(),
                     trades
             ));
         }

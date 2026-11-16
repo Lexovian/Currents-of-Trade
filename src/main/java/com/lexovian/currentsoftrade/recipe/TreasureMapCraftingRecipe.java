@@ -4,25 +4,24 @@ import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.StructureTags;
-import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.neoforged.neoforge.common.CommonHooks;
 
 public class TreasureMapCraftingRecipe extends CustomRecipe {
 
-    private static final ThreadLocal<Level> CURRENT_LEVEL = new ThreadLocal<>();
+    public static final String TAG_PENDING_TREASURE_MAP = "PendingBottleTreasureMap";
 
     public static final MapCodec<TreasureMapCraftingRecipe> MAP_CODEC = MapCodec.unit(TreasureMapCraftingRecipe::new);
     public static final StreamCodec<RegistryFriendlyByteBuf, TreasureMapCraftingRecipe> STREAM_CODEC = StreamCodec.unit(new TreasureMapCraftingRecipe());
@@ -36,8 +35,6 @@ public class TreasureMapCraftingRecipe extends CustomRecipe {
         if (input.width() != 3 || input.height() != 3) {
             return false;
         }
-
-        CURRENT_LEVEL.set(level);
 
         int bottleCount = 0;
         boolean hasCenterMap = false;
@@ -66,45 +63,40 @@ public class TreasureMapCraftingRecipe extends CustomRecipe {
 
     @Override
     public ItemStack assemble(CraftingInput input) {
-        Level level = CURRENT_LEVEL.get();
-        if (level instanceof ServerLevel serverLevel) {
-            ServerPlayer crafter = CommonHooks.getCraftingPlayer() instanceof ServerPlayer sp ? sp : null;
-            if (crafter == null) {
-                for (ServerPlayer player : serverLevel.players()) {
-                    if (player.containerMenu instanceof CraftingMenu) {
-                        crafter = player;
-                        break;
-                    }
-                }
-            }
-
-            BlockPos origin = crafter != null ? crafter.blockPosition() : serverLevel.getLevelData().getRespawnData().pos();
-
-            BlockPos treasurePos = serverLevel.findNearestMapStructure(
-                    StructureTags.ON_TREASURE_MAPS,
-                    origin,
-                    250,
-                    false
-            );
-
-            if (treasurePos != null) {
-                ItemStack mapStack = MapItem.create(serverLevel, treasurePos.getX(), treasurePos.getZ(), (byte) 1, true, true);
-                MapItem.renderBiomePreviewMap(serverLevel, mapStack);
-                MapItemSavedData.addTargetDecoration(mapStack, treasurePos, "+", MapDecorationTypes.RED_X);
-                mapStack.set(DataComponents.ITEM_NAME, Component.translatable("filled_map.buried_treasure"));
-                return mapStack;
-            } else {
-                ItemStack fallback = MapItem.create(serverLevel, origin.getX(), origin.getZ(), (byte) 1, true, true);
-                MapItem.renderBiomePreviewMap(serverLevel, fallback);
-                MapItemSavedData.addTargetDecoration(fallback, origin, "+", MapDecorationTypes.RED_X);
-                fallback.set(DataComponents.ITEM_NAME, Component.translatable("filled_map.buried_treasure"));
-                return fallback;
-            }
-        }
-
+        // Defer expensive structure search & map_<id>.dat allocation until actual craft completion
         ItemStack preview = new ItemStack(Items.FILLED_MAP);
+        CompoundTag marker = new CompoundTag();
+        marker.putBoolean(TAG_PENDING_TREASURE_MAP, true);
+        preview.set(DataComponents.CUSTOM_DATA, CustomData.of(marker));
         preview.set(DataComponents.ITEM_NAME, Component.translatable("filled_map.buried_treasure"));
         return preview;
+    }
+
+    public static boolean resolvePendingTreasureMap(ItemStack stack, ServerLevel serverLevel, BlockPos origin) {
+        if (stack.isEmpty() || !stack.is(Items.FILLED_MAP)) {
+            return false;
+        }
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null || !cd.copyTag().getBooleanOr(TAG_PENDING_TREASURE_MAP, false)) {
+            return false;
+        }
+
+        BlockPos treasurePos = serverLevel.findNearestMapStructure(
+                StructureTags.ON_TREASURE_MAPS,
+                origin,
+                250,
+                false
+        );
+        BlockPos target = treasurePos != null ? treasurePos : origin;
+
+        ItemStack generated = MapItem.create(serverLevel, target.getX(), target.getZ(), (byte) 1, true, true);
+        MapItem.renderBiomePreviewMap(serverLevel, generated);
+        MapItemSavedData.addTargetDecoration(generated, target, "+", MapDecorationTypes.RED_X);
+        generated.set(DataComponents.ITEM_NAME, Component.translatable("filled_map.buried_treasure"));
+
+        stack.remove(DataComponents.CUSTOM_DATA);
+        stack.applyComponents(generated.getComponentsPatch());
+        return true;
     }
 
     @Override

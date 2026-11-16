@@ -3,6 +3,7 @@ package com.lexovian.currentsoftrade.item;
 import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
@@ -75,6 +76,9 @@ public class NauticalChartItem extends Item {
             final MaritimeTradeRegion region = be instanceof AnchorPointBlockEntity aBe
                     ? aBe.getTradeRegion()
                     : MaritimeTradeRegion.fromLevelAndPos(level, pos);
+            final HarborSpecialization spec = be instanceof AnchorPointBlockEntity aBe
+                    ? aBe.getSpecialization()
+                    : HarborSpecialization.NONE;
             final List<HarborTradeOffer> trades =
                     be instanceof AnchorPointBlockEntity aBe ? aBe.getHarborTrades() : List.of();
 
@@ -84,6 +88,7 @@ public class NauticalChartItem extends Item {
                 tag.putInt("TargetZ", pos.getZ());
                 tag.putString("HarborName", finalName);
                 tag.putString("RegionId", region.getId());
+                tag.putString("Specialization", spec.getId());
                 tag.putBoolean("Bound", true);
                 tag.remove("Waypoints");
 
@@ -97,6 +102,15 @@ public class NauticalChartItem extends Item {
             // Immediately sync the chart data to the client inventory
             if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
                 serverPlayer.inventoryMenu.broadcastChanges();
+                if (serverPlayer.level().getServer() != null) {
+                    net.minecraft.advancements.AdvancementHolder adv = serverPlayer.level().getServer().getAdvancements()
+                            .get(net.minecraft.resources.Identifier.fromNamespaceAndPath(com.lexovian.currentsoftrade.CurrentsofTrade.MODID, "first_chart"));
+                    if (adv != null) {
+                        for (String criterion : adv.value().criteria().keySet()) {
+                            serverPlayer.getAdvancements().award(adv, criterion);
+                        }
+                    }
+                }
             }
 
             level.playSound(null, pos, SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -193,51 +207,7 @@ public class NauticalChartItem extends Item {
         return true;
     }
 
-    // Waypoint markers: while the chart is held, plotted waypoints glow and are joined by a dotted line
-
-    @Override
-    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, net.minecraft.world.entity.Entity entity, @Nullable net.minecraft.world.entity.EquipmentSlot slot) {
-        if (!(entity instanceof net.minecraft.world.entity.player.Player player)) return;
-        if (player.getMainHandItem() != stack && player.getOffhandItem() != stack) return;
-        if (level.getGameTime() % 5L != 0L) return;
-        List<BlockPos> waypoints = getWaypoints(stack);
-        if (waypoints.isEmpty()) return;
-
-        double prevX = 0.0;
-        double prevZ = 0.0;
-        double prevY = 0.0;
-        for (int idx = 0; idx < waypoints.size(); idx++) {
-            BlockPos wp = waypoints.get(idx);
-            double x = wp.getX() + 1.0;
-            double z = wp.getZ() + 1.0;
-            double y = wp.getY() + 0.3;
-            if (player.distanceToSqr(x, y, z) < 160.0 * 160.0) {
-                for (int k = 0; k < 4; k++) {
-                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
-                            x + (level.getRandom().nextDouble() - 0.5) * 0.3, y + k * 1.1 + level.getRandom().nextDouble() * 0.4,
-                            z + (level.getRandom().nextDouble() - 0.5) * 0.3, 1, 0.0, 0.015, 0.0, 0.0);
-                }
-            }
-            if (idx > 0) {
-                double dx = x - prevX;
-                double dz = z - prevZ;
-                double len = Math.hypot(dx, dz);
-                int dots = (int) Math.min(80, len / 3.0);
-                for (int k = 1; k < dots; k++) {
-                    double t = (double) k / dots;
-                    double px = prevX + dx * t;
-                    double pz = prevZ + dz * t;
-                    double py = prevY + (y - prevY) * t;
-                    if (player.distanceToSqr(px, py, pz) < 64.0 * 64.0) {
-                        level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, px, py, pz, 1, 0.0, 0.0, 0.0, 0.0);
-                    }
-                }
-            }
-            prevX = x;
-            prevZ = z;
-            prevY = y;
-        }
-    }
+    // Waypoint markers are rendered client-side in ModClientEvents to avoid server particle packet spam
 
     // Tooltip
 
@@ -263,6 +233,10 @@ public class NauticalChartItem extends Item {
             String regionId = tag.getStringOr("RegionId", "");
             MaritimeTradeRegion region = MaritimeTradeRegion.byId(regionId);
             tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.chart_region", region.getDisplayName()));
+            HarborSpecialization spec = HarborSpecialization.byId(tag.getStringOr("Specialization", ""));
+            if (spec != HarborSpecialization.NONE) {
+                tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.spec_active", spec.getShortBadge()));
+            }
             tooltipComponents.accept(region.getExportDescription());
             tooltipComponents.accept(region.getImportDescription());
         } else {
@@ -384,6 +358,25 @@ public class NauticalChartItem extends Item {
                     region = MaritimeTradeRegion.byId(tag.getStringOr("RegionId", ""));
                 } else {
                     region = MaritimeTradeRegion.fromLevelAndPos(level, targetPos);
+                }
+                HarborSpecialization destSpec = HarborSpecialization.NONE;
+                if (level instanceof ServerLevel serverLevel) {
+                    destSpec = HarborSavedData.get(serverLevel).getHarborSpecialization(targetPos);
+                } else if (stack.getItem() instanceof RouteJournalItem) {
+                    List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(stack);
+                    int idx = RouteJournalItem.getSelectedIndex(stack);
+                    if (idx >= 0 && idx < routes.size()) {
+                        destSpec = routes.get(idx).specialization();
+                    }
+                } else if (tag.contains("Specialization")) {
+                    destSpec = HarborSpecialization.byId(tag.getStringOr("Specialization", ""));
+                }
+
+                if (destSpec == HarborSpecialization.GUILD_DEPOT) {
+                    HarborTradeOffer secondBounty = region.getSecondaryUrgentBountyOffer(level, targetPos);
+                    if (secondBounty != null) {
+                        baseList.add(0, secondBounty);
+                    }
                 }
                 HarborTradeOffer bounty = region.getUrgentBountyOffer(level, targetPos);
                 if (bounty != null) {

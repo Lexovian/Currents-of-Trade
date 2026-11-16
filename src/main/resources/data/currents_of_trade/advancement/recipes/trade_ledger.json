@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_writable_book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:writable_book"
+          }
+        ]
+      }
+    },
+    "has_emerald": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:emerald"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:trade_ledger"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_writable_book",
+      "has_emerald"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:trade_ledger"
+    ]
+  }
+}

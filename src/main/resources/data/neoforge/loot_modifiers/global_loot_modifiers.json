@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "entries": [
+    "currents_of_trade:add_buried_treasure_loot",
+    "currents_of_trade:add_shipwreck_supply_loot",
+    "currents_of_trade:add_shipwreck_map_loot",
+    "currents_of_trade:add_shipwreck_treasure_loot",
+    "currents_of_trade:add_underwater_ruin_big_loot",
+    "currents_of_trade:add_underwater_ruin_small_loot"
+  ]
+}

@@ -34,20 +34,47 @@ public class ModPayloads {
 
     // --- Helper Methods ---
 
-    public static BlockPos findAnchorPointNear(ServerPlayer player, BlockPos preferredPos) {
-        Level level = player.level();
-        if (preferredPos != null && !preferredPos.equals(BlockPos.ZERO)) {
-            if (level.getBlockEntity(preferredPos) instanceof AnchorPointBlockEntity) {
-                return preferredPos;
-            }
+    private static final double MAX_HARBOR_INTERACT_DIST_SQ = 16.0 * 16.0;
+
+    public static boolean isReachableHarbor(ServerPlayer player, BlockPos pos) {
+        if (pos == null || pos.equals(BlockPos.ZERO)) return false;
+        if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > MAX_HARBOR_INTERACT_DIST_SQ) {
+            return false;
         }
+        Level level = player.level();
+        return level.isLoaded(pos) && level.getBlockEntity(pos) instanceof AnchorPointBlockEntity;
+    }
+
+    @org.jspecify.annotations.Nullable
+    public static BlockPos findAnchorPointNear(ServerPlayer player, BlockPos preferredPos) {
+        if (isReachableHarbor(player, preferredPos)) {
+            return preferredPos;
+        }
+        Level level = player.level();
         BlockPos playerPos = player.blockPosition();
         for (BlockPos check : BlockPos.betweenClosed(playerPos.offset(-5, -3, -5), playerPos.offset(5, 3, 5))) {
-            if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+            if (level.isLoaded(check) && level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
                 return check.immutable();
             }
         }
-        return preferredPos != null ? preferredPos : playerPos;
+        return null;
+    }
+
+    @org.jspecify.annotations.Nullable
+    public static BlockPos resolveMenuHarbor(ServerPlayer player, BlockPos clientPos) {
+        if (player.containerMenu instanceof AnchorPointMenu anchorMenu && isReachableHarbor(player, anchorMenu.getBlockPos())) {
+            return anchorMenu.getBlockPos();
+        }
+        if (player.containerMenu instanceof TravelMenu travelMenu && isReachableHarbor(player, travelMenu.getCurrentPos())) {
+            return travelMenu.getCurrentPos();
+        }
+        if (player.containerMenu instanceof SendItemsMenu sendItemsMenu && isReachableHarbor(player, sendItemsMenu.getCurrentPos())) {
+            return sendItemsMenu.getCurrentPos();
+        }
+        if (player.containerMenu instanceof RequestTradeMenu requestMenu && isReachableHarbor(player, requestMenu.getCurrentPos())) {
+            return requestMenu.getCurrentPos();
+        }
+        return findAnchorPointNear(player, clientPos);
     }
 
     // --- Open Travel GUI ---
@@ -65,18 +92,11 @@ public class ModPayloads {
                 if (context.player() instanceof ServerPlayer player) {
                     if (com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL != null
                             && !com.lexovian.currentsoftrade.Config.ENABLE_ANCHOR_TRAVEL.get()) {
-                        player.sendOverlayMessage(Component.translatable("tooltip.currents_of_trade.travel_disabled_config"));
+                        player.sendOverlayMessage(Component.translatable("message.currents_of_trade.travel_disabled_config"));
                         return;
                     }
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
-                    final BlockPos finalPos = targetPos;
+                    BlockPos finalPos = resolveMenuHarbor(player, pos);
+                    if (finalPos == null) return;
                     player.openMenu(new SimpleMenuProvider(
                             (id, inv, p) -> new TravelMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
                             Component.translatable("gui.currents_of_trade.travel")
@@ -127,15 +147,8 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
-                    final BlockPos finalPos = targetPos;
+                    BlockPos finalPos = resolveMenuHarbor(player, pos);
+                    if (finalPos == null) return;
                     player.openMenu(new SimpleMenuProvider(
                             (id, inv, p) -> new SendItemsMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
                             Component.translatable("gui.currents_of_trade.send_items.title")
@@ -181,20 +194,9 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
+                    BlockPos finalPos = resolveMenuHarbor(player, pos);
+                    if (finalPos == null) return;
 
-                    if (player.containerMenu instanceof TravelMenu travelMenu) {
-                        BlockPos serverPos = travelMenu.getCurrentPos();
-                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
-                    } else if (player.containerMenu instanceof SendItemsMenu sendItemsMenu) {
-                        BlockPos serverPos = sendItemsMenu.getCurrentPos();
-                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
-                    } else if (player.containerMenu instanceof RequestTradeMenu requestMenu) {
-                        BlockPos serverPos = requestMenu.getCurrentPos();
-                        if (isValidAnchorPos(player, serverPos)) targetPos = serverPos;
-                    }
-
-                    final BlockPos finalPos = targetPos;
                     int harborLevel = 1;
                     if (player.level().getBlockEntity(finalPos) instanceof AnchorPointBlockEntity anchor) {
                         harborLevel = anchor.getTradeLevel();
@@ -211,11 +213,6 @@ public class ModPayloads {
                 }
             });
         }
-
-        private static boolean isValidAnchorPos(ServerPlayer player, BlockPos pos) {
-            return pos != null && !pos.equals(BlockPos.ZERO)
-                    && player.level().getBlockEntity(pos) instanceof AnchorPointBlockEntity;
-        }
     }
 
     // --- Open Request Trade GUI ---
@@ -231,15 +228,8 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
-                    final BlockPos finalPos = targetPos;
+                    BlockPos finalPos = resolveMenuHarbor(player, pos);
+                    if (finalPos == null) return;
                     player.openMenu(new SimpleMenuProvider(
                             (id, inv, p) -> new RequestTradeMenu(id, inv, ContainerLevelAccess.create(player.level(), finalPos), finalPos),
                             Component.translatable("gui.currents_of_trade.request_trade.title")
@@ -365,14 +355,8 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
+                    BlockPos targetPos = resolveMenuHarbor(player, pos);
+                    if (targetPos == null) return;
                     Level level = player.level();
                     if (level.getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
                         String trimmed = (newName != null) ? newName.trim() : "";
@@ -406,14 +390,8 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
+                    BlockPos targetPos = resolveMenuHarbor(player, pos);
+                    if (targetPos == null) return;
                     Level level = player.level();
                     if (level.getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
                         if (anchor.getTradeLevel() >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
@@ -434,18 +412,31 @@ public class ModPayloads {
                                         newLevel, levelName));
                         level.playSound(null, targetPos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.9F, 1.2F);
                         level.playSound(null, targetPos, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.6F, 1.4F);
+                        player.containerMenu.broadcastChanges();
+                    }
+                }
+            });
+        }
+    }
 
-                        if (newLevel >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) {
-                            final BlockPos finalTargetPos = targetPos;
-                            final int finalLevel = newLevel;
-                            player.openMenu(new SimpleMenuProvider(
-                                    (id, inv, p) -> new AnchorPointMenu(id, inv, ContainerLevelAccess.create(level, finalTargetPos), finalTargetPos),
-                                    Component.translatable("gui.currents_of_trade.anchor_point")
-                            ), buf -> {
-                                buf.writeBlockPos(finalTargetPos);
-                                buf.writeVarInt(finalLevel);
-                            });
-                        } else {
+    // --- Cycle Harbor Specialization (Lv.3+) ---
+
+    public record CycleSpecializationPayload(BlockPos pos) implements CustomPacketPayload {
+        public static final Type<CycleSpecializationPayload> TYPE =
+                new Type<>(Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "cycle_specialization"));
+        public static final StreamCodec<ByteBuf, CycleSpecializationPayload> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, CycleSpecializationPayload::pos, CycleSpecializationPayload::new);
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        public void handle(IPayloadContext context) {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    BlockPos targetPos = resolveMenuHarbor(player, pos);
+                    if (targetPos == null) return;
+                    if (player.level().getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
+                        anchor.tryCycleSpecialization(player);
+                        if (player.containerMenu != null) {
                             player.containerMenu.broadcastChanges();
                         }
                     }
@@ -510,12 +501,13 @@ public class ModPayloads {
                         shipEntity = player.getVehicle();
                     }
                     if (shipContainer == null || shipEntity == null) return;
+                    if (shipEntity instanceof com.lexovian.currentsoftrade.entity.TradeBoatEntity tb && tb.isOutboundTradeMission()) return;
 
                     BlockPos center = shipEntity.blockPosition();
                     BlockPos nearestAnchor = null;
                     double bestDistSq = Double.MAX_VALUE;
                     for (BlockPos check : BlockPos.betweenClosed(center.offset(-16, -6, -16), center.offset(16, 6, 16))) {
-                        if (level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+                        if (level.isLoaded(check) && level.getBlockEntity(check) instanceof AnchorPointBlockEntity) {
                             double dSq = check.distSqr(center);
                             if (dSq < bestDistSq) {
                                 bestDistSq = dSq;
@@ -618,14 +610,8 @@ public class ModPayloads {
         public void handle(IPayloadContext context) {
             context.enqueueWork(() -> {
                 if (context.player() instanceof ServerPlayer player) {
-                    BlockPos targetPos = findAnchorPointNear(player, pos);
-                    if (player.containerMenu instanceof AnchorPointMenu anchorMenu) {
-                        BlockPos serverPos = anchorMenu.getBlockPos();
-                        if (serverPos != null && !serverPos.equals(BlockPos.ZERO)
-                                && player.level().getBlockEntity(serverPos) instanceof AnchorPointBlockEntity) {
-                            targetPos = serverPos;
-                        }
-                    }
+                    BlockPos targetPos = resolveMenuHarbor(player, pos);
+                    if (targetPos == null) return;
                     if (player.level().getBlockEntity(targetPos) instanceof AnchorPointBlockEntity anchor) {
                         anchor.tryDeliverUrgentBounty(player, null);
                     }
@@ -657,6 +643,7 @@ public class ModPayloads {
             registrar.playToServer(UnloadShipToHarborPayload.TYPE,  UnloadShipToHarborPayload.STREAM_CODEC,  UnloadShipToHarborPayload::handle);
             registrar.playToServer(SelectJournalRoutePayload.TYPE,  SelectJournalRoutePayload.STREAM_CODEC,  SelectJournalRoutePayload::handle);
             registrar.playToServer(DeliverBountyPayload.TYPE,       DeliverBountyPayload.STREAM_CODEC,       DeliverBountyPayload::handle);
+            registrar.playToServer(CycleSpecializationPayload.TYPE, CycleSpecializationPayload.STREAM_CODEC, CycleSpecializationPayload::handle);
         }
     }
 }

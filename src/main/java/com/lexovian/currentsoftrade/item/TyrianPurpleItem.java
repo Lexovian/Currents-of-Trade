@@ -56,10 +56,10 @@ public class TyrianPurpleItem extends Item {
                 }
             }
 
+            player.getCooldowns().addCooldown(stack, 100);
             if (!player.hasInfiniteMaterials()) {
                 stack.shrink(1);
             }
-            player.getCooldowns().addCooldown(stack, 100);
         }
         return InteractionResult.SUCCESS;
     }

@@ -19,7 +19,13 @@ import net.minecraft.world.item.TooltipFlag;
 public class CaptainsTricorneItem extends Item {
 
     public CaptainsTricorneItem(Properties properties) {
-        super(properties.stacksTo(1).durability(240).equippable(EquipmentSlot.HEAD));
+        super(properties.stacksTo(1).durability(240).component(
+                net.minecraft.core.component.DataComponents.EQUIPPABLE,
+                net.minecraft.world.item.equipment.Equippable.builder(EquipmentSlot.HEAD)
+                        .setEquipSound(net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_LEATHER)
+                        .setDamageOnHurt(false)
+                        .build()
+        ));
     }
 
     @Override

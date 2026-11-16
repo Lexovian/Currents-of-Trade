@@ -107,6 +107,15 @@ public class SloopItem extends Item {
             sloop.loadUpgradesFromStack(itemstack);
 
             level.addFreshEntity(sloop);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.level().getServer() != null) {
+                net.minecraft.advancements.AdvancementHolder adv = serverPlayer.level().getServer().getAdvancements()
+                        .get(net.minecraft.resources.Identifier.fromNamespaceAndPath(com.lexovian.currentsoftrade.CurrentsofTrade.MODID, "fair_winds"));
+                if (adv != null) {
+                    for (String criterion : adv.value().criteria().keySet()) {
+                        serverPlayer.getAdvancements().award(adv, criterion);
+                    }
+                }
+            }
             level.gameEvent(player, GameEvent.ENTITY_PLACE, new Vec3(spawnX, clickLoc.y, spawnZ));
             level.playSound(null, sloop.getX(), sloop.getY(), sloop.getZ(),
                     SoundEvents.BOAT_PADDLE_WATER, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -141,6 +150,9 @@ public class SloopItem extends Item {
             }
             if (tag.getBooleanOr("CopperHull", false)) {
                 tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.sloop_copper_hull"));
+            }
+            if (tag.getBooleanOr("SwivelHarpoon", false)) {
+                tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.ship_swivel_harpoon"));
             }
         }
         tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));

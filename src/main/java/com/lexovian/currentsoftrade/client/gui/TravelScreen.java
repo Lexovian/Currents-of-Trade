@@ -140,7 +140,7 @@ public class TravelScreen extends AbstractContainerScreen<TravelMenu> {
                 guiGraphics.text(this.font, destText, destX, 57, 0xFF1B4D3E, false);
 
                 if (this.menu.isTooExpensive()) {
-                    Component expensiveText = Component.translatable("gui.currents_of_trade.too_expensive_full", distance);
+                    Component expensiveText = Component.translatable("gui.currents_of_trade.too_expensive_full", distance, TravelMenu.getMaxDoubloons());
                     int expX = (this.imageWidth - this.font.width(expensiveText)) / 2;
                     guiGraphics.text(this.font, expensiveText, expX, 70, 0xFFC0392B, false);
                 } else {

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " GS",
+    "CD ",
+    "C  "
+  ],
+  "key": {
+    "G": "minecraft:gold_nugget",
+    "S": "minecraft:string",
+    "C": "minecraft:copper_ingot",
+    "D": "currents_of_trade:doubloon"
+  },
+  "result": {
+    "id": "currents_of_trade:bosuns_whistle",
+    "count": 1
+  }
+}

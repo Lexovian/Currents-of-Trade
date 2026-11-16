@@ -45,7 +45,8 @@ Features:
 • Sloop Sailing: Pilot your own multi-part vessel with realistic buoyancy and dynamic seafaring physics.
 • Harbormaster Profession & Village Docks: Discover naturally generating coastal docks and trade with skilled Harbormasters.
 • Maritime Commodities & Currencies: Trade Doubloons, Silk, Fine Porcelain, Tea, Amber Vials, Spices, and more!
-• Wandering Sailors & Sunken Relics: Uncover messages in bottles, treasure charts, and rare nautical curiosities.
+• Harbor Specializations & Naval Gear: Specialize ports into Free Ports, Naval Drydocks, or Guild Depots, mount Brass Swivel Harpoons, blow the Bosun's Whistle, scout with the Captain's Spyglass, and browse all routes in JEI!
+• Wandering Sailors & Sunken Relics: Uncover messages in bottles, treasure charts, guild charters, and rare nautical curiosities.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
@@ -84,6 +85,13 @@ Features:
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    versionRange="[29.53.0,)"
+    ordering="NONE"
+    side="CLIENT"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't

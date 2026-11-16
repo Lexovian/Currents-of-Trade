@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " IH",
+    "CXC",
+    " I "
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "H": "minecraft:iron_chain",
+    "C": "minecraft:copper_ingot",
+    "X": "minecraft:crossbow"
+  },
+  "result": {
+    "id": "currents_of_trade:swivel_harpoon",
+    "count": 1
+  }
+}

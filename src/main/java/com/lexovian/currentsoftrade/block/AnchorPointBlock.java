@@ -27,6 +27,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -56,6 +58,15 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new AnchorPointBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
+        if (level.isClientSide()) return null;
+        return blockEntityType == CurrentsofTrade.ANCHOR_POINT_BE.get()
+                ? (lvl, pos, st, be) -> AnchorPointBlockEntity.serverTick(lvl, pos, st, (AnchorPointBlockEntity) be)
+                : null;
     }
 
     @Override
@@ -126,21 +137,67 @@ public class AnchorPointBlock extends Block implements EntityBlock {
     // --- Placement & Setup ---
 
     @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide() && player.isCreative() && level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor && anchor.hasPersistentUpgradeState()) {
+            ItemStack drop = new ItemStack(this.asItem());
+            net.minecraft.nbt.CompoundTag savedHarbor = anchor.saveToItemTag(level.registryAccess());
+            net.minecraft.world.item.component.CustomData.update(DataComponents.CUSTOM_DATA, drop,
+                    tag -> tag.put("SavedHarborData", savedHarbor));
+            net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
+                    level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, drop);
+            itemEntity.setDefaultPickUpDelay();
+            level.addFreshEntity(itemEntity);
+        }
+        return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
+    protected java.util.List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+        java.util.List<ItemStack> drops = super.getDrops(state, params);
+        BlockEntity be = params.getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+        if (be instanceof AnchorPointBlockEntity anchor && anchor.hasPersistentUpgradeState()) {
+            net.minecraft.nbt.CompoundTag savedHarbor = anchor.saveToItemTag(params.getLevel().registryAccess());
+            for (ItemStack drop : drops) {
+                if (drop.is(this.asItem())) {
+                    net.minecraft.world.item.component.CustomData.update(DataComponents.CUSTOM_DATA, drop,
+                            tag -> tag.put("SavedHarborData", savedHarbor));
+                    break;
+                }
+            }
+        }
+        return drops;
+    }
+
+    @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (!level.isClientSide() && placer instanceof Player player) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof AnchorPointBlockEntity anchor) {
+                anchor.setOwnerUUID(player.getUUID());
+                boolean restoredFromItem = false;
                 try {
+                    net.minecraft.world.item.component.CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+                    if (customData != null) {
+                        net.minecraft.nbt.CompoundTag rootTag = customData.copyTag();
+                        if (rootTag.contains("SavedHarborData")) {
+                            net.minecraft.nbt.CompoundTag saved = rootTag.getCompoundOrEmpty("SavedHarborData");
+                            if (!saved.isEmpty()) {
+                                anchor.loadFromItemTag(saved, level.registryAccess());
+                                restoredFromItem = true;
+                            }
+                        }
+                    }
                     if (stack.has(DataComponents.CUSTOM_NAME)) {
                         anchor.setHarborName(stack.getHoverName().getString());
-                    } else {
-                        anchor.setHarborName(AnchorPointBlockEntity.generateDynamicHarborName(level, pos));
+                    } else if (!restoredFromItem || anchor.getHarborName().trim().isEmpty()) {
+                        anchor.initDefaultHarborName(AnchorPointBlockEntity.generateDynamicHarborName(level, pos));
                     }
                 } catch (Throwable t) {
                     CurrentsofTrade.LOGGER.error("Failed to initialize harbor name for anchor point at {}", pos, t);
                 }
                 anchor.seedRegionalTradesIfEmpty();
+                level.sendBlockUpdated(pos, state, state, 3);
 
                 AnchorPointBlockEntity.HarborStatus status = anchor.getHarborStatus();
                 if (status != AnchorPointBlockEntity.HarborStatus.VALID) {
@@ -179,9 +236,12 @@ public class AnchorPointBlock extends Block implements EntityBlock {
             return InteractionResult.SUCCESS;
         }
         if (!stack.isEmpty()
-                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem)
-                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem)
-                && !(stack.getItem() instanceof com.lexovian.currentsoftrade.item.TradeLedgerItem)) {
+                && (stack.getItem() instanceof com.lexovian.currentsoftrade.item.NauticalChartItem
+                || stack.getItem() instanceof com.lexovian.currentsoftrade.item.RouteJournalItem
+                || stack.getItem() instanceof com.lexovian.currentsoftrade.item.TradeLedgerItem)) {
+            return stack.useOn(new net.minecraft.world.item.context.UseOnContext(level, player, hand, stack, hitResult));
+        }
+        if (!stack.isEmpty()) {
             if (level.getBlockEntity(pos) instanceof AnchorPointBlockEntity anchor) {
                 if (anchor.tryDeliverUrgentBounty(player, stack)) {
                     return InteractionResult.SUCCESS;

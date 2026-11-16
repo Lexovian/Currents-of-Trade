@@ -90,11 +90,25 @@ public class SaltPouchItem extends Item {
         }
 
         if (!level.isClientSide()) {
+            int countToSalt = player.hasInfiniteMaterials()
+                    ? targetStack.getCount()
+                    : Math.min(saltStack.getCount(), targetStack.getCount());
+            if (countToSalt <= 0) {
+                return InteractionResult.FAIL;
+            }
             Component foodName = targetStack.getHoverName().copy();
-            applySalt(targetStack, level, player);
+            if (countToSalt >= targetStack.getCount()) {
+                applySalt(targetStack, level, player);
+            } else {
+                ItemStack saltedPart = targetStack.split(countToSalt);
+                applySalt(saltedPart, level, player);
+                if (!player.getInventory().add(saltedPart)) {
+                    player.drop(saltedPart, false);
+                }
+            }
 
             if (!player.hasInfiniteMaterials()) {
-                saltStack.shrink(1);
+                saltStack.shrink(countToSalt);
             }
 
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -113,7 +127,7 @@ public class SaltPouchItem extends Item {
 
     @Override
     public boolean overrideStackedOnOther(ItemStack saltStack, Slot slot, ClickAction action, Player player) {
-        if (action != ClickAction.SECONDARY) {
+        if (action != ClickAction.SECONDARY || !slot.allowModification(player)) {
             return false;
         }
 
@@ -122,17 +136,32 @@ public class SaltPouchItem extends Item {
             return false;
         }
 
+        int countToSalt = player.hasInfiniteMaterials()
+                ? targetStack.getCount()
+                : Math.min(saltStack.getCount(), targetStack.getCount());
+        if (countToSalt <= 0) {
+            return false;
+        }
+
         Component foodName = targetStack.getHoverName().copy();
-        applySalt(targetStack, player.level(), player);
-        slot.setChanged();
+        if (countToSalt >= targetStack.getCount()) {
+            applySalt(targetStack, player.level(), player);
+            slot.setChanged();
+        } else {
+            ItemStack saltedPart = targetStack.split(countToSalt);
+            slot.setChanged();
+            applySalt(saltedPart, player.level(), player);
+            if (!player.getInventory().add(saltedPart) && !player.level().isClientSide()) {
+                player.drop(saltedPart, false);
+            }
+        }
 
         if (!player.hasInfiniteMaterials()) {
-            saltStack.shrink(1);
+            saltStack.shrink(countToSalt);
             slot.setChanged();
         }
 
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.SAND_PLACE, SoundSource.PLAYERS, 0.9F, 1.3F);
+        player.playSound(SoundEvents.SAND_PLACE, 0.9F, 1.3F);
 
         player.sendOverlayMessage(
                 Component.translatable("message.currents_of_trade.salt_applied", foodName));
@@ -146,7 +175,7 @@ public class SaltPouchItem extends Item {
 
     @Override
     public boolean overrideOtherStackedOnMe(ItemStack saltStack, ItemStack targetStack, Slot slot, ClickAction action, Player player, SlotAccess access) {
-        if (action != ClickAction.SECONDARY) {
+        if (action != ClickAction.SECONDARY || !slot.allowModification(player)) {
             return false;
         }
 
@@ -154,16 +183,30 @@ public class SaltPouchItem extends Item {
             return false;
         }
 
+        int countToSalt = player.hasInfiniteMaterials()
+                ? targetStack.getCount()
+                : Math.min(saltStack.getCount(), targetStack.getCount());
+        if (countToSalt <= 0) {
+            return false;
+        }
+
         Component foodName = targetStack.getHoverName().copy();
-        applySalt(targetStack, player.level(), player);
+        if (countToSalt >= targetStack.getCount()) {
+            applySalt(targetStack, player.level(), player);
+        } else {
+            ItemStack saltedPart = targetStack.split(countToSalt);
+            applySalt(saltedPart, player.level(), player);
+            if (!player.getInventory().add(saltedPart) && !player.level().isClientSide()) {
+                player.drop(saltedPart, false);
+            }
+        }
 
         if (!player.hasInfiniteMaterials()) {
-            saltStack.shrink(1);
+            saltStack.shrink(countToSalt);
             slot.setChanged();
         }
 
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.SAND_PLACE, SoundSource.PLAYERS, 0.9F, 1.3F);
+        player.playSound(SoundEvents.SAND_PLACE, 0.9F, 1.3F);
 
         player.sendOverlayMessage(
                 Component.translatable("message.currents_of_trade.salt_applied", foodName));

@@ -60,10 +60,10 @@ public class DragonsBloodResinItem extends Item {
                 }
             }
 
+            player.getCooldowns().addCooldown(stack, 80);
             if (!player.hasInfiniteMaterials()) {
                 stack.shrink(1);
             }
-            player.getCooldowns().addCooldown(stack, 80);
         }
         return InteractionResult.SUCCESS;
     }

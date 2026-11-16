@@ -94,7 +94,7 @@ public class TradeBoatItem extends Item {
 
             TradeBoatEntity tradeBoat = new TradeBoatEntity(level, spawnX, clickLoc.y + 0.1, spawnZ);
             tradeBoat.setYRot(player.getYRot());
-            tradeBoat.setCustomName(Component.literal("Trade Boat"));
+            tradeBoat.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
             tradeBoat.setCustomNameVisible(true);
 
             level.addFreshEntity(tradeBoat);

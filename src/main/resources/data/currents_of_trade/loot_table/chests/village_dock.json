@@ -32,6 +32,16 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:trade_ledger",
           "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:trade_charter",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:bosuns_whistle",
+          "weight": 6
         }
       ]
     },

@@ -16,15 +16,8 @@
   },
   "parent": "currents_of_trade:root",
   "criteria": {
-    "has_nautical_chart": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "currents_of_trade:nautical_chart"
-          }
-        ]
-      }
+    "plotted_chart": {
+      "trigger": "minecraft:impossible"
     }
   }
 }

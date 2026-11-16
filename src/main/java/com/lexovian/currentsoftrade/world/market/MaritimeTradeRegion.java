@@ -378,9 +378,17 @@ public enum MaritimeTradeRegion {
      * for one of this region's high-demand commodities. Refreshes every 24,000 ticks (1 Minecraft day).
      */
     public HarborTradeOffer getUrgentBountyOffer(Level level, BlockPos pos) {
+        return getUrgentBountyOffer(level, pos, 0);
+    }
+
+    public HarborTradeOffer getSecondaryUrgentBountyOffer(Level level, BlockPos pos) {
+        return getUrgentBountyOffer(level, pos, 2);
+    }
+
+    public HarborTradeOffer getUrgentBountyOffer(Level level, BlockPos pos, int variantOffset) {
         long day = (level != null) ? (level.getOverworldClockTime() / 24000L) : 0L;
         long posHash = (pos != null) ? (pos.getX() * 3129871L ^ pos.getZ() * 116129781L) : 0L;
-        int variant = (int) Math.floorMod(day + posHash, 5L);
+        int variant = (int) Math.floorMod(day + posHash + variantOffset, 5L);
 
         return switch (this) {
             case ARID -> switch (variant) {

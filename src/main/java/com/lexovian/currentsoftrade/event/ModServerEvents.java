@@ -16,7 +16,19 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 public class ModServerEvents {
 
     @SubscribeEvent
+    public static void onItemCrafted(net.neoforged.neoforge.event.entity.player.PlayerEvent.ItemCraftedEvent event) {
+        if (event.getEntity().level() instanceof ServerLevel serverLevel) {
+            com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe.resolvePendingTreasureMap(
+                    event.getCrafting(), serverLevel, event.getEntity().blockPosition());
+        }
+    }
+
+    @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe.resolvePendingTreasureMap(
+                    event.getItemStack(), serverLevel, event.getEntity().blockPosition());
+        }
         if (SloopEntity.tryCustomizeNearbyShip(event.getEntity(), event.getHand())) {
             event.getEntity().swing(event.getHand(), true);
             event.setCancellationResult(InteractionResult.SUCCESS);

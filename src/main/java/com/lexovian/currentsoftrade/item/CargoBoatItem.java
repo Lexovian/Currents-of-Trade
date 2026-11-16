@@ -114,6 +114,9 @@ public class CargoBoatItem extends Item {
                 if (tag.contains("BannerItem")) {
                     cargoBoat.setBannerStack(tag.read("BannerItem", ItemStack.CODEC, level.registryAccess().createSerializationContext(NbtOps.INSTANCE)).orElse(ItemStack.EMPTY));
                 }
+                if (tag.getBooleanOr("SwivelHarpoon", false)) {
+                    cargoBoat.setSwivelHarpoon(true);
+                }
             }
 
             level.addFreshEntity(cargoBoat);
@@ -142,6 +145,9 @@ public class CargoBoatItem extends Item {
             }
             if (tag.contains("BannerItem")) {
                 tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.sloop_banner"));
+            }
+            if (tag.getBooleanOr("SwivelHarpoon", false)) {
+                tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.ship_swivel_harpoon"));
             }
         }
         tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));

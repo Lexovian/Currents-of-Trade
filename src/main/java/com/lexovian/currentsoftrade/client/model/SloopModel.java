@@ -7,6 +7,7 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
@@ -48,6 +49,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
     private final ModelPart lantern;
     private final ModelPart lanternBracket;
     private final ModelPart sternLantern;
+    private final ModelPart swivelHarpoon;
     private final ModelPart root;
 
     public SloopModel(ModelPart root) {
@@ -72,6 +74,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         this.lantern         = root.getChild("lantern");
         this.lanternBracket  = root.getChild("lantern_bracket");
         this.sternLantern    = root.getChild("stern_lantern");
+        this.swivelHarpoon   = root.getChild("swivel_harpoon");
     }
 
     // --- Model Definition ---
@@ -88,7 +91,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
 
         root.addOrReplaceChild("stempost",
                 CubeListBuilder.create().texOffs(224, 218)
-                        .addBox(-1.0F, -11.0F, -28.5F, 2.0F, 12.0F, 1.5F),
+                        .addBox(-1.0F, -11.0F, -28.5F, 2.0F, 12.0F, 1.5F, new CubeDeformation(-0.03F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("nose_closure",
@@ -128,9 +131,9 @@ public class SloopModel extends EntityModel<SloopRenderState> {
 
         root.addOrReplaceChild("deck_prow",
                 CubeListBuilder.create().texOffs(142, 192)
-                        .addBox(-5.8F, -4.0F, -23.0F, 11.6F, 2.0F, 3.0F)
-                        .addBox(-4.3F, -4.0F, -25.0F, 8.6F, 2.0F, 2.0F)
-                        .addBox(-2.7F, -4.0F, -27.2F, 5.4F, 2.0F, 2.2F),
+                        .addBox(-5.8F, -4.0F, -23.0F, 11.6F, 2.0F, 3.0F, new CubeDeformation(0.0F, 0.0F, -0.01F))
+                        .addBox(-4.3F, -4.0F, -25.0F, 8.6F, 2.0F, 2.0F, new CubeDeformation(0.0F, 0.0F, -0.01F))
+                        .addBox(-2.5F, -4.0F, -27.0F, 5.0F, 2.0F, 2.0F, new CubeDeformation(-0.01F, 0.0F, -0.01F)),
                 PartPose.ZERO);
 
         // --- Main Deck, Waist Walls & Keel ---
@@ -152,8 +155,8 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         root.addOrReplaceChild("keel_bottom",
                 CubeListBuilder.create().texOffs(0, 0)
                         .addBox(-7.0F, 0.0F, -20.0F, 14.0F, 1.5F, 40.8F)
-                        .addBox(-6.0F, 0.0F, -22.7F, 12.0F, 1.5F, 2.7F)
-                        .addBox(-4.5F, 0.0F, -25.2F, 9.0F, 1.5F, 2.5F)
+                        .addBox(-6.0F, 0.0F, -22.7F, 12.0F, 1.5F, 2.7F, new CubeDeformation(-0.01F, 0.0F, -0.01F))
+                        .addBox(-4.5F, 0.0F, -25.2F, 9.0F, 1.5F, 2.5F, new CubeDeformation(-0.01F, 0.0F, 0.0F))
                         .addBox(-3.0F, 0.0F, -27.3F, 6.0F, 1.5F, 2.1F),
                 PartPose.ZERO);
 
@@ -189,12 +192,12 @@ public class SloopModel extends EntityModel<SloopRenderState> {
                 CubeListBuilder.create().texOffs(220, 58)
                         .addBox(-4.0F, -52.5F, -19.0F, 8.0F, 1.0F, 8.0F)
                         .addBox(-4.0F, -55.0F, -19.0F, 8.0F, 2.5F, 0.8F)
-                        .addBox(-4.0F, -55.0F, -19.0F, 0.8F, 2.5F, 8.0F)
-                        .addBox(3.2F,  -55.0F, -19.0F, 0.8F, 2.5F, 8.0F)
+                        .addBox(-4.0F, -55.0F, -19.0F, 0.8F, 2.5F, 8.0F, new CubeDeformation(-0.01F))
+                        .addBox(3.2F,  -55.0F, -19.0F, 0.8F, 2.5F, 8.0F, new CubeDeformation(-0.01F))
                         .addBox(-4.0F, -55.0F, -11.8F, 3.0F, 2.5F, 0.8F)
                         .addBox(1.0F,  -55.0F, -11.8F, 3.0F, 2.5F, 0.8F)
-                        .addBox(-1.5F, -52.5F, -16.0F, 1.0F, 3.5F, 1.0F)
-                        .addBox(0.5F,  -52.5F, -16.0F, 1.0F, 3.5F, 1.0F),
+                        .addBox(-1.5F, -52.5F, -16.0F, 1.0F, 3.5F, 1.0F, new CubeDeformation(-0.02F))
+                        .addBox(0.5F,  -52.5F, -16.0F, 1.0F, 3.5F, 1.0F, new CubeDeformation(-0.02F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("pennant_staff",
@@ -298,10 +301,10 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         root.addOrReplaceChild("cargo_anchors",
                 CubeListBuilder.create().texOffs(124, 104)
                         .addBox(-9.2F, -7.2F, -22.0F, 1.2F, 6.7F, 1.2F)
-                        .addBox(-9.2F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F)
+                        .addBox(-9.2F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F, new CubeDeformation(0.01F))
                         .addBox(-9.5F, -6.8F, -23.0F, 1.6F, 1.2F, 3.2F)
                         .addBox(8.0F, -7.2F, -22.0F, 1.2F, 6.7F, 1.2F)
-                        .addBox(8.0F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F)
+                        .addBox(8.0F, -1.5F, -24.0F, 1.2F, 1.5F, 5.0F, new CubeDeformation(0.01F))
                         .addBox(7.9F, -6.8F, -23.0F, 1.6F, 1.2F, 3.2F),
                 PartPose.ZERO);
 
@@ -324,7 +327,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
 
         root.addOrReplaceChild("trade_figurehead",
                 CubeListBuilder.create().texOffs(140, 104)
-                        .addBox(-1.2F, -12.5F, -30.5F, 2.4F, 4.0F, 2.2F)
+                        .addBox(-1.2F, -12.5F, -30.5F, 2.4F, 4.0F, 2.2F, new CubeDeformation(-0.02F))
                         .addBox(-0.8F, -14.0F, -31.5F, 1.6F, 2.5F, 1.8F),
                 PartPose.ZERO);
 
@@ -336,7 +339,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
 
         root.addOrReplaceChild("deck_quarter",
                 CubeListBuilder.create().texOffs(70, 192)
-                        .addBox(-7.0F, -6.5F, 0.0F, 14.0F, 2.0F, 20.8F),
+                        .addBox(-7.0F, -6.5F, 0.25F, 14.0F, 2.0F, 20.9F, new CubeDeformation(0.0F, 0.0F, 0.25F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("side_port_aft",
@@ -352,7 +355,7 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         root.addOrReplaceChild("quarterdeck_stairs",
                 CubeListBuilder.create().texOffs(0, 192)
                         .addBox(-6.5F, -5.2F, -2.0F, 2.8F, 1.2F, 1.6F)
-                        .addBox(-6.5F, -6.5F, -0.4F, 2.8F, 2.5F, 0.4F)
+                        .addBox(-6.5F, -6.5F, -0.4F, 2.8F, 2.5F, 0.4F, new CubeDeformation(0.01F))
                         .texOffs(220, 58).addBox(-3.7F, -8.0F, -2.0F, 0.6F, 3.0F, 3.0F),
                 PartPose.ZERO);
 
@@ -402,12 +405,12 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         // --- Transom, Rudder & Stern Lantern ---
         root.addOrReplaceChild("transom_lower",
                 CubeListBuilder.create().texOffs(0, 104)
-                        .addBox(-5.0F, -4.5F, 19.5F, 10.0F, 5.5F, 1.5F),
+                        .addBox(-5.0F, -4.6F, 19.8F, 10.0F, 5.6F, 1.8F, new CubeDeformation(0.02F, 0.22F, 0.22F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("transom_upper",
                 CubeListBuilder.create().texOffs(0, 104)
-                        .addBox(-5.0F, -11.0F, 21.0F, 10.0F, 5.0F, 1.0F),
+                        .addBox(-5.0F, -10.8F, 21.0F, 10.0F, 5.8F, 1.0F, new CubeDeformation(0.05F, 0.22F, 0.0F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_windows",
@@ -417,17 +420,17 @@ public class SloopModel extends EntityModel<SloopRenderState> {
 
         root.addOrReplaceChild("transom_quarter_port",
                 CubeListBuilder.create().texOffs(26, 104)
-                        .addBox(-8.5F, -10.0F, 18.0F, 3.5F, 11.0F, 3.0F),
+                        .addBox(-8.5F, -10.0F, 17.9F, 3.5F, 11.0F, 3.6F, new CubeDeformation(0.0F, -0.01F, 0.0F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("transom_quarter_stbd",
                 CubeListBuilder.create().texOffs(42, 104)
-                        .addBox(5.0F, -10.0F, 18.0F, 3.5F, 11.0F, 3.0F),
+                        .addBox(5.0F, -10.0F, 17.9F, 3.5F, 11.0F, 3.6F, new CubeDeformation(0.0F, -0.01F, 0.0F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_crest",
                 CubeListBuilder.create().texOffs(58, 104)
-                        .addBox(-3.5F, -14.42F, 21.8F, 7.0F, 2.2F, 0.8F),
+                        .addBox(-3.5F, -14.42F, 21.8F, 7.0F, 2.2F, 0.8F, new CubeDeformation(0.0F, 0.02F, -0.01F)),
                 PartPose.ZERO);
 
         root.addOrReplaceChild("stern_taffrail",
@@ -453,6 +456,17 @@ public class SloopModel extends EntityModel<SloopRenderState> {
                         .texOffs(150, 142).addBox(-1.5F, -10.5F, 23.5F, 3.0F, 1.0F, 3.0F),
                 PartPose.ZERO);
 
+        root.addOrReplaceChild("swivel_harpoon",
+                CubeListBuilder.create()
+                        .texOffs(220, 58).addBox(-1.1F, -0.8F, -1.1F, 2.2F, 1.2F, 2.2F)
+                        .texOffs(140, 104).addBox(-0.5F, -3.2F, -0.5F, 1.0F, 2.4F, 1.0F)
+                        .texOffs(140, 104).addBox(-1.2F, -4.2F, -0.5F, 2.4F, 1.2F, 1.0F, new CubeDeformation(0.01F))
+                        .texOffs(140, 104).addBox(-0.8F, -4.6F, -4.2F, 1.6F, 1.6F, 6.2F)
+                        .texOffs(220, 58).addBox(-0.4F, -4.1F, 2.0F, 0.8F, 0.8F, 2.2F)
+                        .texOffs(124, 104).addBox(-0.3F, -4.1F, -7.6F, 0.6F, 0.6F, 3.6F)
+                        .texOffs(124, 104).addBox(-0.9F, -4.1F, -8.6F, 1.8F, 0.6F, 1.4F, new CubeDeformation(0.01F)),
+                PartPose.offset(5.0F, -8.0F, -24.0F));
+
         return LayerDefinition.create(mesh, 256, 256);
     }
 
@@ -477,6 +491,10 @@ public class SloopModel extends EntityModel<SloopRenderState> {
         this.waistSeat.visible    = !state.isCargo;
         this.bowSeat.visible      = !state.isCargo;
         this.lantern.visible      = state.isCargo || state.isTrade || state.hasBowLantern;
+        this.swivelHarpoon.visible = state.hasSwivelHarpoon;
+        if (state.hasSwivelHarpoon) {
+            this.swivelHarpoon.yRot = state.swivelHarpoonYRot;
+        }
 
         // Trade Ship & Flagship equipment:
         this.merchantAwning.visible  = state.isTrade;

@@ -16,11 +16,8 @@
   },
   "parent": "currents_of_trade:first_chart",
   "criteria": {
-    "craft_sloop": {
-      "trigger": "minecraft:recipe_crafted",
-      "conditions": {
-        "recipe_id": "currents_of_trade:sloop"
-      }
+    "launched_sloop": {
+      "trigger": "minecraft:impossible"
     }
   }
 }

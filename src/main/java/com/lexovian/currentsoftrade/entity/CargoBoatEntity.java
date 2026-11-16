@@ -50,7 +50,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
     public CargoBoatEntity(EntityType<? extends AbstractBoat> entityType, Level level) {
         super(entityType, level);
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
-        this.setCustomName(Component.literal("Cargo Ship"));
+        this.setCustomName(Component.translatable("entity.currents_of_trade.cargo_boat"));
         this.setCustomNameVisible(true);
     }
 
@@ -62,7 +62,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
         this.zo = z;
         this.updateParts();
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
-        this.setCustomName(Component.literal("Cargo Ship"));
+        this.setCustomName(Component.translatable("entity.currents_of_trade.cargo_boat"));
         this.setCustomNameVisible(true);
     }
 
@@ -101,13 +101,15 @@ public class CargoBoatEntity extends TradeBoatEntity {
     }
 
     @Override
-    public boolean canCollideWith(Entity entity) {
-        if (entity instanceof Player
-                && entity.getBoundingBox().minY < this.getBoundingBox().maxY - 0.15
-                && entity.getBoundingBox().intersects(this.getBoundingBox().deflate(0.02))) {
-            return false;
+    protected net.minecraft.world.phys.AABB makeBoundingBox(Vec3 position) {
+        if (this.entityData != null && this.isPlayerControlled()) {
+            double half = 1.225D;
+            return new net.minecraft.world.phys.AABB(
+                    position.x - half, position.y, position.z - half,
+                    position.x + half, position.y + 0.82D, position.z + half
+            );
         }
-        return super.canCollideWith(entity);
+        return super.makeBoundingBox(position);
     }
 
     @Nullable
@@ -124,11 +126,63 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     // --- Tick Override (Player Control Physics) ---
 
+    @Nullable private Vec3 summonTarget = null;
+    private int summonTicks = 0;
+
+    public void summonToward(Vec3 target) {
+        if (!this.isPlayerControlled()) return;
+        this.summonTarget = target;
+        this.summonTicks = 120;
+    }
+
+    private void tickSummonGlide() {
+        if (this.summonTicks <= 0 || this.summonTarget == null) return;
+        if (this.isVehicle() || !this.isPlayerControlled()) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        this.summonTicks--;
+        double dx = this.summonTarget.x - this.getX();
+        double dz = this.summonTarget.z - this.getZ();
+        double dist = Math.hypot(dx, dz);
+        if (dist <= 2.3D || this.summonTicks <= 0) {
+            Vec3 cur = this.getDeltaMovement();
+            this.setDeltaMovement(cur.x * 0.25D, cur.y, cur.z * 0.25D);
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        double nx = dx / dist;
+        double nz = dz / dist;
+        net.minecraft.core.BlockPos ahead = net.minecraft.core.BlockPos.containing(this.getX() + nx * 1.5D, this.getY(), this.getZ() + nz * 1.5D);
+        if (!this.level().getFluidState(ahead).is(net.minecraft.tags.FluidTags.WATER)
+                && !this.level().getFluidState(ahead.below()).is(net.minecraft.tags.FluidTags.WATER)) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        float desiredYaw = (float) (Mth.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F;
+        float diff = Mth.wrapDegrees(desiredYaw - this.getYRot());
+        this.setYRot(this.getYRot() + Mth.clamp(diff, -7.0F, 7.0F));
+        double speed = Math.min(0.20D, Math.max(0.08D, dist * 0.05D));
+        Vec3 cur = this.getDeltaMovement();
+        this.setDeltaMovement(nx * speed, cur.y, nz * speed);
+        this.needsSync = true;
+    }
+
     @Override
     public void tick() {
         if (this.isPlayerControlled()) {
+            double prevShipX = this.getX();
+            double prevShipY = this.getY();
+            double prevShipZ = this.getZ();
             float prevYaw = this.getYRot();
             super.tick();
+
+            if (!this.level().isClientSide()) {
+                this.tickSummonGlide();
+            }
 
             // Heavy steering feel for cargo ship: 8% damping (vs 14% on Sloop)
             float rawTurnDelta = Mth.wrapDegrees(this.getYRot() - prevYaw);
@@ -138,15 +192,23 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 this.yRotO = prevYaw;
             }
 
-            // Heavy cargo displacement speed limiter: ~35% slower than Sloop
+            // Heavy cargo displacement speed limiter: ~35% slower than Sloop (+20% with Captain's Tricorne)
+            boolean hasTricorne = this.getControllingPassenger() instanceof Player p
+                    && p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get());
             Vec3 delta = this.getDeltaMovement();
+            if (hasTricorne && delta.horizontalDistanceSqr() > 0.002D) {
+                delta = new Vec3(delta.x * 1.02D, delta.y, delta.z * 1.02D);
+                this.setDeltaMovement(delta);
+            }
             double horizontalSpeed = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
-            double maxSpeed = 0.22D;
+            double maxSpeed = hasTricorne ? 0.264D : 0.22D;
             if (horizontalSpeed > maxSpeed) {
                 double scale = maxSpeed / horizontalSpeed;
                 this.setDeltaMovement(delta.x * scale, delta.y, delta.z * scale);
             }
+            this.setBoundingBox(this.makeBoundingBox(this.position()));
             this.updateParts();
+            ShipPart.supportDeckEntities(this, this.getShipParts(), prevShipX, prevShipY, prevShipZ, prevYaw);
             return;
         }
 
@@ -164,6 +226,11 @@ public class CargoBoatEntity extends TradeBoatEntity {
             InteractionResult customResult = this.tryApplyCustomization(player, hand);
             if (customResult.consumesAction()) {
                 return customResult;
+            }
+        } else {
+            InteractionResult harpoonRes = this.tryApplyHarpoonCustomization(player, hand);
+            if (harpoonRes.consumesAction()) {
+                return harpoonRes;
             }
         }
         if (player.isSecondaryUseActive() || this.cargoDelivered) {
@@ -207,6 +274,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
                     }
                     this.level().playSound(null, this.blockPosition(), SoundEvents.DYE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
                     player.sendOverlayMessage(Component.translatable("message.currents_of_trade.cargo_dyed", colorName));
+                    SloopEntity.awardFlagshipAdvancement(player);
                 }
                 return InteractionResult.SUCCESS;
             }
@@ -234,11 +302,17 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 }
                 this.level().playSound(null, this.blockPosition(), SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
                 player.sendOverlayMessage(Component.translatable("message.currents_of_trade.cargo_banner_mounted"));
+                SloopEntity.awardFlagshipAdvancement(player);
             }
             return InteractionResult.SUCCESS;
         }
 
-        // 4. Remove Banner with Shears
+        // 4. Mount or Remove Swivel Harpoon (or Remove Banner with Shears)
+        InteractionResult harpoonRes = this.tryApplyHarpoonCustomization(player, hand);
+        if (harpoonRes.consumesAction()) {
+            return harpoonRes;
+        }
+
         if (held.is(Items.SHEARS) && !this.getBannerStack().isEmpty()) {
             if (!this.level().isClientSide()) {
                 if (!player.getAbilities().instabuild) {
@@ -258,10 +332,12 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     public ItemStack createDropStack() {
         ItemStack stack = new ItemStack(this.getTradeDropItem());
-        if (this.hasCustomName() && !this.getCustomName().getString().equals("Cargo Ship")) {
+        if (this.hasCustomName()
+                && !this.getCustomName().equals(Component.translatable("entity.currents_of_trade.cargo_boat"))
+                && !this.getCustomName().getString().equals("Cargo Ship")) {
             stack.set(DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()) {
+        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty() || this.hasSwivelHarpoon()) {
             CustomData existing = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = existing.copyTag();
             if (this.getSailColor() >= 0) {
@@ -269,6 +345,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
             }
             if (!this.getBannerStack().isEmpty()) {
                 tag.store("BannerItem", ItemStack.CODEC, this.registryAccess().createSerializationContext(NbtOps.INSTANCE), this.getBannerStack());
+            }
+            if (this.hasSwivelHarpoon()) {
+                tag.putBoolean("SwivelHarpoon", true);
             }
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
@@ -279,15 +358,22 @@ public class CargoBoatEntity extends TradeBoatEntity {
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (this.isPlayerControlled()) {
             if (this.isInvulnerableToBase(source)) return false;
-            if (!this.isRemoved()) {
+            if (this.isRemoved()) return true;
+            this.setHurtDir(-this.getHurtDir());
+            this.setHurtTime(10);
+            this.markHurt();
+            float effectiveAmount = this.drydockReinforced ? amount * 0.5F : amount;
+            this.setDamage(this.getDamage() + effectiveAmount * 10.0F);
+            boolean instantBreak = source.getEntity() instanceof Player player && player.getAbilities().instabuild;
+            if (instantBreak || this.getDamage() > 40.0F) {
+                this.ejectPassengers();
                 Containers.dropContents(level, this, this);
-                if (level.getGameRules().get(GameRules.ENTITY_DROPS)) {
+                if (!instantBreak && level.getGameRules().get(GameRules.ENTITY_DROPS)) {
                     this.spawnAtLocation(level, this.createDropStack());
                 }
                 this.discard();
-                return true;
             }
-            return false;
+            return true;
         }
         return super.hurtServer(level, source, amount);
     }

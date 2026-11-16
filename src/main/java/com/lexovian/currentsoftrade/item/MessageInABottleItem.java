@@ -41,6 +41,15 @@ public class MessageInABottleItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide()) {
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.level().getServer() != null) {
+                net.minecraft.advancements.AdvancementHolder adv = serverPlayer.level().getServer().getAdvancements()
+                        .get(net.minecraft.resources.Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "whispers_from_the_deep"));
+                if (adv != null) {
+                    for (String criterion : adv.value().criteria().keySet()) {
+                        serverPlayer.getAdvancements().award(adv, criterion);
+                    }
+                }
+            }
             RandomSource rng = level.getRandom();
             int msgIndex = 1 + rng.nextInt(5);
             player.sendSystemMessage(
@@ -66,6 +75,15 @@ public class MessageInABottleItem extends Item {
                 discovery = createAncientChart(serverLevel, player.blockPosition(), rng);
                 level.playSound(null, player.blockPosition(), SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 0.8F, 1.2F);
                 player.sendOverlayMessage(Component.translatable("message.currents_of_trade.bottle_found_chart"));
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.level().getServer() != null) {
+                    net.minecraft.advancements.AdvancementHolder advChart = serverPlayer.level().getServer().getAdvancements()
+                            .get(net.minecraft.resources.Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "first_chart"));
+                    if (advChart != null) {
+                        for (String criterion : advChart.value().criteria().keySet()) {
+                            serverPlayer.getAdvancements().award(advChart, criterion);
+                        }
+                    }
+                }
             } else if (roll < 0.70F) {
                 // 25% Sunken Doubloons & Rare Curiosities
                 int relicRoll = rng.nextInt(6);
@@ -143,7 +161,7 @@ public class MessageInABottleItem extends Item {
 
         final BlockPos targetPos = chosenPos;
         final String regionId = com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion.fromBiome(serverLevel.getBiome(targetPos)).getId();
-        final String harborName = "Ancient Atoll " + Math.abs(targetPos.getX() % 100);
+        final String harborName = Component.translatable("harbor.currents_of_trade.ancient_atoll", Math.abs(targetPos.getX() % 100)).getString();
 
         CustomData.update(DataComponents.CUSTOM_DATA, chart, tag -> {
             tag.putInt("TargetX", targetPos.getX());

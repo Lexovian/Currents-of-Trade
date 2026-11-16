@@ -64,10 +64,10 @@ public class FrankincenseTearsItem extends Item {
                 }
             }
 
+            player.getCooldowns().addCooldown(stack, 60);
             if (!player.hasInfiniteMaterials()) {
                 stack.shrink(1);
             }
-            player.getCooldowns().addCooldown(stack, 60);
         }
         return InteractionResult.SUCCESS;
     }

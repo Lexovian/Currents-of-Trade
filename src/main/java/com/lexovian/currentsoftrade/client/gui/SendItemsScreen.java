@@ -156,29 +156,26 @@ public class SendItemsScreen extends AbstractContainerScreen<SendItemsMenu> {
             Component destText = Component.literal("§2§l" + this.font.plainSubstrByWidth(destHarbor, 96));
             guiGraphics.text(this.font, destText, 86, 21, 0xFF1B4D3E, false);
 
-            Component distText = Component.literal("§8Dist: §0" + dist + "m");
+            Component distText = Component.translatable("gui.currents_of_trade.short_dist", dist);
             guiGraphics.text(this.font, distText, 86, 31, 0xFF404040, false);
 
             if (this.menu.isTooExpensive()) {
-                guiGraphics.text(this.font, Component.literal("§cToo Far (> 64)"), 86, 41, 0xFFAA0000, false);
+                guiGraphics.text(this.font, Component.translatable("gui.currents_of_trade.short_too_far", com.lexovian.currentsoftrade.world.inventory.TravelMenu.getMaxDoubloons()), 86, 41, 0xFFAA0000, false);
             } else {
-                Component feeText = Component.literal("§8Fee: §6" + fee + " Dbl");
+                Component feeText = Component.translatable("gui.currents_of_trade.short_fee", fee, "");
                 guiGraphics.text(this.font, feeText, 86, 41, 0xFF8B5A00, false);
             }
         } else {
-            guiGraphics.text(this.font, Component.literal("§7No Chart"), 86, 28, 0xFF777777, false);
-            guiGraphics.text(this.font, Component.literal("§8Insert chart"), 86, 40, 0xFF999999, false);
+            guiGraphics.text(this.font, Component.translatable("gui.currents_of_trade.short_no_chart"), 86, 28, 0xFF777777, false);
+            guiGraphics.text(this.font, Component.translatable("gui.currents_of_trade.short_insert_chart"), 86, 40, 0xFF999999, false);
         }
 
         // Cargo section title (displays dynamic slot count and page)
         int cargoSlots = this.menu.getCargoSlotCount();
         int maxPages = this.menu.getMaxPages();
-        String cargoTitle;
-        if (maxPages > 1) {
-            cargoTitle = "Cargo (" + (this.menu.getCurrentPage() + 1) + "/" + maxPages + " — " + cargoSlots + "):";
-        } else {
-            cargoTitle = "Cargo Hold (" + cargoSlots + " Slots):";
-        }
-        guiGraphics.text(this.font, Component.literal(cargoTitle), 18, 57, 0xFF333333, false);
+        Component cargoTitle = maxPages > 1
+                ? Component.translatable("gui.currents_of_trade.cargo_hold_paged", this.menu.getCurrentPage() + 1, maxPages, cargoSlots)
+                : Component.translatable("gui.currents_of_trade.cargo_hold_dynamic", cargoSlots);
+        guiGraphics.text(this.font, cargoTitle, 18, 57, 0xFF333333, false);
     }
 }

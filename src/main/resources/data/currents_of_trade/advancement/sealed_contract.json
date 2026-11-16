@@ -16,15 +16,8 @@
   },
   "parent": "currents_of_trade:root",
   "criteria": {
-    "has_trade_ledger": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "currents_of_trade:trade_ledger"
-          }
-        ]
-      }
+    "sealed_trade": {
+      "trigger": "minecraft:impossible"
     }
   }
 }

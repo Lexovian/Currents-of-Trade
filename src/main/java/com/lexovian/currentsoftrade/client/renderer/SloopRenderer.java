@@ -11,6 +11,7 @@ import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.object.banner.BannerFlagModel;
+import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BannerRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -94,12 +95,16 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
         boolean hasBowLantern = (entity instanceof SloopEntity s && s.getBowLanternType() > 0);
         boolean hasBanner = (entity instanceof SloopEntity s && !s.getBannerStack().isEmpty())
                 || (entity instanceof CargoBoatEntity c && !c.getBannerStack().isEmpty());
+        boolean hasHarpoon = (entity instanceof SloopEntity s && s.hasSwivelHarpoon())
+                || (entity instanceof TradeBoatEntity t && t.hasSwivelHarpoon());
 
         state.isCargo = isCargo;
         state.isTrade = isTrade;
         state.hasCopperHull = hasCopperHull;
         state.hasBowLantern = hasBowLantern;
         state.hasBanner = hasBanner;
+        state.hasSwivelHarpoon = hasHarpoon;
+        state.swivelHarpoonYRot = -0.08F + Mth.sin(ageInTicks * 0.06F) * 0.10F;
 
         int sailColorId = -1;
         int bowLanternType = 0;
@@ -172,9 +177,22 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
             poseStack.translate(0.0F, -14.5F / 16.0F, 22.30F / 16.0F);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
             poseStack.scale(0.38F, 0.38F, 0.38F);
+            // Cancel STANDING_BANNER_FLAG's built-in -44.0F Y PartPose offset so top of cloth sits flush on stern crest
+            poseStack.translate(0.0F, 44.0F / 16.0F, 0.0F);
 
-            this.bannerFlagModel.setupAnim(state.bannerPhase);
             BannerPatternLayers patterns = state.bannerStack.getOrDefault(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY);
+            submitNodeCollector.submitModel(
+                    this.bannerFlagModel,
+                    state.bannerPhase,
+                    poseStack,
+                    state.lightCoords,
+                    OverlayTexture.NO_OVERLAY,
+                    -1,
+                    Sheets.BANNER_BASE,
+                    this.sprites,
+                    0,
+                    null
+            );
             BannerRenderer.submitPatterns(
                     this.sprites,
                     poseStack,
