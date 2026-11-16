@@ -3,6 +3,7 @@ package com.lexovian.currentsoftrade.client.gui;
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.network.ModPayloads;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.client.Minecraft;
@@ -63,10 +64,6 @@ public class NauticalAtlasScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        ItemStack journal = getJournalStack();
-        if (!journal.isEmpty() && this.minecraft != null && this.minecraft.level != null) {
-            RouteJournalItem.pruneBrokenHarbors(journal, this.minecraft.level);
-        }
         this.guiLeft = (this.width - GUI_WIDTH) / 2;
         this.guiTop = (this.height - GUI_HEIGHT) / 2;
 
@@ -233,7 +230,9 @@ public class NauticalAtlasScreen extends Screen {
                 int dist = (int) Math.sqrt(playerPos.distSqr(r.pos()));
                 String distStr = dist + "m";
                 int distW = this.font.width(distStr);
-                String label = this.font.plainSubstrByWidth(r.name(), listW - distW - 34) + " §7L" + r.level();
+                HarborSpecialization spec = r.specialization();
+                String specPrefix = spec != HarborSpecialization.NONE ? (spec.getIcon() + " ") : "";
+                String label = specPrefix + this.font.plainSubstrByWidth(r.name(), listW - distW - 34 - this.font.width(specPrefix)) + " §7L" + r.level();
                 int textCol = isSel ? 0xFFFFD700 : 0xFFE8EEF5;
                 g.drawString(this.font, label, listX + 9, rowY + 3, textCol, false);
 
@@ -263,7 +262,10 @@ public class NauticalAtlasScreen extends Screen {
             int dist = (int) Math.sqrt(playerPos.distSqr(r.pos()));
             List<Component> tip = new ArrayList<>();
             tip.add(Component.literal("§e§l⚓ " + r.name() + " §7(Lv." + r.level() + ")"));
-            tip.add(Component.literal("§7Coords: §f" + r.pos().getX() + ", " + r.pos().getZ() + " §8(" + dist + "m)"));
+            if (r.specialization() != HarborSpecialization.NONE) {
+                tip.add(Component.translatable("tooltip.currents_of_trade.spec_active", r.specialization().getShortBadge()));
+            }
+            tip.add(Component.translatable("gui.currents_of_trade.atlas.coords", r.pos().getX(), r.pos().getZ(), dist));
             tip.add(Component.translatable("tooltip.currents_of_trade.chart_region", reg.getDisplayName()));
             tip.add(reg.getExportDescription());
             tip.add(reg.getImportDescription());
@@ -374,32 +376,32 @@ public class NauticalAtlasScreen extends Screen {
         g.drawString(this.font, Component.translatable("gui.currents_of_trade.atlas.upgrades_header"), startX, startY, 0x1B2D3E, false);
 
         String[] names = {
-                "Lv.1 Fishing Wharf",
-                "Lv.2 Trading Post",
-                "Lv.3 Harbor",
-                "Lv.4 Grand Port",
-                "Lv.5 Royal Dockyard"
+                "Lv.1 " + Component.translatable("harbor.currents_of_trade.level.1").getString(),
+                "Lv.2 " + Component.translatable("harbor.currents_of_trade.level.2").getString(),
+                "Lv.3 " + Component.translatable("harbor.currents_of_trade.level.3").getString(),
+                "Lv.4 " + Component.translatable("harbor.currents_of_trade.level.4").getString(),
+                "Lv.5 " + Component.translatable("harbor.currents_of_trade.level.5").getString()
         };
         String[] stats = {
-                "§a18 Slots §7| §b60s CD §7| §d6 Offers",
-                "§a27 Slots §7| §b45s CD §7| §d8 Offers",
-                "§a36 Slots §7| §b30s CD §7| §d10 Offers",
-                "§a45 Slots §7| §b20s CD §7| §d12 Offers",
-                "§a54 Slots §7| §b10s CD §7| §d14 Offers"
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 18, 60, 6).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 27, 45, 8).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 36, 30, 10).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 45, 20, 12).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 54, 10, 14).getString()
         };
         String[] costs = {
-                "§7Starter Port",
-                "§e8 Dbl + 32 Planks + 16 Iron",
-                "§e20 Dbl + 16 Copper + 4 Lanterns",
-                "§e40 Dbl + 8 Gold + 2 Silk + 2 Spice",
-                "§664 Dbl + 4 Emerald Blk + Astrolabe"
+                Component.translatable("gui.currents_of_trade.atlas.cost_1").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_2").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_3").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_4").getString(),
+                Component.translatable("gui.currents_of_trade.atlas.cost_5").getString()
         };
         ItemStack[] icons = {
                 new ItemStack(Items.OAK_BOAT),
+                new ItemStack(Items.OAK_PLANKS),
                 new ItemStack(Items.IRON_INGOT),
-                new ItemStack(Items.LANTERN),
                 new ItemStack(CurrentsofTrade.SILK_BALE.get()),
-                new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get())
+                new ItemStack(Items.HEART_OF_THE_SEA)
         };
 
         int y = startY + 12;

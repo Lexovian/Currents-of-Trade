@@ -2,6 +2,7 @@ package com.lexovian.currentsoftrade.item;
 
 import com.lexovian.currentsoftrade.block.AnchorPointBlock;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -35,9 +36,17 @@ public class RouteJournalItem extends Item {
     public static final String TAG_ROUTES = "Routes";
     public static final String TAG_SELECTED_INDEX = "SelectedIndex";
 
-    public record RouteEntry(String name, BlockPos pos, int level, String regionId) {
+    public record RouteEntry(String name, BlockPos pos, int level, String regionId, String specializationId) {
+        public RouteEntry(String name, BlockPos pos, int level, String regionId) {
+            this(name, pos, level, regionId, HarborSpecialization.NONE.getId());
+        }
+
         public RouteEntry(String name, BlockPos pos, int level) {
-            this(name, pos, level, "temperate");
+            this(name, pos, level, "temperate", HarborSpecialization.NONE.getId());
+        }
+
+        public HarborSpecialization specialization() {
+            return HarborSpecialization.byId(this.specializationId);
         }
     }
 
@@ -96,7 +105,13 @@ public class RouteJournalItem extends Item {
                     return InteractionResult.FAIL;
                 }
 
-                addRoute(stack, new RouteEntry(harborName, pos, anchor.getTradeLevel(), anchor.getTradeRegion().getId()));
+                addRoute(stack, new RouteEntry(
+                        harborName,
+                        pos,
+                        anchor.getTradeLevel(),
+                        anchor.getTradeRegion().getId(),
+                        anchor.getSpecialization().getId()
+                ));
                 if (routes.isEmpty() && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
                     syncActiveHarborTrades(stack, pos, serverLevel);
                 }
@@ -121,10 +136,13 @@ public class RouteJournalItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        List<String> pruned = pruneBrokenHarbors(stack, level);
-        if (!pruned.isEmpty() && !level.isClientSide) {
-            for (String name : pruned) {
-                player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", name), false);
+        if (!level.isClientSide) {
+            List<String> pruned = pruneBrokenHarbors(stack, level);
+            if (!pruned.isEmpty()) {
+                for (String name : pruned) {
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.journal_harbor_removed", name), false);
+                }
+                player.inventoryMenu.broadcastChanges();
             }
         }
         List<RouteEntry> routes = getRoutes(stack);
@@ -180,14 +198,28 @@ public class RouteJournalItem extends Item {
     }
 
     public static void syncActiveHarborTrades(ItemStack stack, BlockPos targetPos, net.minecraft.server.level.ServerLevel serverLevel) {
-        List<com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer> liveTrades =
-                com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel).getTrades(targetPos);
+        var savedData = com.lexovian.currentsoftrade.world.harbor.HarborSavedData.get(serverLevel);
+        List<com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer> liveTrades = savedData.getTrades(targetPos);
         CustomData.update(stack, tag -> {
             ListTag list = new ListTag();
             for (com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer offer : liveTrades) {
                 list.add(offer.toTag(serverLevel.registryAccess()));
             }
             tag.put("HarborTrades", list);
+
+            if (tag.contains(TAG_ROUTES, Tag.TAG_LIST)) {
+                ListTag routeList = tag.getList(TAG_ROUTES, Tag.TAG_COMPOUND);
+                for (int i = 0; i < routeList.size(); i++) {
+                    CompoundTag entryTag = routeList.getCompound(i);
+                    BlockPos p = new BlockPos(entryTag.getInt("X"), entryTag.getInt("Y"), entryTag.getInt("Z"));
+                    if (savedData.hasHarbor(p)) {
+                        String liveName = savedData.getHarborName(p);
+                        if (liveName != null && !liveName.isEmpty()) entryTag.putString("Name", liveName);
+                        entryTag.putInt("Level", savedData.getHarborLevel(p));
+                        entryTag.putString("Specialization", savedData.getHarborSpecialization(p).getId());
+                    }
+                }
+            }
         });
     }
 
@@ -230,7 +262,8 @@ public class RouteJournalItem extends Item {
             BlockPos pos = new BlockPos(entryTag.getInt("X"), entryTag.getInt("Y"), entryTag.getInt("Z"));
             int lvl = entryTag.contains("Level") ? entryTag.getInt("Level") : 1;
             String regionId = entryTag.contains("Region") ? entryTag.getString("Region") : "temperate";
-            result.add(new RouteEntry(name, pos, lvl, regionId));
+            String specId = entryTag.contains("Specialization") ? entryTag.getString("Specialization") : HarborSpecialization.NONE.getId();
+            result.add(new RouteEntry(name, pos, lvl, regionId, specId));
         }
         return result;
     }
@@ -247,6 +280,7 @@ public class RouteJournalItem extends Item {
         entryTag.putInt("Z", entry.pos().getZ());
         entryTag.putInt("Level", entry.level());
         entryTag.putString("Region", entry.regionId());
+        entryTag.putString("Specialization", entry.specializationId());
         list.add(entryTag);
 
         tag.put(TAG_ROUTES, list);

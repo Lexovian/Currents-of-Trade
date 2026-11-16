@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_message_in_a_bottle": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "currents_of_trade:message_in_a_bottle"
+            ]
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:treasure_map"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_message_in_a_bottle"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:treasure_map"
+    ]
+  },
+  "sends_telemetry_event": false
+}

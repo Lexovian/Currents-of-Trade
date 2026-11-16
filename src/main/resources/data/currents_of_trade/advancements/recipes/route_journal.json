@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_nautical_chart": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "currents_of_trade:nautical_chart"
+            ]
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "currents_of_trade:route_journal"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_nautical_chart"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "currents_of_trade:route_journal"
+    ]
+  },
+  "sends_telemetry_event": false
+}

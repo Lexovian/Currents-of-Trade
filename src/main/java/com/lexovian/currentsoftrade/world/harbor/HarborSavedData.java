@@ -21,6 +21,7 @@ public class HarborSavedData extends SavedData {
     private final Map<BlockPos, List<HarborTradeOffer>> harborTradesMap = new HashMap<>();
     private final Map<BlockPos, String> harborNamesMap = new HashMap<>();
     private final Map<BlockPos, Integer> harborLevelsMap = new HashMap<>();
+    private final Map<BlockPos, HarborSpecialization> harborSpecializationsMap = new HashMap<>();
 
     // --- Persistence & Access ---
 
@@ -69,21 +70,37 @@ public class HarborSavedData extends SavedData {
         setDirty();
     }
 
+    public HarborSpecialization getHarborSpecialization(BlockPos pos) {
+        return harborSpecializationsMap.getOrDefault(pos, HarborSpecialization.NONE);
+    }
+
+    public void setHarborSpecialization(BlockPos pos, HarborSpecialization spec) {
+        if (spec != null && spec != HarborSpecialization.NONE) {
+            harborSpecializationsMap.put(pos.immutable(), spec);
+        } else {
+            harborSpecializationsMap.remove(pos);
+        }
+        setDirty();
+    }
+
     public Set<BlockPos> getAllHarborPositions() {
         Set<BlockPos> all = new HashSet<>(harborTradesMap.keySet());
         all.addAll(harborNamesMap.keySet());
         all.addAll(harborLevelsMap.keySet());
+        all.addAll(harborSpecializationsMap.keySet());
         return all;
     }
 
     public boolean hasHarbor(BlockPos pos) {
-        return harborNamesMap.containsKey(pos) || harborTradesMap.containsKey(pos) || harborLevelsMap.containsKey(pos);
+        return harborNamesMap.containsKey(pos) || harborTradesMap.containsKey(pos)
+                || harborLevelsMap.containsKey(pos) || harborSpecializationsMap.containsKey(pos);
     }
 
     public void removeHarbor(BlockPos pos) {
         boolean changed = harborTradesMap.remove(pos) != null;
         if (harborNamesMap.remove(pos) != null) changed = true;
         if (harborLevelsMap.remove(pos) != null) changed = true;
+        if (harborSpecializationsMap.remove(pos) != null) changed = true;
         if (changed) setDirty();
     }
 
@@ -101,6 +118,12 @@ public class HarborSavedData extends SavedData {
             }
             if (harborTag.contains("Level")) {
                 data.harborLevelsMap.put(pos, harborTag.getInt("Level"));
+            }
+            if (harborTag.contains("Specialization")) {
+                HarborSpecialization spec = HarborSpecialization.byId(harborTag.getString("Specialization"));
+                if (spec != HarborSpecialization.NONE) {
+                    data.harborSpecializationsMap.put(pos, spec);
+                }
             }
 
             ListTag tradesList = harborTag.getList("Trades", Tag.TAG_COMPOUND);
@@ -121,6 +144,7 @@ public class HarborSavedData extends SavedData {
         allPositions.addAll(harborTradesMap.keySet());
         allPositions.addAll(harborNamesMap.keySet());
         allPositions.addAll(harborLevelsMap.keySet());
+        allPositions.addAll(harborSpecializationsMap.keySet());
 
         for (BlockPos pos : allPositions) {
             CompoundTag harborTag = new CompoundTag();
@@ -132,13 +156,18 @@ public class HarborSavedData extends SavedData {
             Integer level = harborLevelsMap.get(pos);
             if (level != null && level > 1) harborTag.putInt("Level", level);
 
-            List<HarborTradeOffer> trades = harborTradesMap.get(pos);
-            if (trades != null && !trades.isEmpty()) {
-                ListTag tradesList = new ListTag();
-                for (HarborTradeOffer offer : trades) {
-                    tradesList.add(offer.toTag(registries));
+            HarborSpecialization spec = harborSpecializationsMap.get(pos);
+            if (spec != null && spec != HarborSpecialization.NONE) {
+                harborTag.putString("Specialization", spec.getId());
+            }
+
+            ListTag trades = harborTradesMap.get(pos) != null ? new ListTag() : null;
+            List<HarborTradeOffer> tradeOffers = harborTradesMap.get(pos);
+            if (tradeOffers != null && !tradeOffers.isEmpty() && trades != null) {
+                for (HarborTradeOffer offer : tradeOffers) {
+                    trades.add(offer.toTag(registries));
                 }
-                harborTag.put("Trades", tradesList);
+                harborTag.put("Trades", trades);
             }
 
             harborsList.add(harborTag);

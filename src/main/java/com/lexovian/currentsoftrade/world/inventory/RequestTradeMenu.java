@@ -7,6 +7,7 @@ import com.lexovian.currentsoftrade.item.DoubloonItem;
 import com.lexovian.currentsoftrade.item.NauticalChartItem;
 import com.lexovian.currentsoftrade.item.RouteJournalItem;
 import com.lexovian.currentsoftrade.world.harbor.HarborSavedData;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborTradeOffer;
 import com.lexovian.currentsoftrade.world.market.MaritimeTradeRegion;
 import net.minecraft.core.BlockPos;
@@ -47,6 +48,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     private final List<ItemStack> stagedPayments = new ArrayList<>();
     private final List<ItemStack> stagedRewards = new ArrayList<>();
     private final List<AnchorPointBlockEntity.TradePresetEntry> stagedPresetEntries = new ArrayList<>();
+    private BlockPos stagedTargetPos = null;
     private int stagedTradeCount = 0;
     private int stagedItemCount = 0;
     private int cargoSurcharge = 0;
@@ -58,17 +60,23 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
     // Client-side constructor
     public RequestTradeMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, new SimpleContainerData(8));
+        this(containerId, playerInventory, ContainerLevelAccess.NULL, BlockPos.ZERO, createDefaultData());
     }
 
     // Server-side constructor
     public RequestTradeMenu(int containerId, Inventory playerInventory, ContainerLevelAccess access, BlockPos currentPos) {
-        this(containerId, playerInventory, access, currentPos, new SimpleContainerData(8));
+        this(containerId, playerInventory, access, currentPos, createDefaultData());
+    }
+
+    private static SimpleContainerData createDefaultData() {
+        SimpleContainerData d = new SimpleContainerData(9);
+        d.set(6, 18);
+        return d;
     }
 
     public RequestTradeMenu(int containerId, Inventory playerInventory, ContainerLevelAccess access, BlockPos currentPos, ContainerData data) {
         super(CurrentsofTrade.REQUEST_TRADE_MENU.get(), containerId);
-        checkContainerDataCount(data, 8);
+        checkContainerDataCount(data, 9);
 
         this.tradeContainer = new SimpleContainer(4);
         this.data = data;
@@ -128,19 +136,31 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
         if (!this.level.isClientSide && this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            BlockPos liveTarget = hasValidChart() ? getTargetPos() : null;
+            if (!this.stagedPayments.isEmpty() && (this.stagedTargetPos == null || !this.stagedTargetPos.equals(liveTarget))) {
+                resetStagedOrder(this.player);
+            }
             ItemStack chart = getChartStack();
-            if (hasValidChart()) {
-                BlockPos targetPos = NauticalChartItem.getTargetPos(chart);
-                if (targetPos != null) {
-                    List<HarborTradeOffer> liveTrades = HarborSavedData.get(serverLevel).getTrades(targetPos);
+            if (hasValidChart() && liveTarget != null) {
+                if (chart.getItem() instanceof RouteJournalItem) {
+                    RouteJournalItem.syncActiveHarborTrades(chart, liveTarget, serverLevel);
+                } else {
+                    var savedData = HarborSavedData.get(serverLevel);
+                    List<HarborTradeOffer> liveTrades = savedData.getTrades(liveTarget);
+                    String liveSpec = savedData.getHarborSpecialization(liveTarget).getId();
                     com.lexovian.currentsoftrade.compat.CustomData.update(chart, tag -> {
                         net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
                         for (HarborTradeOffer offer : liveTrades) {
                             list.add(offer.toTag(serverLevel.registryAccess()));
                         }
                         tag.put("HarborTrades", list);
+                        tag.putString("Specialization", liveSpec);
                     });
                 }
+            }
+            List<HarborTradeOffer> currentOffers = getHarborTrades();
+            if (this.selectedTradeIndex >= currentOffers.size()) {
+                this.selectedTradeIndex = 0;
             }
         }
         this.broadcastChanges();
@@ -156,6 +176,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
                     this.data.set(1, anchor.getHarborStatus().ordinal());
                     this.data.set(6, anchor.getCargoSlotCount());
                     this.data.set(7, anchor.getSavedTradePreset().isEmpty() ? 0 : 1);
+                    this.data.set(8, anchor.getSpecialization().getIndex());
                 }
             });
             this.data.set(2, this.stagedTradeCount);
@@ -219,11 +240,32 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         return null;
     }
 
+    public BlockPos resolveOriginPos() {
+        if (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO)) {
+            return this.currentPos;
+        }
+        if (this.player != null && this.player.level() != null) {
+            BlockPos pPos = this.player.blockPosition();
+            BlockPos nearest = null;
+            double bestDistSq = Double.MAX_VALUE;
+            for (BlockPos check : BlockPos.betweenClosed(pPos.offset(-10, -6, -10), pPos.offset(10, 6, 10))) {
+                if (this.player.level().getBlockEntity(check) instanceof AnchorPointBlockEntity) {
+                    double dSq = check.distToCenterSqr(this.player.position());
+                    if (dSq < bestDistSq) {
+                        bestDistSq = dSq;
+                        nearest = check.immutable();
+                    }
+                }
+            }
+            return nearest != null ? nearest : pPos;
+        }
+        return BlockPos.ZERO;
+    }
+
     public double getDistance() {
         BlockPos target = getTargetPos();
         if (target == null) return 0;
-        BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
-                ? this.currentPos : this.player.blockPosition();
+        BlockPos origin = resolveOriginPos();
         double dx = origin.getX() - target.getX();
         double dz = origin.getZ() - target.getZ();
         return Math.sqrt(dx * dx + dz * dz);
@@ -240,6 +282,45 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         return fee;
     }
 
+    public HarborSpecialization getOriginSpecialization() {
+        if (this.data != null && this.data.getCount() > 8) {
+            return HarborSpecialization.byIndex(this.data.get(8));
+        }
+        return HarborSpecialization.NONE;
+    }
+
+    public boolean isFreePortTradeBonusActive() {
+        if (getOriginSpecialization() == HarborSpecialization.FREE_PORT) {
+            return true;
+        }
+        BlockPos target = getTargetPos();
+        if (target != null && this.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            return HarborSavedData.get(serverLevel).getHarborSpecialization(target) == HarborSpecialization.FREE_PORT;
+        }
+        ItemStack chart = getChartStack();
+        if (!chart.isEmpty()) {
+            if (chart.getItem() instanceof RouteJournalItem) {
+                List<RouteJournalItem.RouteEntry> routes = RouteJournalItem.getRoutes(chart);
+                int idx = RouteJournalItem.getSelectedIndex(chart);
+                if (idx >= 0 && idx < routes.size()) {
+                    return routes.get(idx).specialization() == HarborSpecialization.FREE_PORT;
+                }
+            } else {
+                var tag = com.lexovian.currentsoftrade.compat.CustomData.get(chart).copyTag();
+                return HarborSpecialization.byId(tag.getString("Specialization")) == HarborSpecialization.FREE_PORT;
+            }
+        }
+        return false;
+    }
+
+    public ItemStack applyFreePortRewardBonus(ItemStack costA, ItemStack rawResult) {
+        ItemStack res = rawResult.copy();
+        if (isFreePortTradeBonusActive() && res.is(CurrentsofTrade.DOUBLOON.get()) && !costA.is(CurrentsofTrade.DOUBLOON.get())) {
+            res.setCount(Math.max(res.getCount() + 1, Math.round(res.getCount() * 1.25F)));
+        }
+        return res;
+    }
+
     public int getCargoSurcharge() {
         return this.data.get(4);
     }
@@ -247,7 +328,14 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     public int getRequiredFee() {
         int base = getBaseFee();
         if (base <= 0) return 0;
-        return base + getCargoSurcharge();
+        int total = base + getCargoSurcharge();
+        if (isArbitrageRoute()) {
+            total = Math.max(1, (int) Math.ceil(total * 0.5));
+        }
+        if (getOriginSpecialization() == HarborSpecialization.FREE_PORT) {
+            total = Math.max(1, (int) Math.floor(total * 0.75));
+        }
+        return total;
     }
 
     public static int getMaxDoubloons() {
@@ -354,24 +442,33 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     public boolean addCurrentTradeToOrder(Player player, int tradeIndex, boolean maxAll) {
         if (this.level.isClientSide) return false;
         this.selectedTradeIndex = tradeIndex;
-        if (!hasValidChart()) return false;
+        if (!hasValidChart() || isTooExpensive()) return false;
         if (!hasRequiredTradeItems()) return false;
 
         HarborTradeOffer trade = getSelectedTrade();
         if (trade == null) return false;
 
         int maxSlots = getCargoSlotCount();
+        int maxIterations = maxAll ? maxSlots * 4 : 1;
+        if (trade.isUrgentBounty()) {
+            int remainingAllowed = AnchorPointBlockEntity.MAX_DAILY_BOUNTY_CLAIMS - getStagedCountForOffer(trade);
+            if (remainingAllowed <= 0) {
+                this.level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 0.8F, 1.0F);
+                return false;
+            }
+            maxIterations = Math.min(maxIterations, remainingAllowed);
+        }
         int addedCount = 0;
         while (hasRequiredTradeItems()) {
             ItemStack costA = trade.getCostA();
             ItemStack costB = trade.getCostB();
-            ItemStack result = trade.getResult();
+            ItemStack result = applyFreePortRewardBonus(costA, trade.getResult());
 
             // Check if adding exceeds harbor level cargo limit (18..54 slots)
             if (countMergedSlots(this.stagedPayments, costA, costB) > maxSlots
                     || countMergedSlots(this.stagedRewards, result, ItemStack.EMPTY) > maxSlots) {
                 if (addedCount == 0) {
-                    player.displayClientMessage(Component.translatable("message.currents_of_trade.boat_hold_full"), true);
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.boat_hold_full", maxSlots), true);
                 }
                 break;
             }
@@ -394,15 +491,16 @@ public class RequestTradeMenu extends AbstractContainerMenu {
             this.stagedTradeCount++;
             addedCount++;
 
-            if (!maxAll || addedCount >= 64) {
+            if (!maxAll || addedCount >= maxIterations) {
                 break;
             }
         }
 
         if (addedCount > 0) {
+            this.stagedTargetPos = getTargetPos();
             recordPresetAddition(trade, addedCount);
             recalculateStagingMetrics();
-            ItemStack result = trade.getResult();
+            ItemStack result = applyFreePortRewardBonus(trade.getCostA(), trade.getResult());
             this.level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.PLAYERS, 1.0F, 1.2F);
             player.displayClientMessage(
                     Component.translatable("message.currents_of_trade.trade_staged_success", this.stagedTradeCount, result.getCount() * addedCount, result.getHoverName().getString()),
@@ -413,6 +511,16 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         }
 
         return false;
+    }
+
+    private int getStagedCountForOffer(HarborTradeOffer offer) {
+        int total = 0;
+        for (AnchorPointBlockEntity.TradePresetEntry existing : this.stagedPresetEntries) {
+            if (isSameOffer(existing.offer(), offer)) {
+                total += existing.count();
+            }
+        }
+        return total;
     }
 
     private void recordPresetAddition(HarborTradeOffer offer, int count) {
@@ -436,9 +544,8 @@ public class RequestTradeMenu extends AbstractContainerMenu {
     }
 
     public boolean repeatLastTradeOrder(Player player) {
-        if (this.level.isClientSide || !hasValidChart()) return false;
-        BlockPos origin = (this.currentPos != null && !this.currentPos.equals(BlockPos.ZERO))
-                ? this.currentPos : player.blockPosition();
+        if (this.level.isClientSide || !hasValidChart() || isTooExpensive()) return false;
+        BlockPos origin = resolveOriginPos();
         if (!(this.level.getBlockEntity(origin) instanceof AnchorPointBlockEntity anchor)) {
             return false;
         }
@@ -466,10 +573,14 @@ public class RequestTradeMenu extends AbstractContainerMenu {
 
             ItemStack costA = matchedOffer.getCostA();
             ItemStack costB = matchedOffer.getCostB();
-            ItemStack result = matchedOffer.getResult();
+            ItemStack result = applyFreePortRewardBonus(costA, matchedOffer.getResult());
             int countForEntry = 0;
+            int maxEntryCount = entry.count();
+            if (matchedOffer.isUrgentBounty()) {
+                maxEntryCount = Math.min(maxEntryCount, Math.max(0, AnchorPointBlockEntity.MAX_DAILY_BOUNTY_CLAIMS - getStagedCountForOffer(matchedOffer)));
+            }
 
-            for (int c = 0; c < entry.count(); c++) {
+            for (int c = 0; c < maxEntryCount; c++) {
                 if (countMergedSlots(this.stagedPayments, costA, costB) > maxSlots
                         || countMergedSlots(this.stagedRewards, result, ItemStack.EMPTY) > maxSlots) {
                     break;
@@ -497,6 +608,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         }
 
         if (totalAdded > 0) {
+            this.stagedTargetPos = getTargetPos();
             recalculateStagingMetrics();
             this.level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.PLAYERS, 1.0F, 1.25F);
             player.displayClientMessage(
@@ -615,6 +727,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         this.stagedPayments.clear();
         this.stagedRewards.clear();
         this.stagedPresetEntries.clear();
+        this.stagedTargetPos = null;
         this.stagedTradeCount = 0;
         this.stagedItemCount = 0;
         this.cargoSurcharge = 0;
@@ -645,10 +758,6 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         this.stagedItemCount = totalItems;
         // Shipping surcharge: +1 Doubloon per 3 item stacks
         int surcharge = totalStacks > 0 ? (int) Math.ceil(totalStacks / 3.0) : 0;
-        if (isArbitrageRouteInternal()) {
-            // Maritime Arbitrage Route: 50% discount on shipping fees!
-            surcharge = Math.max(0, surcharge / 2);
-        }
         this.cargoSurcharge = surcharge;
         this.data.set(2, this.stagedTradeCount);
         this.data.set(3, this.stagedItemCount);
@@ -660,12 +769,17 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         if (!hasValidChart()) return false;
         BlockPos target = getTargetPos();
         if (target == null) return false;
-        HarborTradeOffer trade = getSelectedTrade();
-        if (trade == null) return false;
 
         MaritimeTradeRegion targetRegion = MaritimeTradeRegion.fromLevelAndPos(this.level, target);
-        MaritimeTradeRegion originRegion = MaritimeTradeRegion.fromLevelAndPos(this.level, this.currentPos);
+        MaritimeTradeRegion originRegion = MaritimeTradeRegion.fromLevelAndPos(this.level, resolveOriginPos());
 
+        for (AnchorPointBlockEntity.TradePresetEntry entry : this.stagedPresetEntries) {
+            if (MaritimeTradeRegion.isArbitrageRoute(originRegion, targetRegion, entry.offer().getResult().getItem())) {
+                return true;
+            }
+        }
+        HarborTradeOffer trade = getSelectedTrade();
+        if (trade == null) return false;
         return MaritimeTradeRegion.isArbitrageRoute(originRegion, targetRegion, trade.getResult().getItem());
     }
 
@@ -747,6 +861,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         String homeHarborName = "Home Port";
         if (this.level.getBlockEntity(origin) instanceof AnchorPointBlockEntity anchor) {
             homeHarborName = anchor.getHarborName();
+            anchor.setOwnerUUID(player.getUUID());
             if (!this.stagedPresetEntries.isEmpty()) {
                 anchor.setSavedTradePreset(this.stagedPresetEntries);
             }
@@ -770,11 +885,14 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         tradeBoat.setRouteWaypoints(NauticalChartItem.getWaypoints(getChartStack()));
         tradeBoat.setVoyageTarget(target, destHarbor);
         tradeBoat.setSender(player);
-        tradeBoat.setCustomName(Component.literal("Trade Ship"));
+        tradeBoat.setCustomName(Component.translatable("entity.currents_of_trade.trade_boat"));
         tradeBoat.setCustomNameVisible(true);
 
         // Configure as two-way Trade Mission carrying all staged rewards
         tradeBoat.setTradeMission(origin, homeHarborName, this.stagedRewards);
+        if (this.level.getBlockEntity(origin) instanceof AnchorPointBlockEntity originAnchor) {
+            originAnchor.applyOutboundShipSpecialization(tradeBoat);
+        }
 
         // Put all staged payment items in the boat's inventory for the outbound voyage
         for (int i = 0; i < this.stagedPayments.size() && i < tradeBoat.getContainerSize(); i++) {
@@ -789,6 +907,7 @@ public class RequestTradeMenu extends AbstractContainerMenu {
         this.stagedPayments.clear();
         this.stagedRewards.clear();
         this.stagedPresetEntries.clear();
+        this.stagedTargetPos = null;
         this.stagedTradeCount = 0;
         this.stagedItemCount = 0;
         this.cargoSurcharge = 0;

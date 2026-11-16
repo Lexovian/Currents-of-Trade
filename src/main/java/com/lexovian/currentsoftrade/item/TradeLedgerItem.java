@@ -118,6 +118,15 @@ public class TradeLedgerItem extends Item {
 
             if (player instanceof ServerPlayer serverPlayer) {
                 serverPlayer.inventoryMenu.broadcastChanges();
+                if (serverPlayer.getServer() != null) {
+                    net.minecraft.advancements.Advancement adv = serverPlayer.getServer().getAdvancements()
+                            .getAdvancement(new net.minecraft.resources.ResourceLocation(CurrentsofTrade.MODID, "sealed_contract"));
+                    if (adv != null) {
+                        for (String criterion : adv.getCriteria().keySet()) {
+                            serverPlayer.getAdvancements().award(adv, criterion);
+                        }
+                    }
+                }
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);

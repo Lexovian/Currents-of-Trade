@@ -64,11 +64,6 @@ public class HarbormasterTrades {
         // Level 2 — Apprentice: Spices, aromatics, elixirs & navigation equipment
         // ══════════════════════════════════════════════════════════════════════════════
 
-        // Regional Spices & Aromatics:
-        // Arid: sells Spices cheap (1 dbl).
-        // Cold: buys Tea Bricks & Vanilla for 6 Doubloons (2x high demand!).
-        // Tropical: sells Vanilla cheap (1 dbl).
-        // Temperate: sells Tea Bricks cheap (2 dbl).
         trades.get(2).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2), 12, 10, 0.05F).getOffer(null, rng);
             case COLD -> new BasicItemListing(new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6), 12, 10, 0.05F).getOffer(null, rng);
@@ -81,7 +76,6 @@ public class HarbormasterTrades {
             default   -> new BasicItemListing(new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), 12, 10, 0.05F).getOffer(null, rng);
         }));
 
-        // Regional Frankincense Tears & Spiced Cacao Elixir:
         trades.get(2).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 12, 10, 0.05F).getOffer(null, rng);
             case TROPICAL -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), 12, 10, 0.05F).getOffer(null, rng);
@@ -91,17 +85,13 @@ public class HarbormasterTrades {
 
         trades.get(2).add(new BasicItemListing(new ItemStack(Items.COPPER_INGOT, 4), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), 16, 5, 0.05F));
         trades.get(2).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(Items.COMPASS, 1), new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1), 12, 10, 0.05F));
+        trades.get(2).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.BOSUNS_WHISTLE.get(), 1), 6, 10, 0.05F));
         trades.get(2).add(new BasicItemListing(new ItemStack(Items.EMERALD, 4), new ItemStack(Items.SPYGLASS, 1), 8, 10, 0.05F));
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Level 3 — Journeyman: Trade commodities & harbor tools
         // ══════════════════════════════════════════════════════════════════════════════
 
-        // Regional Luxury Goods:
-        // Arid: sells Silk Bale cheap (4 dbl).
-        // Tropical: sells Sandalwood cheap (2 dbl); buys Porcelain for 12 dbl (2x!).
-        // Temperate: sells Porcelain cheap (4 dbl); buys Sandalwood for 8 dbl.
-        // Cold: sells Amber cheap (3 dbl); buys Silk for 10 dbl.
         trades.get(3).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), 8, 20, 0.05F).getOffer(null, rng);
             case TROPICAL -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 2), 10, 15, 0.05F).getOffer(null, rng);
@@ -116,7 +106,6 @@ public class HarbormasterTrades {
             default -> new BasicItemListing(new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7), 8, 20, 0.05F).getOffer(null, rng);
         }));
 
-        // Regional Saffron, Dragon's Blood Resin & Tyrian Purple:
         trades.get(3).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), 10, 15, 0.05F).getOffer(null, rng);
             case TROPICAL -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 8, 20, 0.05F).getOffer(null, rng);
@@ -132,6 +121,7 @@ public class HarbormasterTrades {
         }));
 
         trades.get(3).add(new BasicItemListing(new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 2), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), 10, 15, 0.05F));
+        trades.get(3).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.TRADE_CHARTER.get(), 1), 6, 20, 0.05F));
         trades.get(3).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(Items.BOOK, 1), new ItemStack(CurrentsofTrade.TRADE_LEDGER.get(), 1), 8, 20, 0.05F));
         trades.get(3).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.ANCHOR_POINT_ITEM.get(), 1), 6, 20, 0.05F));
 
@@ -139,14 +129,12 @@ public class HarbormasterTrades {
         // Level 4 — Expert: Relics, artisan crafts & nautical instruments
         // ══════════════════════════════════════════════════════════════════════════════
 
-        // Arid pays 10 Doubloons for Amber Vial (2x payout!)
         trades.get(4).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10), 8, 20, 0.05F).getOffer(null, rng);
             case COLD -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), 8, 20, 0.05F).getOffer(null, rng);
             default   -> new BasicItemListing(new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), 8, 20, 0.05F).getOffer(null, rng);
         }));
 
-        // Regional Damascus Steel, Sea Ivory & Carved Jade Figurine exports:
         trades.get(4).add(new RegionalTradeListing((region, rng) -> switch (region) {
             case ARID -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1), 6, 25, 0.05F).getOffer(null, rng);
             case COLD -> new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), 6, 25, 0.05F).getOffer(null, rng);
@@ -160,6 +148,8 @@ public class HarbormasterTrades {
         trades.get(4).add(new BasicItemListing(new ItemStack(Items.NAUTILUS_SHELL, 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), 8, 20, 0.05F));
         trades.get(4).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1), 4, 25, 0.05F));
         trades.get(4).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.SALVAGE_DREDGE.get(), 1), 4, 20, 0.05F));
+        trades.get(4).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10), new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get(), 1), 4, 25, 0.05F));
+        trades.get(4).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.TRADE_CHARTER.get(), 1), 8, 20, 0.05F));
         trades.get(4).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1), new ItemStack(Items.EMERALD, 4), new ItemStack(Items.CLOCK, 1), 8, 15, 0.05F));
 
         // ══════════════════════════════════════════════════════════════════════════════
@@ -181,6 +171,7 @@ public class HarbormasterTrades {
 
         trades.get(5).add(new BasicItemListing(new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 12), 6, 30, 0.05F));
         trades.get(5).add(new BasicItemListing(new ItemStack(Items.HEART_OF_THE_SEA, 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 16), 4, 30, 0.05F));
+        trades.get(5).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 8), new ItemStack(Items.SPYGLASS, 1), new ItemStack(CurrentsofTrade.CAPTAINS_SPYGLASS.get(), 1), 4, 30, 0.05F));
         trades.get(5).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 24), new ItemStack(Items.OAK_BOAT, 1), new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1), 4, 30, 0.05F));
         trades.get(5).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 36), new ItemStack(Items.OAK_CHEST_BOAT, 1), new ItemStack(CurrentsofTrade.CARGO_BOAT_ITEM.get(), 1), 4, 30, 0.05F));
         trades.get(5).add(new BasicItemListing(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 32), new ItemStack(Items.EMERALD, 16), new ItemStack(Items.CONDUIT, 1), 3, 30, 0.05F));

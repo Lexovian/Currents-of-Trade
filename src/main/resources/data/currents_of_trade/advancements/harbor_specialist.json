@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:anchor_point"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.harbor_specialist.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.harbor_specialist.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "currents_of_trade:fair_winds",
+  "criteria": {
+    "specialized_harbor": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

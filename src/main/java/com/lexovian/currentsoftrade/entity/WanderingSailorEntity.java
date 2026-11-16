@@ -151,6 +151,8 @@ public class WanderingSailorEntity extends WanderingTrader {
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1),5, 8,  0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
         poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.BOSUNS_WHISTLE.get(), 1),     3, 8,  0.05F));
+        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.TRADE_CHARTER.get(), 1),      4, 12, 0.05F));
         // Reverse: sailor buys nautilus shells
         poolA.add(new MerchantOffer(new ItemStack(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),           4, 10, 0.05F));
         // Small vanilla food option — intentionally placed last so it has lower draw chance
@@ -169,6 +171,8 @@ public class WanderingSailorEntity extends WanderingTrader {
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),     3, 18, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.CAPTAINS_SPYGLASS.get(), 1),  2, 20, 0.05F));
+        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 9),  new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get(), 1),     2, 22, 0.05F));
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
         // Reverse: sailor buys ammonite fossils & sea ivory
         poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));

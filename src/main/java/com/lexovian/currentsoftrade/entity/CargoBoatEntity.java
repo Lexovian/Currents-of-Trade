@@ -44,7 +44,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
     public CargoBoatEntity(EntityType<? extends Boat> entityType, Level level) {
         super(entityType, level);
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
-        this.setCustomName(Component.literal("Cargo Ship"));
+        this.setCustomName(Component.translatable("entity.currents_of_trade.cargo_boat"));
         this.setCustomNameVisible(true);
     }
 
@@ -56,7 +56,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
         this.zo = z;
         this.updateParts();
         this.cruiseSpeed = (Config.CARGO_BOAT_SPEED != null) ? Config.CARGO_BOAT_SPEED.get() : 0.9;
-        this.setCustomName(Component.literal("Cargo Ship"));
+        this.setCustomName(Component.translatable("entity.currents_of_trade.cargo_boat"));
         this.setCustomNameVisible(true);
     }
 
@@ -91,7 +91,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
     }
 
     public void setBannerStack(ItemStack stack) {
-        this.entityData.set(BANNER_STACK, stack.copy());
+        this.entityData.set(BANNER_STACK, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
     }
 
     @Nullable
@@ -108,11 +108,75 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     // --- Tick Override (Player Control Physics) ---
 
+    @Nullable private Vec3 summonTarget = null;
+    private int summonTicks = 0;
+
+    public void summonToward(Vec3 target) {
+        if (!this.isPlayerControlled()) return;
+        this.summonTarget = target;
+        this.summonTicks = 120;
+    }
+
+    private void tickSummonGlide() {
+        if (this.summonTicks <= 0 || this.summonTarget == null) return;
+        if (this.isVehicle() || !this.isPlayerControlled()) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        this.summonTicks--;
+        double dx = this.summonTarget.x - this.getX();
+        double dz = this.summonTarget.z - this.getZ();
+        double dist = Math.hypot(dx, dz);
+        if (dist <= 2.3D || this.summonTicks <= 0) {
+            Vec3 cur = this.getDeltaMovement();
+            this.setDeltaMovement(cur.x * 0.25D, cur.y, cur.z * 0.25D);
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        double nx = dx / dist;
+        double nz = dz / dist;
+        net.minecraft.core.BlockPos ahead = net.minecraft.core.BlockPos.containing(this.getX() + nx * 1.5D, this.getY(), this.getZ() + nz * 1.5D);
+        if (!this.level().getFluidState(ahead).is(net.minecraft.tags.FluidTags.WATER)
+                && !this.level().getFluidState(ahead.below()).is(net.minecraft.tags.FluidTags.WATER)) {
+            this.summonTicks = 0;
+            this.summonTarget = null;
+            return;
+        }
+        float desiredYaw = (float) (Mth.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F;
+        float diff = Mth.wrapDegrees(desiredYaw - this.getYRot());
+        this.setYRot(this.getYRot() + Mth.clamp(diff, -7.0F, 7.0F));
+        double speed = Math.min(0.20D, Math.max(0.08D, dist * 0.05D));
+        Vec3 cur = this.getDeltaMovement();
+        this.setDeltaMovement(nx * speed, cur.y, nz * speed);
+        this.hasImpulse = true;
+    }
+
+    @Override
+    protected net.minecraft.world.phys.AABB makeBoundingBox() {
+        if (this.entityData != null && this.isPlayerControlled()) {
+            double half = 1.225D;
+            return new net.minecraft.world.phys.AABB(
+                    this.getX() - half, this.getY(), this.getZ() - half,
+                    this.getX() + half, this.getY() + 0.82D, this.getZ() + half
+            );
+        }
+        return super.makeBoundingBox();
+    }
+
     @Override
     public void tick() {
         if (this.isPlayerControlled()) {
+            double prevShipX = this.getX();
+            double prevShipY = this.getY();
+            double prevShipZ = this.getZ();
             float prevYaw = this.getYRot();
             super.tick();
+
+            if (!this.level().isClientSide) {
+                this.tickSummonGlide();
+            }
 
             // Heavy steering feel for cargo ship: 8% damping (vs 14% on Sloop)
             float rawTurnDelta = Mth.wrapDegrees(this.getYRot() - prevYaw);
@@ -122,15 +186,23 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 this.yRotO = prevYaw;
             }
 
-            // Heavy cargo displacement speed limiter: ~35% slower than Sloop
+            // Heavy cargo displacement speed limiter: ~35% slower than Sloop (+20% with Captain's Tricorne)
+            boolean hasTricorne = this.getControllingPassenger() instanceof Player p
+                    && p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get());
             Vec3 delta = this.getDeltaMovement();
+            if (hasTricorne && delta.horizontalDistanceSqr() > 0.002D) {
+                delta = new Vec3(delta.x * 1.02D, delta.y, delta.z * 1.02D);
+                this.setDeltaMovement(delta);
+            }
             double horizontalSpeed = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
-            double maxSpeed = 0.22D;
+            double maxSpeed = hasTricorne ? 0.264D : 0.22D;
             if (horizontalSpeed > maxSpeed) {
                 double scale = maxSpeed / horizontalSpeed;
                 this.setDeltaMovement(delta.x * scale, delta.y, delta.z * scale);
             }
+            this.setBoundingBox(this.makeBoundingBox());
             this.updateParts();
+            ShipPart.supportDeckEntities(this, this.getShipParts(), prevShipX, prevShipY, prevShipZ, prevYaw);
             return;
         }
 
@@ -146,9 +218,14 @@ public class CargoBoatEntity extends TradeBoatEntity {
         }
 
         if (this.isPlayerControlled()) {
-            InteractionResult customResult = this.tryApplyCustomization(player, player.getItemInHand(hand));
-            if (customResult != InteractionResult.PASS) {
+            InteractionResult customResult = this.tryApplyCustomization(player, hand);
+            if (customResult.consumesAction()) {
                 return customResult;
+            }
+        } else {
+            InteractionResult harpoonRes = this.tryApplyHarpoonCustomization(player, hand);
+            if (harpoonRes.consumesAction()) {
+                return harpoonRes;
             }
         }
 
@@ -166,7 +243,11 @@ public class CargoBoatEntity extends TradeBoatEntity {
         return this.interactWithContainerVehicle(player);
     }
 
-    public InteractionResult tryApplyCustomization(Player player, ItemStack held) {
+    public InteractionResult tryApplyCustomization(Player player, InteractionHand hand) {
+        if (!this.isPlayerControlled()) return InteractionResult.PASS;
+        ItemStack held = player.getItemInHand(hand);
+        if (held.isEmpty()) return InteractionResult.PASS;
+
         // 1. Dye Sails (16 DyeColors, Royal Tyrian Purple, or Dragon's Blood Red)
         if (held.getItem() instanceof DyeItem || held.is(CurrentsofTrade.TYRIAN_PURPLE.get()) || held.is(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get())) {
             DyeColor color;
@@ -189,11 +270,13 @@ public class CargoBoatEntity extends TradeBoatEntity {
                     }
                     this.level().playSound(null, this.blockPosition(), SoundEvents.DYE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
                     player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_dyed", colorName), true);
+                    SloopEntity.awardFlagshipAdvancement(player);
                 }
                 return InteractionResult.sidedSuccess(this.level().isClientSide);
             }
         }
 
+        // 2. Wash Dyed Sails
         if ((held.is(Items.WATER_BUCKET) || held.is(Items.SPONGE) || held.is(Items.WET_SPONGE)) && this.getSailColor() >= 0) {
             if (!this.level().isClientSide) {
                 this.setSailColor(-1);
@@ -203,6 +286,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
 
+        // 3. Mount Banner / Pennant ("Flama")
         if (held.getItem() instanceof BannerItem) {
             if (!this.level().isClientSide) {
                 if (!this.getBannerStack().isEmpty() && !player.getAbilities().instabuild) {
@@ -214,8 +298,15 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 }
                 this.level().playSound(null, this.blockPosition(), SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 1.0F, 1.0F);
                 player.displayClientMessage(Component.translatable("message.currents_of_trade.cargo_banner_mounted"), true);
+                SloopEntity.awardFlagshipAdvancement(player);
             }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 4. Mount or Remove Swivel Harpoon (or Remove Banner with Shears)
+        InteractionResult harpoonRes = this.tryApplyHarpoonCustomization(player, hand);
+        if (harpoonRes.consumesAction()) {
+            return harpoonRes;
         }
 
         if (held.is(Items.SHEARS) && !this.getBannerStack().isEmpty()) {
@@ -235,14 +326,21 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
     public ItemStack createCustomizedDropStack() {
         ItemStack stack = new ItemStack(this.getDropItem());
-        if (this.hasCustomName() && !this.getCustomName().getString().equals("Cargo Ship")) {
+        if (this.hasCustomName()
+                && !this.getCustomName().equals(Component.translatable("entity.currents_of_trade.cargo_boat"))
+                && !this.getCustomName().getString().equals("Cargo Ship")) {
             stack.setHoverName(this.getCustomName());
         }
-        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()) {
+        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty() || this.hasSwivelHarpoon()) {
             CustomData.update(stack, tag -> {
-                tag.putInt("SailColor", this.getSailColor());
+                if (this.getSailColor() >= 0) {
+                    tag.putInt("SailColor", this.getSailColor());
+                }
                 if (!this.getBannerStack().isEmpty()) {
                     tag.put("BannerItem", this.getBannerStack().save(new CompoundTag()));
+                }
+                if (this.hasSwivelHarpoon()) {
+                    tag.putBoolean("SwivelHarpoon", true);
                 }
             });
         }
@@ -250,6 +348,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
     }
 
     public void loadUpgradesFromStack(ItemStack stack) {
+        if (stack.hasCustomHoverName()) {
+            this.setCustomName(stack.getHoverName());
+        }
         CustomData customData = CustomData.getOrNull(stack);
         if (customData != null) {
             CompoundTag tag = customData.copyTag();
@@ -259,14 +360,21 @@ public class CargoBoatEntity extends TradeBoatEntity {
             if (tag.contains("BannerItem")) {
                 this.setBannerStack(ItemStack.of(tag.getCompound("BannerItem")));
             }
+            if (tag.contains("SwivelHarpoon")) {
+                this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
+            }
         }
     }
 
     @Override
     public void destroy(DamageSource source) {
+        if (!this.isPlayerControlled()) {
+            super.destroy(source);
+            return;
+        }
         this.chestVehicleDestroyed(source, this.level(), this);
         this.kill();
-        if (this.isPlayerControlled() && this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+        if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.spawnAtLocation(this.createCustomizedDropStack());
         }
     }
@@ -277,11 +385,23 @@ public class CargoBoatEntity extends TradeBoatEntity {
     public boolean hurt(DamageSource source, float amount) {
         if (this.isPlayerControlled()) {
             if (this.isInvulnerableTo(source)) return false;
-            if (!this.level().isClientSide && !this.isRemoved()) {
-                this.destroy(source);
-                return true;
+            if (this.level().isClientSide || this.isRemoved()) return true;
+            this.setHurtDir(-this.getHurtDir());
+            this.setHurtTime(10);
+            this.markHurt();
+            float effectiveAmount = this.drydockReinforced ? amount * 0.5F : amount;
+            this.setDamage(this.getDamage() + effectiveAmount * 10.0F);
+            boolean instantBreak = source.getEntity() instanceof Player player && player.getAbilities().instabuild;
+            if (instantBreak || this.getDamage() > 40.0F) {
+                this.ejectPassengers();
+                if (instantBreak) {
+                    this.chestVehicleDestroyed(source, this.level(), this);
+                    this.discard();
+                } else {
+                    this.destroy(source);
+                }
             }
-            return false;
+            return true;
         }
         return super.hurt(source, amount);
     }

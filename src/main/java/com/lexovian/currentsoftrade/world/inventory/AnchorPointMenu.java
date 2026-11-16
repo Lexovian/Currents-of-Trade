@@ -2,6 +2,7 @@ package com.lexovian.currentsoftrade.world.inventory;
 
 import com.lexovian.currentsoftrade.CurrentsofTrade;
 import com.lexovian.currentsoftrade.block.entity.AnchorPointBlockEntity;
+import com.lexovian.currentsoftrade.world.harbor.HarborSpecialization;
 import com.lexovian.currentsoftrade.world.harbor.HarborUpgradeCost;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -32,11 +33,13 @@ public class AnchorPointMenu extends AbstractContainerMenu {
     }
 
     private static ContainerData createClientContainerData(BlockPos pos, int level) {
-        SimpleContainerData clientData = new SimpleContainerData(4);
+        SimpleContainerData clientData = new SimpleContainerData(6);
         clientData.set(0, level);
         clientData.set(1, pos.getX());
         clientData.set(2, pos.getY());
         clientData.set(3, pos.getZ());
+        clientData.set(4, 0);
+        clientData.set(5, 0);
         return clientData;
     }
 
@@ -62,6 +65,18 @@ public class AnchorPointMenu extends AbstractContainerMenu {
                     case 1 -> pos.getX();
                     case 2 -> pos.getY();
                     case 3 -> pos.getZ();
+                    case 4 -> access.evaluate((level, p) -> {
+                        if (level.getBlockEntity(p) instanceof AnchorPointBlockEntity a) {
+                            return a.getSpecialization().getIndex();
+                        }
+                        return 0;
+                    }).orElse(0);
+                    case 5 -> access.evaluate((level, p) -> {
+                        if (level.getBlockEntity(p) instanceof AnchorPointBlockEntity a && a.isSpecializationChosen()) {
+                            return 1;
+                        }
+                        return 0;
+                    }).orElse(0);
                     default -> 0;
                 };
             }
@@ -72,7 +87,7 @@ public class AnchorPointMenu extends AbstractContainerMenu {
 
             @Override
             public int getCount() {
-                return 4;
+                return 6;
             }
         };
     }
@@ -84,9 +99,8 @@ public class AnchorPointMenu extends AbstractContainerMenu {
         this.player = playerInventory.player;
         this.data = data;
 
-        boolean isMax = getHarborLevel() >= 5;
-        int invStartY = isMax ? 129 : 157;
-        int hotbarY = isMax ? 189 : 217;
+        int invStartY = 157;
+        int hotbarY = 217;
 
         // Player Inventory
         for (int row = 0; row < 3; ++row) {
@@ -155,6 +169,31 @@ public class AnchorPointMenu extends AbstractContainerMenu {
         if (level >= AnchorPointBlockEntity.MAX_HARBOR_LEVEL) return false;
         HarborUpgradeCost cost = getUpgradeCost();
         return cost != null && this.player != null && cost.canAfford(this.player);
+    }
+
+    public HarborSpecialization getSpecialization() {
+        if (this.data != null && this.data.getCount() >= 5) {
+            int idx = this.data.get(4);
+            if (idx > 0) return HarborSpecialization.byIndex(idx);
+        }
+        var anchor = findAnchorBE();
+        return anchor != null ? anchor.getSpecialization() : HarborSpecialization.NONE;
+    }
+
+    public boolean isSpecializationChosen() {
+        if (this.data != null && this.data.getCount() >= 6) {
+            if (this.data.get(5) != 0) return true;
+        }
+        var anchor = findAnchorBE();
+        return anchor != null && anchor.isSpecializationChosen();
+    }
+
+    public boolean canAffordSpecializationSwitch() {
+        if (!isSpecializationChosen()) return true;
+        if (this.player == null) return false;
+        if (this.player.getAbilities().instabuild) return true;
+        return AnchorPointBlockEntity.countPlayerMatchingItems(
+                this.player, new ItemStack(CurrentsofTrade.DOUBLOON.get())) >= HarborSpecialization.SWITCH_COST_DOUBLOONS;
     }
 
     // --- Container Operations ---

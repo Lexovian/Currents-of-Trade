@@ -47,6 +47,16 @@
           "type": "minecraft:item",
           "name": "currents_of_trade:captains_pipe",
           "weight": 15
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:trade_charter",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "currents_of_trade:guild_strongbox",
+          "weight": 8
         }
       ]
     }

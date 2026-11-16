@@ -45,11 +45,26 @@ public class ModServerEvents {
     }
 
     /**
+     * Resolves Message-in-a-Bottle Buried Treasure Maps only when actually crafted (avoiding preview lag & map spam).
+     */
+    @SubscribeEvent
+    public static void onItemCrafted(net.minecraftforge.event.entity.player.PlayerEvent.ItemCraftedEvent event) {
+        if (event.getEntity().level() instanceof ServerLevel serverLevel) {
+            com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe.resolvePendingTreasureMap(
+                    event.getCrafting(), serverLevel, event.getEntity().blockPosition());
+        }
+    }
+
+    /**
      * Allows players aiming at the visual mast/sails above the hull hitbox (or riding/standing on the ship)
      * to dye sails, mount banners/pennants ("Flama"), lanterns, or copper hull sheathing with Right-Click.
      */
     @SubscribeEvent
     public static void onRightClickItem(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            com.lexovian.currentsoftrade.recipe.TreasureMapCraftingRecipe.resolvePendingTreasureMap(
+                    event.getItemStack(), serverLevel, event.getEntity().blockPosition());
+        }
         if (com.lexovian.currentsoftrade.entity.SloopEntity.tryCustomizeNearbyShip(event.getEntity(), event.getHand())) {
             event.setCancellationResult(net.minecraft.world.InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
             event.setCanceled(true);
