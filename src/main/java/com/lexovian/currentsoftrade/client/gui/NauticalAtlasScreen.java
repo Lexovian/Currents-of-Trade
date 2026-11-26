@@ -363,11 +363,11 @@ public class NauticalAtlasScreen extends Screen {
                 "Lv.5 " + Component.translatable("harbor.currents_of_trade.level.5").getString()
         };
         String[] stats = {
-                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 18, 60, 6).getString(),
-                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 27, 45, 8).getString(),
-                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 36, 30, 10).getString(),
-                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 45, 20, 12).getString(),
-                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 54, 10, 14).getString()
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 18, 60, 10).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 27, 45, 16).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 36, 30, 22).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 45, 20, 28).getString(),
+                Component.translatable("gui.currents_of_trade.atlas.tier_stats", 54, 10, 32).getString()
         };
         String[] costs = {
                 Component.translatable("gui.currents_of_trade.atlas.cost_1").getString(),

@@ -429,6 +429,9 @@ public class AnchorPointBlockEntity extends BlockEntity {
                 double pz = this.worldPosition.getZ() + 0.5;
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, px, py, pz, 14, 0.35, 0.3, 0.35, 0.05);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON, px, py, pz, 10, 0.3, 0.25, 0.3, 0.05);
+                if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    com.lexovian.currentsoftrade.world.harbor.GuildReputationData.awardReputation(serverLevel, sp, 10);
+                }
             }
 
             player.displayClientMessage(Component.translatable(
@@ -799,7 +802,8 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     private boolean containsSimilarTrade(HarborTradeOffer check) {
         for (HarborTradeOffer existing : this.harborTrades) {
-            if (ItemStack.isSameItemSameComponents(existing.getResult(), check.getResult())) {
+            if (ItemStack.isSameItemSameComponents(existing.getCostA(), check.getCostA())
+                    && ItemStack.isSameItemSameComponents(existing.getResult(), check.getResult())) {
                 return true;
             }
         }
@@ -988,11 +992,11 @@ public class AnchorPointBlockEntity extends BlockEntity {
 
     public int getMaxTradeOffers() {
         return switch (this.tradeLevel) {
-            case 2 -> 8;
-            case 3 -> 10;
-            case 4 -> 12;
-            case 5 -> 14;
-            default -> 6;
+            case 2 -> 16;
+            case 3 -> 22;
+            case 4 -> 28;
+            case 5 -> 32;
+            default -> 10;
         };
     }
 

@@ -1456,6 +1456,9 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
             this.level().playSound(null, this.blockPosition(), SoundEvents.PLAYER_SPLASH_HIGH_SPEED, SoundSource.PLAYERS, 1.0F, 1.0F);
             if (this.targetPos != null) {
                 this.level().playSound(null, this.targetPos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1.0F, 1.0F);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    com.lexovian.currentsoftrade.block.HarborBellBlock.ringNearbyBells(serverLevel, this.targetPos);
+                }
                 if (this.level().getBlockEntity(this.targetPos) instanceof AnchorPointBlockEntity targetAnchor) {
                     targetAnchor.triggerTravelCooldown();
                 }
@@ -1474,6 +1477,7 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                     targetAnchor.triggerTravelCooldown();
                 }
                 if (this.level() instanceof ServerLevel serverLevel) {
+                    com.lexovian.currentsoftrade.block.HarborBellBlock.ringNearbyBells(serverLevel, this.targetPos);
                     com.lexovian.currentsoftrade.item.TradeCharterItem.tryFulfillFromShipHold(
                             serverLevel, this.targetPos, this.homeHarborPos, this, this.tradeRewards, this.senderUUID, false);
                 }
@@ -1541,6 +1545,13 @@ public class TradeBoatEntity extends Boat implements HasCustomInventoryScreen, C
                 targetAnchor.triggerTravelCooldown();
             }
             if (this.level() instanceof ServerLevel serverLevel) {
+                com.lexovian.currentsoftrade.block.HarborBellBlock.ringNearbyBells(serverLevel, this.targetPos);
+                if (this.senderUUID != null && serverLevel.getServer() != null) {
+                    ServerPlayer sender = serverLevel.getServer().getPlayerList().getPlayer(this.senderUUID);
+                    if (sender != null) {
+                        com.lexovian.currentsoftrade.world.harbor.GuildReputationData.awardReputation(serverLevel, sender, 15);
+                    }
+                }
                 com.lexovian.currentsoftrade.item.TradeCharterItem.tryFulfillFromShipHold(
                         serverLevel, this.targetPos, this.homeHarborPos, this, null, this.senderUUID, false);
             }

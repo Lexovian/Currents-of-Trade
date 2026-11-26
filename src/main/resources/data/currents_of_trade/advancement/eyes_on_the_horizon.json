@@ -1,0 +1,23 @@
+{
+  "parent": "currents_of_trade:root",
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:captains_spyglass"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.eyes_on_the_horizon.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.eyes_on_the_horizon.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

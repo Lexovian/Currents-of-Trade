@@ -131,7 +131,7 @@ public class SalvageDredgeItem extends Item {
 
         // 30% Trade Commodities
         if (roll < 0.70F) {
-            int sub = rng.nextInt(9);
+            int sub = rng.nextInt(13);
             return switch (sub) {
                 case 0 -> new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 1 + rng.nextInt(2));
                 case 1 -> new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 1);
@@ -141,6 +141,10 @@ public class SalvageDredgeItem extends Item {
                 case 5 -> new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 1);
                 case 6 -> new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1);
                 case 7 -> new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1);
+                case 8 -> new ItemStack(CurrentsofTrade.INDIGO_DYE_CAKE.get(), 1);
+                case 9 -> new ItemStack(CurrentsofTrade.ERMINE_PELT.get(), 1);
+                case 10 -> new ItemStack(CurrentsofTrade.CINNAMON_QUILLS.get(), 1);
+                case 11 -> new ItemStack(CurrentsofTrade.VELVET_BOLT.get(), 1);
                 default -> new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 1);
             };
         }

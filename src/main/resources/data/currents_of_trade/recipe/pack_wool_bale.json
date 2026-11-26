@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "XXX",
+    "XXX"
+  ],
+  "key": {
+    "X": {
+      "item": "minecraft:white_wool"
+    }
+  },
+  "result": {
+    "id": "currents_of_trade:wool_bale",
+    "count": 1
+  }
+}

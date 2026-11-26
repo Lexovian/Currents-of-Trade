@@ -94,7 +94,11 @@ public class GuildStrongboxItem extends Item {
                 CurrentsofTrade.LUMINOUS_PEARL.get(),
                 CurrentsofTrade.SAFFRON_BUNDLE.get(),
                 CurrentsofTrade.SILK_BALE.get(),
-                CurrentsofTrade.FINE_PORCELAIN.get()
+                CurrentsofTrade.FINE_PORCELAIN.get(),
+                CurrentsofTrade.INDIGO_DYE_CAKE.get(),
+                CurrentsofTrade.ERMINE_PELT.get(),
+                CurrentsofTrade.CINNAMON_QUILLS.get(),
+                CurrentsofTrade.VELVET_BOLT.get()
         };
         Item luxury = luxuryPool[rng.nextInt(luxuryPool.length)];
         int luxuryCount = 1 + rng.nextInt(2);
@@ -110,7 +114,9 @@ public class GuildStrongboxItem extends Item {
             rewards.add(new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1));
         } else if (bonusRoll < 0.34F) {
             rewards.add(new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1));
-        } else if (bonusRoll < 0.45F) {
+        } else if (bonusRoll < 0.44F) {
+            rewards.add(new ItemStack(CurrentsofTrade.TRAWL_NET.get(), 1));
+        } else if (bonusRoll < 0.54F) {
             rewards.add(new ItemStack(Items.EMERALD, 4 + rng.nextInt(5)));
         }
 

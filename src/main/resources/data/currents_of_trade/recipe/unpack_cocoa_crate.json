@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "currents_of_trade:cocoa_crate"
+    }
+  ],
+  "result": {
+    "id": "minecraft:cocoa_beans",
+    "count": 9
+  }
+}

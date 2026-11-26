@@ -115,6 +115,9 @@ public class CargoBoatItem extends Item {
                 if (tag.getBoolean("SwivelHarpoon")) {
                     cargoBoat.setSwivelHarpoon(true);
                 }
+                if (tag.getBoolean("TrawlNet")) {
+                    cargoBoat.setTrawlNet(true);
+                }
             }
 
             level.addFreshEntity(cargoBoat);
@@ -148,6 +151,9 @@ public class CargoBoatItem extends Item {
             }
             if (tag.getBoolean("SwivelHarpoon")) {
                 tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.ship_swivel_harpoon"));
+            }
+            if (tag.getBoolean("TrawlNet")) {
+                tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.ship_trawl_net"));
             }
         }
         tooltipComponents.add(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));
