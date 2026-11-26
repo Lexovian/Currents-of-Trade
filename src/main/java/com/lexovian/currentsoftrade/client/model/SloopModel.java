@@ -52,6 +52,9 @@ public class SloopModel extends EntityModel<Boat> {
     private final ModelPart lanternBracket;
     private final ModelPart sternLantern;
     private final ModelPart swivelHarpoon;
+    private final ModelPart figureheadJade;
+    private final ModelPart figureheadIvory;
+    private final ModelPart figureheadAmmonite;
     private final ModelPart root;
 
     public SloopModel(ModelPart root) {
@@ -76,6 +79,9 @@ public class SloopModel extends EntityModel<Boat> {
         this.lanternBracket  = root.getChild("lantern_bracket");
         this.sternLantern    = root.getChild("stern_lantern");
         this.swivelHarpoon   = root.getChild("swivel_harpoon");
+        this.figureheadJade  = root.getChild("figurehead_jade");
+        this.figureheadIvory = root.getChild("figurehead_ivory");
+        this.figureheadAmmonite = root.getChild("figurehead_ammonite");
     }
 
     // --- Model Definition ---
@@ -470,6 +476,31 @@ public class SloopModel extends EntityModel<Boat> {
                         .texOffs(124, 104).addBox(-0.9F, -4.1F, -8.6F, 1.8F, 0.6F, 1.4F, new CubeDeformation(0.01F)),
                 PartPose.offset(5.0F, -8.0F, -24.0F));
 
+        // --- Ship Figureheads (Bow Prow Statues & Tusk) ---
+        root.addOrReplaceChild("figurehead_jade",
+                CubeListBuilder.create()
+                        .texOffs(24, 152).addBox(-1.6F, -1.8F, -2.2F, 3.2F, 3.6F, 2.6F)
+                        .texOffs(24, 152).addBox(-2.6F, -2.6F, -1.4F, 5.2F, 1.4F, 1.6F)
+                        .texOffs(24, 152).addBox(-1.2F, -4.2F, -2.6F, 2.4F, 2.4F, 2.4F)
+                        .texOffs(24, 152).addBox(-0.6F, -5.2F, -2.0F, 1.2F, 1.0F, 1.2F),
+                PartPose.offset(0.0F, -11.0F, -30.5F));
+
+        root.addOrReplaceChild("figurehead_ivory",
+                CubeListBuilder.create()
+                        .texOffs(24, 152).addBox(-1.4F, -1.4F, -2.0F, 2.8F, 2.8F, 2.4F)
+                        .texOffs(24, 152).addBox(-1.0F, -1.0F, -6.2F, 2.0F, 2.0F, 4.4F)
+                        .texOffs(24, 152).addBox(-0.65F, -0.65F, -10.4F, 1.3F, 1.3F, 4.4F)
+                        .texOffs(24, 152).addBox(-0.35F, -0.35F, -13.4F, 0.7F, 0.7F, 3.2F),
+                PartPose.offset(0.0F, -11.2F, -30.2F));
+
+        root.addOrReplaceChild("figurehead_ammonite",
+                CubeListBuilder.create()
+                        .texOffs(24, 152).addBox(-2.2F, -2.2F, -2.4F, 4.4F, 4.4F, 2.4F)
+                        .texOffs(24, 152).addBox(-1.5F, -3.2F, -2.8F, 3.0F, 6.4F, 1.6F)
+                        .texOffs(24, 152).addBox(-3.0F, -1.4F, -2.6F, 6.0F, 2.8F, 1.6F)
+                        .texOffs(24, 152).addBox(-1.0F, -1.0F, -3.4F, 2.0F, 2.0F, 1.2F),
+                PartPose.offset(0.0F, -11.0F, -30.5F));
+
         return LayerDefinition.create(mesh, 256, 256);
     }
 
@@ -517,6 +548,7 @@ public class SloopModel extends EntityModel<Boat> {
                 || (entity instanceof com.lexovian.currentsoftrade.entity.CargoBoatEntity c && !c.getBannerStack().isEmpty());
         boolean hasHarpoon    = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s && s.hasSwivelHarpoon())
                 || (entity instanceof com.lexovian.currentsoftrade.entity.TradeBoatEntity t && t.hasSwivelHarpoon());
+        int figureheadType    = (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity s) ? s.getFigureheadType() : 0;
 
         // Cargo Boat & Upgraded Sloop equipment:
         this.cargoCrate.visible   = isCargo;
@@ -530,11 +562,14 @@ public class SloopModel extends EntityModel<Boat> {
         if (hasHarpoon) {
             this.swivelHarpoon.yRot = -0.08F + Mth.sin(ageInTicks * 0.06F) * 0.10F;
         }
+        this.figureheadJade.visible     = (figureheadType == 1);
+        this.figureheadIvory.visible    = (figureheadType == 2);
+        this.figureheadAmmonite.visible = (figureheadType == 3);
 
         // Trade Ship & Flagship equipment:
         this.merchantAwning.visible  = isTrade;
         this.merchantDesk.visible    = isTrade;
-        this.tradeFigurehead.visible = isTrade;
+        this.tradeFigurehead.visible = isTrade && figureheadType == 0;
         this.crowsNest.visible       = isTrade;
         this.pennantStaff.visible    = isTrade || hasBanner;
         this.tradePennant.visible    = isTrade || hasBanner;
@@ -550,11 +585,13 @@ public class SloopModel extends EntityModel<Boat> {
                                  int packedLight, int packedOverlay) {
         int sailColorId = -1;
         int bowLantern = 0;
+        int figureheadType = 0;
         ItemStack bannerStack = ItemStack.EMPTY;
 
         if (entity instanceof com.lexovian.currentsoftrade.entity.SloopEntity sloop) {
             sailColorId = sloop.getSailColor();
             bowLantern = sloop.getBowLanternType();
+            figureheadType = sloop.getFigureheadType();
             bannerStack = sloop.getBannerStack();
         } else if (entity instanceof com.lexovian.currentsoftrade.entity.CargoBoatEntity cargo && cargo.isPlayerControlled()) {
             sailColorId = cargo.getSailColor();
@@ -568,12 +605,15 @@ public class SloopModel extends EntityModel<Boat> {
             pennantColorId = sailColorId;
         }
 
-        if (sailColorId >= 0 || bowLantern > 0 || pennantColorId >= 0) {
+        if (sailColorId >= 0 || bowLantern > 0 || pennantColorId >= 0 || figureheadType > 0) {
             boolean prevSailVis = this.sail.visible;
             boolean prevTopVis = this.sailTop.visible;
             boolean prevPennantVis = this.tradePennant.visible;
             boolean prevLanternVis = this.lantern.visible;
             boolean prevSternLanternVis = this.sternLantern.visible;
+            boolean prevJadeVis = this.figureheadJade.visible;
+            boolean prevIvoryVis = this.figureheadIvory.visible;
+            boolean prevAmmoniteVis = this.figureheadAmmonite.visible;
 
             if (sailColorId >= 0) {
                 this.sail.visible = false;
@@ -585,6 +625,11 @@ public class SloopModel extends EntityModel<Boat> {
             if (bowLantern > 0) {
                 this.lantern.visible = false;
                 this.sternLantern.visible = false;
+            }
+            if (figureheadType > 0) {
+                this.figureheadJade.visible = false;
+                this.figureheadIvory.visible = false;
+                this.figureheadAmmonite.visible = false;
             }
 
             this.root.render(poseStack, buffer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
@@ -614,6 +659,19 @@ public class SloopModel extends EntityModel<Boat> {
                 }
                 if (prevSternLanternVis) {
                     this.sternLantern.render(poseStack, buffer, 0xF000F0, packedOverlay, lr, lg, lb, 1.0F);
+                }
+            }
+
+            if (figureheadType > 0) {
+                this.figureheadJade.visible = prevJadeVis;
+                this.figureheadIvory.visible = prevIvoryVis;
+                this.figureheadAmmonite.visible = prevAmmoniteVis;
+                if (prevJadeVis) {
+                    this.figureheadJade.render(poseStack, buffer, packedLight, packedOverlay, 0.25F, 0.85F, 0.60F, 1.0F);
+                } else if (prevIvoryVis) {
+                    this.figureheadIvory.render(poseStack, buffer, packedLight, packedOverlay, 0.97F, 0.96F, 0.89F, 1.0F);
+                } else if (prevAmmoniteVis) {
+                    this.figureheadAmmonite.render(poseStack, buffer, packedLight, packedOverlay, 0.90F, 0.71F, 0.30F, 1.0F);
                 }
             }
             return;

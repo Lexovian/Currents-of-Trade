@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "currents_of_trade:wool_bale"
+    }
+  ],
+  "result": {
+    "item": "minecraft:white_wool",
+    "count": 9
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:chicken",
+    "minecraft:rabbit",
+    "minecraft:parrot",
+    "minecraft:cow",
+    "minecraft:sheep",
+    "minecraft:pig",
+    "minecraft:goat",
+    "minecraft:cat",
+    "minecraft:fox",
+    "minecraft:ocelot",
+    "minecraft:frog",
+    "minecraft:mooshroom",
+    {
+      "id": "minecraft:armadillo",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:capuchin_monkey",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:crow",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:toucan",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:sugar_glider",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:jerboa",
+      "required": false
+    },
+    {
+      "id": "naturalist:robin",
+      "required": false
+    },
+    {
+      "id": "naturalist:bluejay",
+      "required": false
+    },
+    {
+      "id": "naturalist:canary",
+      "required": false
+    },
+    {
+      "id": "naturalist:duck",
+      "required": false
+    },
+    {
+      "id": "naturalist:snail",
+      "required": false
+    },
+    {
+      "id": "crittersandcompanions:ferret",
+      "required": false
+    }
+  ]
+}

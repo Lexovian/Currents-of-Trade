@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " P ",
+    "NGI",
+    " P "
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:purple_dye"
+    },
+    "N": {
+      "item": "minecraft:nautilus_shell"
+    },
+    "G": {
+      "item": "minecraft:glass_bottle"
+    },
+    "I": {
+      "item": "minecraft:glow_ink_sac"
+    }
+  },
+  "result": {
+    "item": "currents_of_trade:tyrian_purple",
+    "count": 1
+  }
+}

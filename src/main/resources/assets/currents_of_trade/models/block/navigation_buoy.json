@@ -1,0 +1,100 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "float": "currents_of_trade:block/navigation_buoy_float",
+    "lantern": "currents_of_trade:block/navigation_buoy_lantern",
+    "particle": "currents_of_trade:block/navigation_buoy_float"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        5,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#float"
+        },
+        "south": {
+          "texture": "#float"
+        },
+        "east": {
+          "texture": "#float"
+        },
+        "west": {
+          "texture": "#float"
+        },
+        "up": {
+          "texture": "#float"
+        },
+        "down": {
+          "texture": "#float"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        5,
+        6
+      ],
+      "to": [
+        10,
+        11,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#float"
+        },
+        "south": {
+          "texture": "#float"
+        },
+        "east": {
+          "texture": "#float"
+        },
+        "west": {
+          "texture": "#float"
+        }
+      }
+    },
+    {
+      "from": [
+        4.5,
+        11,
+        4.5
+      ],
+      "to": [
+        11.5,
+        16,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#lantern"
+        },
+        "south": {
+          "texture": "#lantern"
+        },
+        "east": {
+          "texture": "#lantern"
+        },
+        "west": {
+          "texture": "#lantern"
+        },
+        "up": {
+          "texture": "#lantern"
+        },
+        "down": {
+          "texture": "#lantern"
+        }
+      }
+    }
+  ]
+}

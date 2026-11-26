@@ -233,6 +233,23 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
                     return List.of();
                 }
 
+                // Reject if the dock interior/pier is buried inside a hill or cliffside
+                int buriedBlocks = 0;
+                for (int step = 2; step <= 14; step += 2) {
+                    BlockPos mid = StructureTemplate.calculateRelativePosition(settings, new BlockPos(5, 3, step)).offset(offset);
+                    if (serverLevel.hasChunk(mid.getX() >> 4, mid.getZ() >> 4)) {
+                        var st = serverLevel.getBlockState(mid);
+                        if (!st.isAir() && !st.canBeReplaced() && !serverLevel.getFluidState(mid).is(FluidTags.WATER)) {
+                            buriedBlocks++;
+                        }
+                    }
+                }
+                if (buriedBlocks >= 3) {
+                    LOGGER.info("[Currents of Trade] Rejecting buried dock placement at {} (buriedBlocks={})", pierWorldPos, buriedBlocks);
+                    markRejected(pierWorldPos);
+                    return List.of();
+                }
+
                 synchronized (PLACED_DOCKS) {
                     PLACED_DOCKS.put(pierWorldPos, System.currentTimeMillis());
                 }
@@ -260,10 +277,36 @@ public class CoastalWaterCheckProcessor extends StructureProcessor {
             }
 
             if (originalBlockInfos != null && originalBlockInfos.size() == processedBlockInfos.size()) {
+                Set<BlockPos> occupied = new HashSet<>(processedBlockInfos.size() * 2);
+                for (StructureTemplate.StructureBlockInfo info : processedBlockInfos) {
+                    occupied.add(info.pos());
+                }
+                Set<BlockPos> carved = new HashSet<>();
+
                 for (int i = 0; i < originalBlockInfos.size(); i++) {
                     StructureTemplate.StructureBlockInfo orig = originalBlockInfos.get(i);
+                    BlockPos worldBlockPos = processedBlockInfos.get(i).pos();
+
+                    // Carve intruding shoreline grass/dirt/foliage above dock floor & pier walkway planks
+                    if (orig.pos().getY() <= 1 && (orig.state().is(Blocks.OAK_PLANKS)
+                            || orig.state().is(Blocks.SPRUCE_PLANKS)
+                            || orig.state().is(Blocks.SPRUCE_SLAB)
+                            || orig.state().is(Blocks.COBBLESTONE)
+                            || orig.state().is(Blocks.STONE_BRICKS))) {
+                        for (int dy = 1; dy <= 3; dy++) {
+                            BlockPos abovePos = worldBlockPos.above(dy);
+                            if (occupied.contains(abovePos) || carved.contains(abovePos)) continue;
+                            if (!serverLevel.hasChunk(abovePos.getX() >> 4, abovePos.getZ() >> 4)) continue;
+                            var existing = serverLevel.getBlockState(abovePos);
+                            if (!existing.isAir() && !serverLevel.getFluidState(abovePos).is(FluidTags.WATER)) {
+                                carved.add(abovePos);
+                                result.add(new StructureTemplate.StructureBlockInfo(abovePos, Blocks.AIR.defaultBlockState(), null));
+                            }
+                        }
+                    }
+
                     if (orig.pos().getY() == 0) {
-                        BlockPos worldBottomPos = processedBlockInfos.get(i).pos();
+                        BlockPos worldBottomPos = worldBlockPos;
                         boolean isPiling = orig.state().is(Blocks.STRIPPED_SPRUCE_LOG);
                         boolean isFoundation = orig.state().is(Blocks.COBBLESTONE) || orig.state().is(Blocks.STONE_BRICKS);
 

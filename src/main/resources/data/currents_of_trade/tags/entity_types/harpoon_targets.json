@@ -1,0 +1,80 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:drowned",
+    "minecraft:guardian",
+    "minecraft:elder_guardian",
+    {
+      "id": "myths_of_the_sea:kraken",
+      "required": false
+    },
+    {
+      "id": "myths_of_the_sea:leviathan",
+      "required": false
+    },
+    {
+      "id": "myths_of_the_sea:hippocampus",
+      "required": false
+    },
+    {
+      "id": "myths_of_the_sea:abaia",
+      "required": false
+    },
+    {
+      "id": "myths_of_the_sea:bunyip",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:cachalot_whale",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:giant_squid",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:skelewag",
+      "required": false
+    },
+    {
+      "id": "iceandfire:sea_serpent",
+      "required": false
+    },
+    {
+      "id": "iceandfire:siren",
+      "required": false
+    },
+    {
+      "id": "aquamirae:eel",
+      "required": false
+    },
+    {
+      "id": "aquamirae:maw",
+      "required": false
+    },
+    {
+      "id": "aquamirae:anglerfish",
+      "required": false
+    },
+    {
+      "id": "aquamirae:captain_cornelia",
+      "required": false
+    },
+    {
+      "id": "cataclysm:the_leviathan",
+      "required": false
+    },
+    {
+      "id": "cataclysm:deepling",
+      "required": false
+    },
+    {
+      "id": "cataclysm:deepling_brute",
+      "required": false
+    },
+    {
+      "id": "cataclysm:deepling_angler",
+      "required": false
+    }
+  ]
+}

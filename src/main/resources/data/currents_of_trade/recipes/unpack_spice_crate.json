@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "currents_of_trade:spice_crate"
+    }
+  ],
+  "result": {
+    "item": "currents_of_trade:spice_sack",
+    "count": 9
+  }
+}

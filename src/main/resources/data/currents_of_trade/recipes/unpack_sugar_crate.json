@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "currents_of_trade:sugar_crate"
+    }
+  ],
+  "result": {
+    "item": "minecraft:sugar",
+    "count": 9
+  }
+}

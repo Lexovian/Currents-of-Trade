@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "currents_of_trade:block/harbor_bell"
+    },
+    "powered=true": {
+      "model": "currents_of_trade:block/harbor_bell"
+    }
+  }
+}

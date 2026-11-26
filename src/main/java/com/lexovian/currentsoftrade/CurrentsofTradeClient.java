@@ -76,7 +76,10 @@ public class CurrentsofTradeClient {
         event.registerEntityRenderer(CurrentsofTrade.SLOOP.get(), SloopRenderer::new);
         event.registerEntityRenderer(CurrentsofTrade.TRADE_BOAT.get(), SloopRenderer::new);
         event.registerEntityRenderer(CurrentsofTrade.CARGO_BOAT.get(), SloopRenderer::new);
-        event.registerEntityRenderer(CurrentsofTrade.WANDERING_SAILOR.get(), WanderingTraderRenderer::new);
+        event.registerEntityRenderer(CurrentsofTrade.WANDERING_SAILOR.get(),
+                com.lexovian.currentsoftrade.client.renderer.WanderingSailorRenderer::new);
+        event.registerEntityRenderer(CurrentsofTrade.DRIFTING_FLOTSAM.get(),
+                com.lexovian.currentsoftrade.client.renderer.DriftingFlotsamRenderer::new);
     }
 
     @EventBusSubscriber(modid = CurrentsofTrade.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)

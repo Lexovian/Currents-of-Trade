@@ -72,8 +72,8 @@ public class Config {
         BUILDER.comment("Spawning and village world generation settings").push("worldgen");
 
         WANDERING_SAILOR_CHECK_INTERVAL = BUILDER
-                .comment("Interval in game ticks between harbor arrival checks for the Wandering Sailor (default: 12000 ticks / 10 minutes)")
-                .defineInRange("wanderingSailorCheckInterval", 12000, 600, 72000);
+                .comment("Interval in game ticks between harbor arrival checks for the Wandering Sailor (default: 8400 ticks / 7 minutes)")
+                .defineInRange("wanderingSailorCheckInterval", 8400, 600, 72000);
 
         WANDERING_SAILOR_SPAWN_CHANCE = BUILDER
                 .comment("Probability (0.0 to 1.0) of a Wandering Sailor docking at a valid harbor per check (default: 0.35)")

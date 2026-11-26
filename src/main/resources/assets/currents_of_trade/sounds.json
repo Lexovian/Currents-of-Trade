@@ -1,0 +1,20 @@
+{
+  "bosuns_whistle": {
+    "subtitle": "subtitles.currents_of_trade.bosuns_whistle",
+    "sounds": [
+      "currents_of_trade:bosuns_whistle"
+    ]
+  },
+  "harpoon_fire": {
+    "subtitle": "subtitles.currents_of_trade.harpoon_fire",
+    "sounds": [
+      "currents_of_trade:harpoon_fire"
+    ]
+  },
+  "ship_horn": {
+    "subtitle": "subtitles.currents_of_trade.ship_horn",
+    "sounds": [
+      "currents_of_trade:ship_horn"
+    ]
+  }
+}

@@ -107,8 +107,16 @@ public class BosunsWhistleItem extends Item {
     }
 
     private static void playBosunCall(Level level, Player player, float pitchA, float pitchB) {
-        level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_FLUTE.value(), SoundSource.PLAYERS, 1.0F, pitchA);
-        level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.PLAYERS, 0.65F, pitchB);
+        level.playSound(null, player.blockPosition(), com.lexovian.currentsoftrade.CurrentsofTrade.BOSUNS_WHISTLE_SOUND.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp && sp.getServer() != null) {
+            var adv = sp.getServer().getAdvancements().getAdvancement(
+                    new net.minecraft.resources.ResourceLocation(com.lexovian.currentsoftrade.CurrentsofTrade.MODID, "call_of_the_bosun"));
+            if (adv != null) {
+                for (String c : adv.getCriteria().keySet()) {
+                    sp.getAdvancements().award(adv, c);
+                }
+            }
+        }
     }
 
     @Nullable

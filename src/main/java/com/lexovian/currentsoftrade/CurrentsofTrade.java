@@ -108,6 +108,17 @@ public class CurrentsofTrade {
     public static final DeferredRegister<StructureProcessorType<?>> STRUCTURE_PROCESSORS = DeferredRegister.create(Registries.STRUCTURE_PROCESSOR, MODID);
     public static final DeferredRegister<StructurePoolElementType<?>> STRUCTURE_POOL_ELEMENTS = DeferredRegister.create(Registries.STRUCTURE_POOL_ELEMENT, MODID);
     public static final DeferredRegister<Codec<? extends IGlobalLootModifier>> LOOT_MODIFIERS = DeferredRegister.create(ForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, MODID);
+    public static final DeferredRegister<net.minecraft.sounds.SoundEvent> SOUND_EVENTS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, MODID);
+
+    public static final RegistryObject<net.minecraft.sounds.SoundEvent> BOSUNS_WHISTLE_SOUND =
+            SOUND_EVENTS.register("bosuns_whistle", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(
+                    new net.minecraft.resources.ResourceLocation(MODID, "bosuns_whistle")));
+    public static final RegistryObject<net.minecraft.sounds.SoundEvent> HARPOON_FIRE_SOUND =
+            SOUND_EVENTS.register("harpoon_fire", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(
+                    new net.minecraft.resources.ResourceLocation(MODID, "harpoon_fire")));
+    public static final RegistryObject<net.minecraft.sounds.SoundEvent> SHIP_HORN_SOUND =
+            SOUND_EVENTS.register("ship_horn", () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(
+                    new net.minecraft.resources.ResourceLocation(MODID, "ship_horn")));
 
     public static final RegistryObject<StructureProcessorType<CoastalWaterCheckProcessor>> COASTAL_WATER_CHECK =
             STRUCTURE_PROCESSORS.register("coastal_water_check", () -> () -> CoastalWaterCheckProcessor.CODEC);
@@ -337,6 +348,64 @@ public class CurrentsofTrade {
     public static final RegistryObject<SwivelHarpoonItem> SWIVEL_HARPOON =
             ITEMS.register("swivel_harpoon", () -> new SwivelHarpoonItem(new Item.Properties().stacksTo(16)));
 
+    /** Navigation Buoy — floating illuminated sea marker placed directly on water; integrates with Nautical Charts. */
+    public static final RegistryObject<com.lexovian.currentsoftrade.block.NavigationBuoyBlock> NAVIGATION_BUOY = BLOCKS.register(
+            "navigation_buoy",
+            () -> new com.lexovian.currentsoftrade.block.NavigationBuoyBlock(
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.COLOR_RED)
+                            .strength(1.0F, 2.0F)
+                            .sound(SoundType.WOOD)
+                            .lightLevel(state -> 14)
+                            .noOcclusion()
+            )
+    );
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.NavigationBuoyItem> NAVIGATION_BUOY_ITEM =
+            ITEMS.register("navigation_buoy", () -> new com.lexovian.currentsoftrade.item.NavigationBuoyItem(
+                    NAVIGATION_BUOY.get(), new Item.Properties().stacksTo(16)));
+
+    /** Harbor Brass Bell — rings with a Redstone pulse when trade ships arrive; right-click for fleet status. */
+    public static final RegistryObject<com.lexovian.currentsoftrade.block.HarborBellBlock> HARBOR_BELL = BLOCKS.register(
+            "harbor_bell",
+            () -> new com.lexovian.currentsoftrade.block.HarborBellBlock(
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.GOLD)
+                            .strength(3.0F, 6.0F)
+                            .sound(SoundType.METAL)
+                            .noOcclusion()
+            )
+    );
+    public static final RegistryObject<BlockItem> HARBOR_BELL_ITEM =
+            ITEMS.register("harbor_bell", () -> new BlockItem(HARBOR_BELL.get(), new Item.Properties()));
+
+    /** Shipboard Trawl Net — mount on a Sloop or Cargo Ship to passively haul fish & sunken relics while sailing. */
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TrawlNetItem> TRAWL_NET =
+            ITEMS.register("trawl_net", () -> new com.lexovian.currentsoftrade.item.TrawlNetItem(new Item.Properties().stacksTo(16)));
+
+    // --- Exotic Regional Trade Commodities (v1.0.8) ---
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.ExoticTradeGoodItem> INDIGO_DYE_CAKE =
+            ITEMS.register("indigo_dye_cake", () -> new com.lexovian.currentsoftrade.item.ExoticTradeGoodItem("indigo_dye_cake", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.ExoticTradeGoodItem> ERMINE_PELT =
+            ITEMS.register("ermine_pelt", () -> new com.lexovian.currentsoftrade.item.ExoticTradeGoodItem("ermine_pelt", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.ExoticTradeGoodItem> CINNAMON_QUILLS =
+            ITEMS.register("cinnamon_quills", () -> new com.lexovian.currentsoftrade.item.ExoticTradeGoodItem("cinnamon_quills", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.ExoticTradeGoodItem> VELVET_BOLT =
+            ITEMS.register("velvet_bolt", () -> new com.lexovian.currentsoftrade.item.ExoticTradeGoodItem("velvet_bolt", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.AnimalCageItem> ANIMAL_CAGE =
+            ITEMS.register("animal_cage", () -> new com.lexovian.currentsoftrade.item.AnimalCageItem(new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> FISH_CRATE =
+            ITEMS.register("fish_crate", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("fish_crate", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> SALT_CRATE =
+            ITEMS.register("salt_crate", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("salt_crate", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> SPICE_CRATE =
+            ITEMS.register("spice_crate", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("spice_crate", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> COCOA_CRATE =
+            ITEMS.register("cocoa_crate", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("cocoa_crate", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> SUGAR_CRATE =
+            ITEMS.register("sugar_crate", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("sugar_crate", new Item.Properties()));
+    public static final RegistryObject<com.lexovian.currentsoftrade.item.TradeCrateItem> WOOL_BALE =
+            ITEMS.register("wool_bale", () -> new com.lexovian.currentsoftrade.item.TradeCrateItem("wool_bale", new Item.Properties()));
+
     // --- Menu Types ---
     public static final RegistryObject<MenuType<AnchorPointMenu>> ANCHOR_POINT_MENU =
             MENUS.register("anchor_point", () -> IForgeMenuType.create(AnchorPointMenu::new));
@@ -384,6 +453,16 @@ public class CurrentsofTrade {
                             .build("wandering_sailor")
             );
 
+    public static final RegistryObject<EntityType<com.lexovian.currentsoftrade.entity.DriftingFlotsamEntity>> DRIFTING_FLOTSAM =
+            ENTITY_TYPES.register("drifting_flotsam", () ->
+                    EntityType.Builder.<com.lexovian.currentsoftrade.entity.DriftingFlotsamEntity>of(
+                            com.lexovian.currentsoftrade.entity.DriftingFlotsamEntity::new, MobCategory.MISC)
+                            .sized(0.95F, 0.75F)
+                            .clientTrackingRange(10)
+                            .updateInterval(20)
+                            .build("drifting_flotsam")
+            );
+
     // --- Village & POI Integration ---
     public static final RegistryObject<PoiType> ANCHOR_POINT_POI =
             POI_TYPES.register("anchor_point_poi", () ->
@@ -412,6 +491,9 @@ public class CurrentsofTrade {
                             .displayItems((parameters, output) -> {
                                 output.accept(ANCHOR_POINT_ITEM.get());
                                 output.accept(LIGHTHOUSE_ITEM.get());
+                                output.accept(NAVIGATION_BUOY_ITEM.get());
+                                output.accept(HARBOR_BELL_ITEM.get());
+                                output.accept(TRAWL_NET.get());
                                 output.accept(CAPTAINS_TRICORNE.get());
                                 output.accept(SALVAGE_DREDGE.get());
                                 output.accept(NAUTICAL_CHART.get());
@@ -432,6 +514,17 @@ public class CurrentsofTrade {
                                 output.accept(FRANKINCENSE_TEARS.get());
                                 output.accept(TYRIAN_PURPLE.get());
                                 output.accept(DRAGONS_BLOOD_RESIN.get());
+                                output.accept(INDIGO_DYE_CAKE.get());
+                                output.accept(ERMINE_PELT.get());
+                                output.accept(CINNAMON_QUILLS.get());
+                                output.accept(VELVET_BOLT.get());
+                                output.accept(ANIMAL_CAGE.get());
+                                output.accept(FISH_CRATE.get());
+                                output.accept(SALT_CRATE.get());
+                                output.accept(SPICE_CRATE.get());
+                                output.accept(COCOA_CRATE.get());
+                                output.accept(SUGAR_CRATE.get());
+                                output.accept(WOOL_BALE.get());
                                 output.accept(MESSAGE_IN_A_BOTTLE.get());
                                 output.accept(SPICE_SACK.get());
                                 output.accept(AMBER_VIAL.get());
@@ -469,6 +562,7 @@ public class CurrentsofTrade {
         STRUCTURE_PROCESSORS.register(modEventBus);
         STRUCTURE_POOL_ELEMENTS.register(modEventBus);
         LOOT_MODIFIERS.register(modEventBus);
+        SOUND_EVENTS.register(modEventBus);
 
         modEventBus.addListener(this::addCreative);
         modEventBus.addListener(this::registerAttributes);
@@ -485,53 +579,6 @@ public class CurrentsofTrade {
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS || event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(ANCHOR_POINT_ITEM);
-            event.accept(LIGHTHOUSE_ITEM);
-        }
-        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
-            event.accept(CAPTAINS_TRICORNE);
-            event.accept(SWIVEL_HARPOON);
-        }
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(NAUTICAL_CHART);
-            event.accept(ROUTE_JOURNAL);
-            event.accept(CAPTAINS_TRICORNE);
-            event.accept(CAPTAINS_SPYGLASS);
-            event.accept(BOSUNS_WHISTLE);
-            event.accept(SWIVEL_HARPOON);
-            event.accept(TRADE_CHARTER);
-            event.accept(GUILD_STRONGBOX);
-            event.accept(SALVAGE_DREDGE);
-            event.accept(BRASS_ASTROLABE);
-            event.accept(STORM_GLASS);
-            event.accept(CAPTAINS_PIPE);
-            event.accept(MESSAGE_IN_A_BOTTLE);
-            event.accept(TRADE_LEDGER);
-            event.accept(SLOOP_ITEM);
-            event.accept(CARGO_BOAT_ITEM);
-            event.accept(TRADE_BOAT_ITEM);
-        }
-        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
-            event.accept(DOUBLOON);
-            event.accept(SILK_BALE);
-            event.accept(TEA_BRICK);
-            event.accept(FINE_PORCELAIN);
-            event.accept(SANDALWOOD);
-            event.accept(VANILLA_BUNDLE);
-            event.accept(LUMINOUS_PEARL);
-            event.accept(AMMONITE_FOSSIL);
-            event.accept(SPICE_SACK);
-            event.accept(AMBER_VIAL);
-            event.accept(SALT_POUCH);
-            event.accept(SAFFRON_BUNDLE);
-            event.accept(JADE_FIGURINE);
-            event.accept(CACAO_ELIXIR);
-            event.accept(NARWHAL_IVORY);
-            event.accept(DAMASCUS_STEEL);
-            event.accept(FRANKINCENSE_TEARS);
-            event.accept(TYRIAN_PURPLE);
-            event.accept(DRAGONS_BLOOD_RESIN);
-        }
+        // All mod items live exclusively in CURRENTS_TAB.
     }
 }

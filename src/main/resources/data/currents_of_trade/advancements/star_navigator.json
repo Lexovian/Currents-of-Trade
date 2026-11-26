@@ -1,0 +1,23 @@
+{
+  "parent": "currents_of_trade:first_chart",
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:brass_astrolabe"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.star_navigator.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.star_navigator.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

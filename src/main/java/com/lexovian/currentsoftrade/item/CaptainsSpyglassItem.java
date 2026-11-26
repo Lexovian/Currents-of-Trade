@@ -47,6 +47,15 @@ public class CaptainsSpyglassItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         player.playSound(SoundEvents.SPYGLASS_USE, 1.0F, 1.0F);
         player.awardStat(Stats.ITEM_USED.get(this));
+        if (!level.isClientSide && player instanceof net.minecraft.server.level.ServerPlayer sp && sp.getServer() != null) {
+            var adv = sp.getServer().getAdvancements().getAdvancement(
+                    new net.minecraft.resources.ResourceLocation(com.lexovian.currentsoftrade.CurrentsofTrade.MODID, "eyes_on_the_horizon"));
+            if (adv != null) {
+                for (String c : adv.getCriteria().keySet()) {
+                    sp.getAdvancements().award(adv, c);
+                }
+            }
+        }
         return ItemUtils.startUsingInstantly(level, player, hand);
     }
 

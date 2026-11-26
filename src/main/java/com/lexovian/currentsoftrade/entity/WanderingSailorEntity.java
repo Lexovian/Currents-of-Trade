@@ -107,19 +107,23 @@ public class WanderingSailorEntity extends WanderingTrader {
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2), 8, 8, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5), new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),      6, 12, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 6, 8, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.INDIGO_DYE_CAKE.get(), 2), 6, 8, 0.05F));
             }
             case 1 -> { // Boreal Amber Hanse
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),    6, 10, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1), 5, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.ERMINE_PELT.get(), 1),   5, 12, 0.05F));
             }
             case 2 -> { // Emerald Archipelago Guild
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),   6, 8, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1), 6, 8, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 6, 10, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2), new ItemStack(CurrentsofTrade.CINNAMON_QUILLS.get(), 2), 6, 8, 0.05F));
             }
             case 3 -> { // Imperial Jade Flotilla
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1), 6, 10, 0.05F));
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),  5, 14, 0.05F));
+                offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3), new ItemStack(CurrentsofTrade.VELVET_BOLT.get(), 1),    5, 12, 0.05F));
             }
             case 4 -> { // Crimson Privateer Syndicate
                 offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4), new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),      5, 14, 0.05F));
@@ -136,62 +140,130 @@ public class WanderingSailorEntity extends WanderingTrader {
         offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),     new ItemStack(Items.COOKED_SALMON, 2),             8,  1, 0.05F));
         // Reverse: sailor buys cooked fish from the player
         offers.add(new MerchantOffer(new ItemStack(Items.COOKED_COD, 8),                   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  8,  3, 0.05F));
+        // Exotic Livestock Trade: Wandering Sailors are the sole supplier of caged animals (#currents_of_trade:cageable_animals)
+        ItemStack primaryCage = com.lexovian.currentsoftrade.item.AnimalCageItem.createDeterministicCage((long) this.getId() * 7919L + 17L);
+        offers.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),     primaryCage,                                       2, 12, 0.05F));
 
-        // ── Pool A: Market Cargo — common mod goods + 1 vanilla food option ─────
-        // Sailor shows 5 randomly chosen offers from this pool.
-        List<MerchantOffer> poolA = new ArrayList<>();
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 2),         8, 2,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),         6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),          6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),     6, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2),     5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1),       5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1),5, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.BOSUNS_WHISTLE.get(), 1),     3, 8,  0.05F));
-        poolA.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.TRADE_CHARTER.get(), 1),      4, 12, 0.05F));
-        // Reverse: sailor buys nautilus shells
-        poolA.add(new MerchantOffer(new ItemStack(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),           4, 10, 0.05F));
-        // Small vanilla food option — intentionally placed last so it has lower draw chance
-        poolA.add(new MerchantOffer(new ItemStack(Items.EMERALD, 1),                   new ItemStack(Items.COOKED_SALMON, 3),                      6, 1,  0.05F));
+        // ── Pool 1: Maritime Provisions & Historical Vanilla Trade Goods (picks 4) ──
+        List<MerchantOffer> pool1 = new ArrayList<>();
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(CurrentsofTrade.SALT_POUCH.get(), 2),      8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.SPICE_SACK.get(), 2),      6, 5, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.TEA_BRICK.get(), 2),       6, 5, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.VANILLA_BUNDLE.get(), 2),  6, 5, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.SUGAR, 12),                          8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.COCOA_BEANS, 8),                     8, 3, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(Items.HONEY_BOTTLE, 3),                    6, 4, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.WHITE_WOOL, 8),                      8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.LEATHER, 6),                         8, 3, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.GLASS, 12),                          8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.PAPER, 12),                          8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.COPPER_INGOT, 8),                    8, 3, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(Items.IRON_INGOT, 4),                      6, 4, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(Items.LAPIS_LAZULI, 6),                    6, 5, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.DRIED_KELP_BLOCK, 4),                8, 2, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(Items.NAUTILUS_SHELL, 1),            new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),        4, 10, 0.05F));
+        pool1.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 1),  new ItemStack(Items.INK_SAC, 8),                         8, 2, 0.05F));
 
-        // ── Pool B: Sailor's Rarities — rare & premium mod items ─────────────────
-        // Sailor shows 4 randomly chosen offers from this pool.
-        List<MerchantOffer> poolB = new ArrayList<>();
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),      3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),      3, 18, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),      3, 18, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),     3, 18, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.CAPTAINS_SPYGLASS.get(), 1),  2, 20, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 9),  new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get(), 1),     2, 22, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
-        // Reverse: sailor buys ammonite fossils & sea ivory
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),    3, 18, 0.05F));
-        // Premium/rare — low maxUses, high value
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10), new ItemStack(Items.EMERALD, 4),  new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1),  2, 25, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 26), new ItemStack(Items.EMERALD, 6),  new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1),       1, 30, 0.05F));
-        poolB.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 18), new ItemStack(Items.EMERALD, 8),  new ItemStack(Items.HEART_OF_THE_SEA, 1),                 1, 30, 0.05F));
+        // ── Pool 2: Regional Exotic Commodities, Bulk Crates & Navigation (picks 4) ─
+        List<MerchantOffer> pool2 = new ArrayList<>();
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.FRANKINCENSE_TEARS.get(), 2), 5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.CINNAMON_QUILLS.get(), 2),    5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.INDIGO_DYE_CAKE.get(), 2),    5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SAFFRON_BUNDLE.get(), 2),     5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.CACAO_ELIXIR.get(), 1),       5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.SANDALWOOD.get(), 1),         5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.FINE_PORCELAIN.get(), 1),     4, 10, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.TYRIAN_PURPLE.get(), 1),      3, 15, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.DRAGONS_BLOOD_RESIN.get(), 1), 3, 15, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.ERMINE_PELT.get(), 1),        3, 15, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.VELVET_BOLT.get(), 1),        3, 15, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.SILK_BALE.get(), 1),          3, 15, 0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.MESSAGE_IN_A_BOTTLE.get(), 1), 5, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 2),  new ItemStack(CurrentsofTrade.NAUTICAL_CHART.get(), 1),     4, 5,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 3),  new ItemStack(CurrentsofTrade.BOSUNS_WHISTLE.get(), 1),     3, 8,  0.05F));
+        pool2.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.TRADE_CHARTER.get(), 1),      4, 12, 0.05F));
 
-        // ── Shuffle both pools with a seed derived from this entity's ID ──────────
-        // Same sailor → same combo each session; different sailors → different combos.
+        // ── Pool 3: Rare Relics, Shipwright Gear & Extra Exotic Livestock (picks 3) ─
+        List<MerchantOffer> pool3 = new ArrayList<>();
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 4),  new ItemStack(CurrentsofTrade.AMBER_VIAL.get(), 1),         4, 12, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1),    3, 15, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),  new ItemStack(CurrentsofTrade.STORM_GLASS.get(), 1),        3, 15, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.JADE_FIGURINE.get(), 1),      3, 18, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),      3, 18, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.DAMASCUS_STEEL.get(), 1),     3, 18, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.BRASS_ASTROLABE.get(), 1),    3, 18, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  new ItemStack(CurrentsofTrade.CAPTAINS_PIPE.get(), 1),      2, 20, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 7),  new ItemStack(CurrentsofTrade.CAPTAINS_SPYGLASS.get(), 1),  2, 20, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 9),  new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get(), 1),     2, 22, 0.05F));
+        ItemStack secondaryCage = com.lexovian.currentsoftrade.item.AnimalCageItem.createDeterministicCage((long) this.getId() * 104729L + 31L);
+        EntityType<?> primaryType = com.lexovian.currentsoftrade.item.AnimalCageItem.getStoredAnimalType(primaryCage);
+        for (int attempt = 1; attempt <= 12 && primaryType != null && primaryType == com.lexovian.currentsoftrade.item.AnimalCageItem.getStoredAnimalType(secondaryCage); attempt++) {
+            secondaryCage = com.lexovian.currentsoftrade.item.AnimalCageItem.createDeterministicCage((long) this.getId() * 104729L + 31L + attempt * 997L);
+        }
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),  secondaryCage, 2, 14, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.AMMONITE_FOSSIL.get(), 1), new ItemStack(CurrentsofTrade.DOUBLOON.get(), 5),    3, 15, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.NARWHAL_IVORY.get(), 1),   new ItemStack(CurrentsofTrade.DOUBLOON.get(), 6),    3, 18, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 10), new ItemStack(Items.EMERALD, 4),  new ItemStack(CurrentsofTrade.LUMINOUS_PEARL.get(), 1),  2, 25, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 26), new ItemStack(Items.EMERALD, 6),  new ItemStack(CurrentsofTrade.SLOOP_ITEM.get(), 1),       1, 30, 0.05F));
+        pool3.add(new MerchantOffer(new ItemStack(CurrentsofTrade.DOUBLOON.get(), 18), new ItemStack(Items.EMERALD, 8),  new ItemStack(Items.HEART_OF_THE_SEA, 1),                 1, 30, 0.05F));
+
+        // ── Shuffle all 3 pools with deterministic seeds derived from this sailor's ID ─
         java.util.Random rng = new java.util.Random((long) this.getId() * 2654435761L);
-        Collections.shuffle(poolA, rng);
+        Collections.shuffle(pool1, rng);
         rng.setSeed((long) this.getId() * 2246822519L);
-        Collections.shuffle(poolB, rng);
+        Collections.shuffle(pool2, rng);
+        rng.setSeed((long) this.getId() * 3266489917L);
+        Collections.shuffle(pool3, rng);
 
-        // Add top 5 from Pool A and top 4 from Pool B
-        for (int i = 0; i < Math.min(5, poolA.size()); i++) offers.add(poolA.get(i));
-        for (int i = 0; i < Math.min(4, poolB.size()); i++) offers.add(poolB.get(i));
+        // Add up to 4 from Pool 1, 4 from Pool 2, and 3 from Pool 3 — strictly preventing duplicates & same-sailor buy/sell loops
+        addFilteredFromPool(offers, pool1, 4);
+        addFilteredFromPool(offers, pool2, 4);
+        addFilteredFromPool(offers, pool3, 3);
+    }
+
+    private static void addFilteredFromPool(MerchantOffers offers, List<MerchantOffer> pool, int limit) {
+        int added = 0;
+        for (MerchantOffer cand : pool) {
+            if (added >= limit) break;
+            if (!conflictsWithExisting(offers, cand)) {
+                offers.add(cand);
+                added++;
+            }
+        }
+    }
+
+    private static boolean conflictsWithExisting(MerchantOffers offers, MerchantOffer cand) {
+        ItemStack candA = cand.getBaseCostA();
+        ItemStack candRes = cand.getResult();
+        boolean candSellsItem = candA.is(CurrentsofTrade.DOUBLOON.get()) || candA.is(Items.EMERALD);
+        boolean candBuysItem = candRes.is(CurrentsofTrade.DOUBLOON.get()) || candRes.is(Items.EMERALD);
+
+        for (MerchantOffer ex : offers) {
+            ItemStack exA = ex.getBaseCostA();
+            ItemStack exRes = ex.getResult();
+            boolean exIsCurrencySwap = (exA.is(Items.EMERALD) && exRes.is(CurrentsofTrade.DOUBLOON.get()))
+                    || (exA.is(CurrentsofTrade.DOUBLOON.get()) && exRes.is(Items.EMERALD));
+            if (exIsCurrencySwap) continue;
+
+            // Block duplicate sales of the same item (allow a second Animal Cage ONLY if it holds a different species)
+            if (candSellsItem && ItemStack.isSameItem(exRes, candRes)) {
+                if (candRes.getItem() instanceof com.lexovian.currentsoftrade.item.AnimalCageItem) {
+                    EntityType<?> exAnimal = com.lexovian.currentsoftrade.item.AnimalCageItem.getStoredAnimalType(exRes);
+                    EntityType<?> candAnimal = com.lexovian.currentsoftrade.item.AnimalCageItem.getStoredAnimalType(candRes);
+                    if (exAnimal != null && exAnimal == candAnimal) return true;
+                } else {
+                    return true;
+                }
+            }
+            // Block duplicate buybacks of the same item
+            if (candBuysItem && ItemStack.isSameItem(exA, candA)) {
+                return true;
+            }
+            // Block inverse buy/sell arbitrage loop on the same sailor
+            if (candSellsItem && ItemStack.isSameItem(exA, candRes)) return true;
+            if (candBuysItem && ItemStack.isSameItem(exRes, candA)) return true;
+        }
+        return false;
     }
 
     @Override

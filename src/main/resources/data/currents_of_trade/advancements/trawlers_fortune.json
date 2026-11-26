@@ -1,0 +1,23 @@
+{
+  "parent": "currents_of_trade:fair_winds",
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:trawl_net"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.trawlers_fortune.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.trawlers_fortune.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

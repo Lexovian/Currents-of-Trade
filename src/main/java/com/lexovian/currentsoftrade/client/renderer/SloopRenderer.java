@@ -29,9 +29,12 @@ public class SloopRenderer extends EntityRenderer<Boat> {
     private static final ResourceLocation SLOOP_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/sloop.png");
     private static final ResourceLocation CARGO_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/cargo_boat.png");
     private static final ResourceLocation TRADE_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/trade_boat.png");
+    private static final ResourceLocation TRAWL_NET_TEXTURE = new ResourceLocation(CurrentsofTrade.MODID, "textures/entity/ship/trawl_net.png");
 
     private final SloopModel model;
     private final ModelPart bannerFlag;
+    private final ModelPart trawlNetRoot;
+    private final ModelPart trawlNetBag;
 
     public SloopRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -39,6 +42,40 @@ public class SloopRenderer extends EntityRenderer<Boat> {
         this.model = new SloopModel(context.bakeLayer(SloopModel.LAYER_LOCATION));
         // Bake ONLY the pure cloth "flag" child of the Banner model (excluding "pole" and "bar" so no stick ever shows)
         this.bannerFlag = context.bakeLayer(ModelLayers.BANNER).getChild("flag");
+        this.trawlNetRoot = createTrawlNetLayer().bakeRoot();
+        this.trawlNetBag = this.trawlNetRoot.getChild("net_bag");
+    }
+
+    private static net.minecraft.client.model.geom.builders.LayerDefinition createTrawlNetLayer() {
+        var mesh = new net.minecraft.client.model.geom.builders.MeshDefinition();
+        var root = mesh.getRoot();
+        // Sleek dark-oak stern outrigger davits & horizontal trawl boom
+        root.addOrReplaceChild("davits",
+                net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-4.6F, -0.5F, -0.4F, 0.55F, 0.55F, 5.2F)
+                        .texOffs(0, 0).addBox( 4.05F, -0.5F, -0.4F, 0.55F, 0.55F, 5.2F)
+                        .texOffs(0, 0).addBox(-5.1F, -0.6F, 4.3F, 10.2F, 0.65F, 0.65F),
+                net.minecraft.client.model.geom.PartPose.offset(0.0F, -3.8F, 21.6F));
+        // Trailing open-weave diamond hemp fishnet funnel & cork headrope
+        root.addOrReplaceChild("net_bag",
+                net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+                        // Row of 5 cork buoys along the headrope
+                        .texOffs(0, 16).addBox(-4.2F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox(-2.2F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox(-0.45F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox( 1.3F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox( 3.3F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        // Slender braided hemp side towing lines
+                        .texOffs(32, 16).addBox(-4.35F, 0.0F, -0.15F, 0.35F, 9.6F, 0.35F)
+                        .texOffs(32, 16).addBox( 4.00F, 0.0F, -0.15F, 0.35F, 9.6F, 0.35F)
+                        // Transparent diamond-mesh fishing net funnel (top, belly, left/right walls & cod-end)
+                        .texOffs(0, 24).addBox(-4.2F, 0.2F,  0.1F, 8.4F, 9.4F, 0.15F)
+                        .texOffs(0, 24).addBox(-3.6F, 0.8F, -1.8F, 7.2F, 8.8F, 0.15F)
+                        .texOffs(0, 24).addBox(-4.2F, 0.4F, -1.7F, 0.15F, 9.0F, 1.8F)
+                        .texOffs(0, 24).addBox( 4.05F, 0.4F, -1.7F, 0.15F, 9.0F, 1.8F)
+                        .texOffs(0, 24).addBox(-2.5F, 9.4F, -1.5F, 5.0F, 3.0F, 1.5F),
+                net.minecraft.client.model.geom.PartPose.offsetAndRotation(0.0F, -3.7F, 26.2F, 1.12F, 0.0F, 0.0F));
+        return net.minecraft.client.model.geom.builders.LayerDefinition.create(mesh, 64, 64);
     }
 
     @Override
@@ -87,6 +124,15 @@ public class SloopRenderer extends EntityRenderer<Boat> {
 
         VertexConsumer vertexConsumer = buffer.getBuffer(this.model.renderType(this.getTextureLocation(entity)));
         this.model.renderCustomShip(entity, poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY);
+
+        // Render dedicated transparent open-weave Shipboard Trawl Net trailing off the stern
+        boolean hasTrawlNet = (entity instanceof SloopEntity s && s.hasTrawlNet())
+                || (entity instanceof CargoBoatEntity c && c.hasTrawlNet());
+        if (hasTrawlNet) {
+            this.trawlNetBag.xRot = 1.12F + Mth.sin(ageInTicks * 0.12F) * 0.06F;
+            VertexConsumer netBuf = buffer.getBuffer(net.minecraft.client.renderer.RenderType.entityCutoutNoCull(TRAWL_NET_TEXTURE));
+            this.trawlNetRoot.render(poseStack, netBuf, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        }
 
         // Render pure cloth Heraldic Banner on the back of the ship (stern crest & transom) with ZERO wooden pole/stick
         ItemStack bannerStack = ItemStack.EMPTY;

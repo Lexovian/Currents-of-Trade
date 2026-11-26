@@ -153,6 +153,10 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> HAS_SWIVEL_HARPOON =
             SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> HAS_TRAWL_NET =
+            SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> FIGUREHEAD_TYPE =
+            SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> SYNCED_CARGO_STACKS =
             SynchedEntityData.defineId(SloopEntity.class, EntityDataSerializers.INT);
 
@@ -205,6 +209,22 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         this.entityData.set(HAS_SWIVEL_HARPOON, harpoon);
     }
 
+    public boolean hasTrawlNet() {
+        return this.entityData.get(HAS_TRAWL_NET);
+    }
+
+    public void setTrawlNet(boolean trawlNet) {
+        this.entityData.set(HAS_TRAWL_NET, trawlNet);
+    }
+
+    public int getFigureheadType() {
+        return this.entityData.get(FIGUREHEAD_TYPE);
+    }
+
+    public void setFigureheadType(int type) {
+        this.entityData.set(FIGUREHEAD_TYPE, Mth.clamp(type, 0, 3));
+    }
+
     public int getSyncedCargoStacks() {
         return this.entityData.get(SYNCED_CARGO_STACKS);
     }
@@ -218,6 +238,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         this.entityData.define(BOW_LANTERN_TYPE, 0);
         this.entityData.define(COPPER_HULL, false);
         this.entityData.define(HAS_SWIVEL_HARPOON, false);
+        this.entityData.define(HAS_TRAWL_NET, false);
+        this.entityData.define(FIGUREHEAD_TYPE, 0);
         this.entityData.define(SYNCED_CARGO_STACKS, 0);
     }
 
@@ -232,6 +254,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         tag.putInt("BowLanternType", this.getBowLanternType());
         tag.putBoolean("CopperHull", this.hasCopperHull());
         tag.putBoolean("SwivelHarpoon", this.hasSwivelHarpoon());
+        tag.putBoolean("TrawlNet", this.hasTrawlNet());
+        tag.putInt("FigureheadType", this.getFigureheadType());
         this.addChestVehicleSaveData(tag);
     }
 
@@ -258,6 +282,12 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
         if (tag.contains("SwivelHarpoon")) {
             this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
         }
+        if (tag.contains("TrawlNet")) {
+            this.setTrawlNet(tag.getBoolean("TrawlNet"));
+        }
+        if (tag.contains("FigureheadType")) {
+            this.setFigureheadType(tag.getInt("FigureheadType"));
+        }
         this.readChestVehicleSaveData(tag);
     }
 
@@ -267,7 +297,7 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             stack.setHoverName(this.getCustomName());
         }
         if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty()
-                || this.getBowLanternType() > 0 || this.hasCopperHull() || this.hasSwivelHarpoon()) {
+                || this.getBowLanternType() > 0 || this.hasCopperHull() || this.hasSwivelHarpoon() || this.hasTrawlNet() || this.getFigureheadType() > 0) {
             CustomData.update(stack, tag -> {
                 tag.putInt("SailColor", this.getSailColor());
                 if (!this.getBannerStack().isEmpty()) {
@@ -276,6 +306,8 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 tag.putInt("BowLanternType", this.getBowLanternType());
                 tag.putBoolean("CopperHull", this.hasCopperHull());
                 tag.putBoolean("SwivelHarpoon", this.hasSwivelHarpoon());
+                tag.putBoolean("TrawlNet", this.hasTrawlNet());
+                tag.putInt("FigureheadType", this.getFigureheadType());
             });
         }
         return stack;
@@ -302,6 +334,12 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             }
             if (tag.contains("SwivelHarpoon")) {
                 this.setSwivelHarpoon(tag.getBoolean("SwivelHarpoon"));
+            }
+            if (tag.contains("TrawlNet")) {
+                this.setTrawlNet(tag.getBoolean("TrawlNet"));
+            }
+            if (tag.contains("FigureheadType")) {
+                this.setFigureheadType(tag.getInt("FigureheadType"));
             }
         }
     }
@@ -363,7 +401,11 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 || stack.is(Items.SOUL_LANTERN)
                 || stack.is(Items.COPPER_BLOCK)
                 || stack.is(Items.WAXED_COPPER_BLOCK)
-                || stack.is(CurrentsofTrade.SWIVEL_HARPOON.get());
+                || stack.is(CurrentsofTrade.SWIVEL_HARPOON.get())
+                || stack.is(CurrentsofTrade.TRAWL_NET.get())
+                || stack.is(CurrentsofTrade.JADE_FIGURINE.get())
+                || stack.is(CurrentsofTrade.NARWHAL_IVORY.get())
+                || stack.is(CurrentsofTrade.AMMONITE_FOSSIL.get());
     }
 
     /**
@@ -434,10 +476,27 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
 
-        // 4. Remove Swivel Harpoon (Sneak + Shears), Banner/Pennant, or Bow Lantern with Shears
-        if (held.is(Items.SHEARS) && ((this.hasSwivelHarpoon() && player.isSecondaryUseActive()) || !this.getBannerStack().isEmpty() || this.getBowLanternType() > 0)) {
+        // 4. Remove Figurehead / Trawl Net / Swivel Harpoon (Sneak + Shears), Banner/Pennant, or Bow Lantern with Shears
+        if (held.is(Items.SHEARS) && (((this.getFigureheadType() > 0 || this.hasTrawlNet() || this.hasSwivelHarpoon()) && player.isSecondaryUseActive()) || !this.getBannerStack().isEmpty() || this.getBowLanternType() > 0)) {
             if (!this.level().isClientSide) {
-                if (this.hasSwivelHarpoon() && player.isSecondaryUseActive()) {
+                if (this.getFigureheadType() > 0 && player.isSecondaryUseActive()) {
+                    if (!player.getAbilities().instabuild) {
+                        Item figItem = this.getFigureheadType() == 1 ? CurrentsofTrade.JADE_FIGURINE.get()
+                                : this.getFigureheadType() == 2 ? CurrentsofTrade.NARWHAL_IVORY.get()
+                                : CurrentsofTrade.AMMONITE_FOSSIL.get();
+                        player.getInventory().placeItemBackInInventory(new ItemStack(figItem));
+                    }
+                    this.setFigureheadType(0);
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.figurehead_removed"), true);
+                } else if (this.hasTrawlNet() && player.isSecondaryUseActive()) {
+                    if (!player.getAbilities().instabuild) {
+                        player.getInventory().placeItemBackInInventory(new ItemStack(CurrentsofTrade.TRAWL_NET.get()));
+                    }
+                    this.setTrawlNet(false);
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.displayClientMessage(Component.translatable("message.currents_of_trade.trawl_net_removed"), true);
+                } else if (this.hasSwivelHarpoon() && player.isSecondaryUseActive()) {
                     if (!player.getAbilities().instabuild) {
                         player.getInventory().placeItemBackInInventory(new ItemStack(CurrentsofTrade.SWIVEL_HARPOON.get()));
                     }
@@ -512,6 +571,44 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
                 this.level().playSound(null, this.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.75F, 1.3F);
                 this.level().playSound(null, this.blockPosition(), SoundEvents.CROSSBOW_LOADING_END, SoundSource.PLAYERS, 1.0F, 1.0F);
                 player.displayClientMessage(Component.translatable("message.currents_of_trade.harpoon_mounted"), true);
+                this.awardFlagshipAdvancement(player);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 8. Mount Shipboard Trawl Net on Stern
+        if (held.is(CurrentsofTrade.TRAWL_NET.get()) && !this.hasTrawlNet()) {
+            if (!this.level().isClientSide) {
+                this.setTrawlNet(true);
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                }
+                this.level().playSound(null, this.blockPosition(), SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 1.0F, 0.9F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.trawl_net_mounted"), true);
+                this.awardFlagshipAdvancement(player);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+
+        // 9. Mount Ship Figurehead on Bow (Jade Figurine = 1, Narwhal Ivory = 2, Ammonite Fossil = 3)
+        int newFig = held.is(CurrentsofTrade.JADE_FIGURINE.get()) ? 1
+                : held.is(CurrentsofTrade.NARWHAL_IVORY.get()) ? 2
+                : held.is(CurrentsofTrade.AMMONITE_FOSSIL.get()) ? 3 : 0;
+        if (newFig > 0 && this.getFigureheadType() != newFig) {
+            if (!this.level().isClientSide) {
+                Component figName = held.getHoverName();
+                if (this.getFigureheadType() > 0 && !player.getAbilities().instabuild) {
+                    Item prev = this.getFigureheadType() == 1 ? CurrentsofTrade.JADE_FIGURINE.get()
+                            : this.getFigureheadType() == 2 ? CurrentsofTrade.NARWHAL_IVORY.get()
+                            : CurrentsofTrade.AMMONITE_FOSSIL.get();
+                    player.getInventory().placeItemBackInInventory(new ItemStack(prev));
+                }
+                this.setFigureheadType(newFig);
+                if (!player.getAbilities().instabuild) {
+                    held.shrink(1);
+                }
+                this.level().playSound(null, this.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.7F, 1.35F);
+                player.displayClientMessage(Component.translatable("message.currents_of_trade.figurehead_mounted", figName), true);
                 this.awardFlagshipAdvancement(player);
             }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
@@ -634,6 +731,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
     public boolean hurt(DamageSource source, float amount) {
         if (this.hasCopperHull() && !(source.getEntity() instanceof Player p && p.getAbilities().instabuild)) {
             amount *= 0.5F;
+        }
+        if (this.getFigureheadType() == 2 && !(source.getEntity() instanceof Player p && p.getAbilities().instabuild)) {
+            amount *= 0.75F;
         }
         return super.hurt(source, amount);
     }
@@ -785,26 +885,38 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
 
         boolean hasCopper = this.hasCopperHull();
         boolean hasSoulLanternBoost = (lanternType == 2 && isNightOrStorm);
+        int figurehead = this.getFigureheadType();
+        boolean hasTradeWind = com.lexovian.currentsoftrade.world.market.TradeWinds.hasFavorableTradeWind(this.level(), this.getYRot());
 
-        if ((this.tailwindTicks > 0 || hasTricorne || hasCopper || hasSoulLanternBoost)
+        if ((this.tailwindTicks > 0 || hasTricorne || hasCopper || hasSoulLanternBoost || hasTradeWind || figurehead == 2)
                 && this.getDeltaMovement().horizontalDistanceSqr() > 0.002) {
             Vec3 motion = this.getDeltaMovement();
             double boost = (this.tailwindTicks > 0 ? 1.028 : 1.0)
                     * (hasTricorne ? 1.02 : 1.0)
                     * (hasCopper ? 1.015 : 1.0)
-                    * (hasSoulLanternBoost ? 1.01 : 1.0);
+                    * (hasSoulLanternBoost ? 1.01 : 1.0)
+                    * (hasTradeWind ? 1.016 : 1.0)
+                    * (figurehead == 2 ? 1.010 : 1.0);
             this.setDeltaMovement(motion.x * boost, motion.y, motion.z * boost);
 
-            if (this.level().isClientSide && (this.tailwindTicks > 0 || hasSoulLanternBoost) && this.random.nextFloat() < 0.35F) {
-                this.level().addParticle(hasSoulLanternBoost ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.GLOW,
+            if (this.level().isClientSide && (this.tailwindTicks > 0 || hasSoulLanternBoost || hasTradeWind) && this.random.nextFloat() < 0.35F) {
+                this.level().addParticle(hasSoulLanternBoost ? ParticleTypes.SOUL_FIRE_FLAME : (hasTradeWind ? ParticleTypes.CLOUD : ParticleTypes.GLOW),
                         this.getX() + (this.random.nextDouble() - 0.5) * 2.0,
-                        this.getY() + 0.5,
+                        this.getY() + 0.65,
                         this.getZ() + (this.random.nextDouble() - 0.5) * 2.0,
-                        0.0, 0.04, 0.0);
+                        0.0, 0.03, 0.0);
             }
         }
 
-        // 6. Brass Swivel Harpoon defense & Bosun's Whistle shoreline glide
+        if (!this.level().isClientSide && figurehead == 1 && this.tickCount % 40 == 0) {
+            for (Entity passenger : this.getPassengers()) {
+                if (passenger instanceof Player rider) {
+                    rider.addEffect(new MobEffectInstance(MobEffects.LUCK, 120, 0, true, false, true));
+                }
+            }
+        }
+
+        // 6. Brass Swivel Harpoon defense, Shipboard Trawl Net & Bosun's Whistle shoreline glide
         if (!this.level().isClientSide) {
             if (this.tickCount % 10 == 0) {
                 int used = 0;
@@ -815,6 +927,9 @@ public class SloopEntity extends Boat implements HasCustomInventoryScreen, Conta
             }
             if (this.hasSwivelHarpoon()) {
                 com.lexovian.currentsoftrade.item.SwivelHarpoonItem.tickShipHarpoonDefense(this);
+            }
+            if (this.hasTrawlNet() && !this.isMerchantShip()) {
+                com.lexovian.currentsoftrade.item.TrawlNetItem.tickShipTrawlNet(this, this, figurehead);
             }
             this.tickSummonGlide();
         }

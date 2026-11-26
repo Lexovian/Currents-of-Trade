@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PDP",
+    "SBS",
+    "PDP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:poppy"
+    },
+    "D": {
+      "item": "minecraft:dandelion"
+    },
+    "S": {
+      "item": "minecraft:string"
+    },
+    "B": {
+      "item": "minecraft:blaze_powder"
+    }
+  },
+  "result": {
+    "item": "currents_of_trade:saffron_bundle",
+    "count": 1
+  }
+}

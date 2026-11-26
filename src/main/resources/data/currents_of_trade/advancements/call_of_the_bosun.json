@@ -1,0 +1,23 @@
+{
+  "parent": "currents_of_trade:fair_winds",
+  "display": {
+    "icon": {
+      "item": "currents_of_trade:bosuns_whistle"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.call_of_the_bosun.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.call_of_the_bosun.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -129,7 +129,14 @@ public class SendItemsMenu extends AbstractContainerMenu {
         }
 
         this.addDataSlots(data);
+        this.addDataSlot(this.guildDiscountPct);
+        if (this.player != null && this.player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            this.guildDiscountPct.set((int) Math.round(com.lexovian.currentsoftrade.world.harbor.GuildReputationData.get(sl)
+                    .getRank(this.player.getUUID()).feeDiscount * 100.0D));
+        }
     }
+
+    private final net.minecraft.world.inventory.DataSlot guildDiscountPct = net.minecraft.world.inventory.DataSlot.standalone();
 
     private static ContainerData createContainerData(ContainerLevelAccess access, BlockPos pos) {
         return new ContainerData() {
@@ -268,6 +275,10 @@ public class SendItemsMenu extends AbstractContainerMenu {
         int fee = (int) Math.ceil(dist / 100.0);
         if (this.player != null && this.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get())) {
             fee = Math.max(1, (int) Math.floor(fee * 0.9));
+        }
+        int rankDiscPct = this.guildDiscountPct.get();
+        if (rankDiscPct > 0 && fee > 1) {
+            fee = Math.max(1, (int) Math.floor(fee * (1.0D - (rankDiscPct / 100.0D))));
         }
         if (getOriginSpecialization() == HarborSpecialization.FREE_PORT) {
             fee = Math.max(1, (int) Math.floor(fee * 0.75));
