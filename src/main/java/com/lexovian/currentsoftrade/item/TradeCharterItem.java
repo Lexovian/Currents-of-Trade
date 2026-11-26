@@ -99,7 +99,7 @@ public class TradeCharterItem extends Item {
             }
         }
         MaritimeTradeRegion targetRegion = candidates.get(rng.nextInt(candidates.size()));
-        int variant = rng.nextInt(5);
+        int variant = rng.nextInt(6);
 
         Item reqItem;
         int reqCount;
@@ -113,7 +113,8 @@ public class TradeCharterItem extends Item {
                     case 1 -> { reqItem = CurrentsofTrade.CACAO_ELIXIR.get(); reqCount = 3; rewardDoubloons = 24; }
                     case 2 -> { reqItem = CurrentsofTrade.JADE_FIGURINE.get(); reqCount = 2; rewardDoubloons = 32; }
                     case 3 -> { reqItem = CurrentsofTrade.TYRIAN_PURPLE.get(); reqCount = 2; rewardDoubloons = 28; }
-                    default -> { reqItem = CurrentsofTrade.NARWHAL_IVORY.get(); reqCount = 2; rewardDoubloons = 32; }
+                    case 4 -> { reqItem = CurrentsofTrade.NARWHAL_IVORY.get(); reqCount = 2; rewardDoubloons = 32; }
+                    default -> { reqItem = CurrentsofTrade.ERMINE_PELT.get(); reqCount = 2; rewardDoubloons = 28; }
                 }
             }
             case COLD -> {
@@ -122,7 +123,8 @@ public class TradeCharterItem extends Item {
                     case 1 -> { reqItem = CurrentsofTrade.VANILLA_BUNDLE.get(); reqCount = 6; rewardDoubloons = 24; }
                     case 2 -> { reqItem = CurrentsofTrade.SAFFRON_BUNDLE.get(); reqCount = 4; rewardDoubloons = 26; }
                     case 3 -> { reqItem = CurrentsofTrade.FRANKINCENSE_TEARS.get(); reqCount = 4; rewardDoubloons = 26; }
-                    default -> { reqItem = CurrentsofTrade.DAMASCUS_STEEL.get(); reqCount = 2; rewardDoubloons = 32; }
+                    case 4 -> { reqItem = CurrentsofTrade.DAMASCUS_STEEL.get(); reqCount = 2; rewardDoubloons = 32; }
+                    default -> { reqItem = CurrentsofTrade.CINNAMON_QUILLS.get(); reqCount = 4; rewardDoubloons = 26; }
                 }
             }
             case TROPICAL -> {
@@ -131,7 +133,8 @@ public class TradeCharterItem extends Item {
                     case 1 -> { reqItem = CurrentsofTrade.SILK_BALE.get(); reqCount = 3; rewardDoubloons = 28; }
                     case 2 -> { reqItem = CurrentsofTrade.TYRIAN_PURPLE.get(); reqCount = 2; rewardDoubloons = 28; }
                     case 3 -> { reqItem = CurrentsofTrade.DAMASCUS_STEEL.get(); reqCount = 2; rewardDoubloons = 32; }
-                    default -> { reqItem = CurrentsofTrade.NARWHAL_IVORY.get(); reqCount = 2; rewardDoubloons = 32; }
+                    case 4 -> { reqItem = CurrentsofTrade.NARWHAL_IVORY.get(); reqCount = 2; rewardDoubloons = 32; }
+                    default -> { reqItem = CurrentsofTrade.VELVET_BOLT.get(); reqCount = 2; rewardDoubloons = 28; }
                 }
             }
             default -> {
@@ -140,7 +143,8 @@ public class TradeCharterItem extends Item {
                     case 1 -> { reqItem = CurrentsofTrade.SAFFRON_BUNDLE.get(); reqCount = 4; rewardDoubloons = 26; }
                     case 2 -> { reqItem = CurrentsofTrade.AMBER_VIAL.get(); reqCount = 3; rewardDoubloons = 26; }
                     case 3 -> { reqItem = CurrentsofTrade.FRANKINCENSE_TEARS.get(); reqCount = 4; rewardDoubloons = 26; }
-                    default -> { reqItem = CurrentsofTrade.JADE_FIGURINE.get(); reqCount = 2; rewardDoubloons = 32; }
+                    case 4 -> { reqItem = CurrentsofTrade.JADE_FIGURINE.get(); reqCount = 2; rewardDoubloons = 32; }
+                    default -> { reqItem = CurrentsofTrade.INDIGO_DYE_CAKE.get(); reqCount = 4; rewardDoubloons = 26; }
                 }
             }
         }
@@ -300,6 +304,9 @@ public class TradeCharterItem extends Item {
             }
 
             awardCharterAdvancement(player);
+            if (level instanceof ServerLevel sl && player instanceof ServerPlayer sp) {
+                com.lexovian.currentsoftrade.world.harbor.GuildReputationData.awardReputation(sl, sp, 25);
+            }
 
             player.sendOverlayMessage(Component.translatable(
                     "message.currents_of_trade.charter_fulfilled",
@@ -403,6 +410,7 @@ public class TradeCharterItem extends Item {
                 ServerPlayer sender = level.getServer().getPlayerList().getPlayer(senderUUID);
                 if (sender != null) {
                     awardCharterAdvancement(sender);
+                    com.lexovian.currentsoftrade.world.harbor.GuildReputationData.awardReputation(level, sender, 15 * fulfilledCount);
                     sender.sendSystemMessage(Component.translatable(
                             "message.currents_of_trade.charter_fulfilled_ship",
                             fulfilledCount,

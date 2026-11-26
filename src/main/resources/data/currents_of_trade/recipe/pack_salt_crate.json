@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "XXX",
+    "XXX"
+  ],
+  "key": {
+    "X": "currents_of_trade:salt_pouch"
+  },
+  "result": {
+    "id": "currents_of_trade:salt_crate",
+    "count": 1
+  }
+}

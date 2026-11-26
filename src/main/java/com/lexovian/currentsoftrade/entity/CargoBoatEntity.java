@@ -44,6 +44,8 @@ public class CargoBoatEntity extends TradeBoatEntity {
             SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> BANNER_STACK =
             SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<Boolean> HAS_TRAWL_NET =
+            SynchedEntityData.defineId(CargoBoatEntity.class, EntityDataSerializers.BOOLEAN);
 
     // --- Constructors ---
 
@@ -74,6 +76,15 @@ public class CargoBoatEntity extends TradeBoatEntity {
         builder.define(IS_PLAYER_CONTROLLED, false);
         builder.define(SAIL_COLOR, -1);
         builder.define(BANNER_STACK, ItemStack.EMPTY);
+        builder.define(HAS_TRAWL_NET, false);
+    }
+
+    public boolean hasTrawlNet() {
+        return this.entityData.get(HAS_TRAWL_NET);
+    }
+
+    public void setTrawlNet(boolean trawlNet) {
+        this.entityData.set(HAS_TRAWL_NET, trawlNet);
     }
 
     public boolean isPlayerControlled() {
@@ -182,6 +193,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
 
             if (!this.level().isClientSide()) {
                 this.tickSummonGlide();
+                if (this.hasTrawlNet()) {
+                    com.lexovian.currentsoftrade.item.TrawlNetItem.tickShipTrawlNet(this, this);
+                }
             }
 
             // Heavy steering feel for cargo ship: 8% damping (vs 14% on Sloop)
@@ -192,16 +206,18 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 this.yRotO = prevYaw;
             }
 
-            // Heavy cargo displacement speed limiter: ~35% slower than Sloop (+20% with Captain's Tricorne)
+            // Heavy cargo displacement speed limiter: ~35% slower than Sloop (+20% with Captain's Tricorne, +15% with Trade Winds)
             boolean hasTricorne = this.getControllingPassenger() instanceof Player p
                     && p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(CurrentsofTrade.CAPTAINS_TRICORNE.get());
+            boolean hasTradeWind = com.lexovian.currentsoftrade.world.market.TradeWinds.hasFavorableTradeWind(this.level(), this.getYRot());
             Vec3 delta = this.getDeltaMovement();
-            if (hasTricorne && delta.horizontalDistanceSqr() > 0.002D) {
-                delta = new Vec3(delta.x * 1.02D, delta.y, delta.z * 1.02D);
+            if ((hasTricorne || hasTradeWind) && delta.horizontalDistanceSqr() > 0.002D) {
+                double boost = (hasTricorne ? 1.02D : 1.0D) * (hasTradeWind ? 1.015D : 1.0D);
+                delta = new Vec3(delta.x * boost, delta.y, delta.z * boost);
                 this.setDeltaMovement(delta);
             }
             double horizontalSpeed = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
-            double maxSpeed = hasTricorne ? 0.264D : 0.22D;
+            double maxSpeed = (hasTricorne ? 0.264D : 0.22D) * (hasTradeWind ? 1.15D : 1.0D);
             if (horizontalSpeed > maxSpeed) {
                 double scale = maxSpeed / horizontalSpeed;
                 this.setDeltaMovement(delta.x * scale, delta.y, delta.z * scale);
@@ -313,14 +329,36 @@ public class CargoBoatEntity extends TradeBoatEntity {
             return harpoonRes;
         }
 
-        if (held.is(Items.SHEARS) && !this.getBannerStack().isEmpty()) {
+        if (held.is(CurrentsofTrade.TRAWL_NET.get()) && !this.hasTrawlNet()) {
             if (!this.level().isClientSide()) {
+                this.setTrawlNet(true);
                 if (!player.getAbilities().instabuild) {
-                    player.getInventory().placeItemBackInInventory(this.getBannerStack().copy());
+                    held.shrink(1);
                 }
-                this.setBannerStack(ItemStack.EMPTY);
-                this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
-                player.sendOverlayMessage(Component.translatable("message.currents_of_trade.cargo_banner_removed"));
+                this.level().playSound(null, this.blockPosition(), SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 1.0F, 0.9F);
+                player.sendOverlayMessage(Component.translatable("message.currents_of_trade.trawl_net_mounted"));
+                SloopEntity.awardFlagshipAdvancement(player);
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        if (held.is(Items.SHEARS) && ((this.hasTrawlNet() && player.isSecondaryUseActive()) || !this.getBannerStack().isEmpty())) {
+            if (!this.level().isClientSide()) {
+                if (this.hasTrawlNet() && player.isSecondaryUseActive()) {
+                    if (!player.getAbilities().instabuild) {
+                        player.getInventory().placeItemBackInInventory(new ItemStack(CurrentsofTrade.TRAWL_NET.get()));
+                    }
+                    this.setTrawlNet(false);
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.sendOverlayMessage(Component.translatable("message.currents_of_trade.trawl_net_removed"));
+                } else {
+                    if (!player.getAbilities().instabuild) {
+                        player.getInventory().placeItemBackInInventory(this.getBannerStack().copy());
+                    }
+                    this.setBannerStack(ItemStack.EMPTY);
+                    this.level().playSound(null, this.blockPosition(), SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    player.sendOverlayMessage(Component.translatable("message.currents_of_trade.cargo_banner_removed"));
+                }
             }
             return InteractionResult.SUCCESS;
         }
@@ -337,7 +375,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
                 && !this.getCustomName().getString().equals("Cargo Ship")) {
             stack.set(DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty() || this.hasSwivelHarpoon()) {
+        if (this.getSailColor() >= 0 || !this.getBannerStack().isEmpty() || this.hasSwivelHarpoon() || this.hasTrawlNet()) {
             CustomData existing = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             CompoundTag tag = existing.copyTag();
             if (this.getSailColor() >= 0) {
@@ -348,6 +386,9 @@ public class CargoBoatEntity extends TradeBoatEntity {
             }
             if (this.hasSwivelHarpoon()) {
                 tag.putBoolean("SwivelHarpoon", true);
+            }
+            if (this.hasTrawlNet()) {
+                tag.putBoolean("TrawlNet", true);
             }
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
@@ -398,6 +439,7 @@ public class CargoBoatEntity extends TradeBoatEntity {
         if (!this.getBannerStack().isEmpty()) {
             output.store("BannerItem", ItemStack.CODEC, this. getBannerStack());
         }
+        output.putBoolean("TrawlNet", this.hasTrawlNet());
     }
 
     @Override
@@ -406,5 +448,6 @@ public class CargoBoatEntity extends TradeBoatEntity {
         this.setPlayerControlled(input.getBooleanOr("PlayerControlled", false));
         this.setSailColor(input.getIntOr("SailColor", -1));
         this.setBannerStack(input.read("BannerItem", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+        this.setTrawlNet(input.getBooleanOr("TrawlNet", false));
     }
 }

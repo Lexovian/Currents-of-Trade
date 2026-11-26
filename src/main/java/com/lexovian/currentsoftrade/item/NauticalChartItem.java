@@ -207,6 +207,35 @@ public class NauticalChartItem extends Item {
         return true;
     }
 
+    /** Server side: appends an explicit water coordinate (such as a Navigation Buoy) as a waypoint on a bound chart. */
+    public static boolean addWaypointAt(Level level, net.minecraft.world.entity.player.Player player, ItemStack stack, BlockPos wp) {
+        if (!isBound(stack) || wp == null) return false;
+        List<BlockPos> waypoints = getWaypoints(stack);
+        if (waypoints.size() >= MAX_WAYPOINTS) {
+            player.sendOverlayMessage(Component.translatable("message.currents_of_trade.chart_waypoints_full", MAX_WAYPOINTS));
+            return false;
+        }
+        if (!waypoints.isEmpty() && waypoints.get(waypoints.size() - 1).distManhattan(wp) < 4) {
+            return false;
+        }
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            ListTag wpList = tag.contains("Waypoints")
+                    ? tag.getListOrEmpty("Waypoints")
+                    : new ListTag();
+            CompoundTag wpTag = new CompoundTag();
+            wpTag.putInt("X", wp.getX());
+            wpTag.putInt("Y", wp.getY());
+            wpTag.putInt("Z", wp.getZ());
+            wpList.add(wpTag);
+            tag.put("Waypoints", wpList);
+        });
+        if (player instanceof ServerPlayer sp) sp.inventoryMenu.broadcastChanges();
+        level.playSound(null, wp, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 0.7F, 1.4F);
+        player.sendOverlayMessage(Component.translatable("message.currents_of_trade.chart_waypoint_added",
+                waypoints.size() + 1, MAX_WAYPOINTS, wp.getX(), wp.getZ()));
+        return true;
+    }
+
     // Waypoint markers are rendered client-side in ModClientEvents to avoid server particle packet spam
 
     // Tooltip

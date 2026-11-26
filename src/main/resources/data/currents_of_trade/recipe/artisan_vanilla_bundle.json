@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "VSV",
+    "CHC",
+    "UVU"
+  ],
+  "key": {
+    "V": "minecraft:vine",
+    "S": "minecraft:string",
+    "C": "minecraft:cocoa_beans",
+    "H": "minecraft:honeycomb",
+    "U": "minecraft:sugar"
+  },
+  "result": {
+    "id": "currents_of_trade:vanilla_bundle",
+    "count": 1
+  }
+}

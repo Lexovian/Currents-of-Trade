@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:water_bucket",
+    "minecraft:dried_kelp",
+    "minecraft:dried_kelp",
+    "minecraft:paper"
+  ],
+  "result": {
+    "id": "currents_of_trade:salt_pouch",
+    "count": 2
+  }
+}

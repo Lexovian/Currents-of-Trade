@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "currents_of_trade:fish_crate"
+  ],
+  "result": {
+    "id": "minecraft:cod",
+    "count": 9
+  }
+}

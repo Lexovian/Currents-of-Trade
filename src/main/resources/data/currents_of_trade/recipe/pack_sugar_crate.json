@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "XXX",
+    "XXX"
+  ],
+  "key": {
+    "X": "minecraft:sugar"
+  },
+  "result": {
+    "id": "currents_of_trade:sugar_crate",
+    "count": 1
+  }
+}

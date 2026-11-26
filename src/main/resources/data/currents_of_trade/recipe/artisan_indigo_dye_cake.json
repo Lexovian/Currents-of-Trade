@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BGB",
+    "CLK",
+    "BGB"
+  ],
+  "key": {
+    "B": "minecraft:blue_dye",
+    "G": "minecraft:gold_nugget",
+    "C": "minecraft:clay_ball",
+    "L": "minecraft:lapis_block",
+    "K": "minecraft:black_dye"
+  },
+  "result": {
+    "id": "currents_of_trade:indigo_dye_cake",
+    "count": 1
+  }
+}

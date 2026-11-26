@@ -154,6 +154,13 @@ public class SloopItem extends Item {
             if (tag.getBooleanOr("SwivelHarpoon", false)) {
                 tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.ship_swivel_harpoon"));
             }
+            if (tag.getBooleanOr("TrawlNet", false)) {
+                tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.ship_trawl_net"));
+            }
+            int fig = tag.getIntOr("FigureheadType", 0);
+            if (fig > 0) {
+                tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.ship_figurehead_" + fig));
+            }
         }
         tooltipComponents.accept(Component.translatable("tooltip.currents_of_trade.sloop_customize_hint"));
         super.appendHoverText(stack, context, display, tooltipComponents, tooltipFlag);

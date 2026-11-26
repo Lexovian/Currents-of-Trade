@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XXX",
+    "XXX",
+    "XXX"
+  ],
+  "key": {
+    "X": "minecraft:cod"
+  },
+  "result": {
+    "id": "currents_of_trade:fish_crate",
+    "count": 1
+  }
+}

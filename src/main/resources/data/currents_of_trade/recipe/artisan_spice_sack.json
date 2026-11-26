@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " S ",
+    "BCB",
+    "LUL"
+  ],
+  "key": {
+    "S": "minecraft:string",
+    "B": "minecraft:sweet_berries",
+    "C": "minecraft:cocoa_beans",
+    "L": "minecraft:leather",
+    "U": "minecraft:sugar"
+  },
+  "result": {
+    "id": "currents_of_trade:spice_sack",
+    "count": 2
+  }
+}

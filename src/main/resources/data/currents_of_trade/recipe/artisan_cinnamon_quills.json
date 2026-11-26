@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "J C",
+    "JHG",
+    "J R"
+  ],
+  "key": {
+    "J": "minecraft:jungle_log",
+    "C": "minecraft:cocoa_beans",
+    "H": "minecraft:honey_bottle",
+    "G": "minecraft:gold_nugget",
+    "R": "minecraft:red_wool"
+  },
+  "result": {
+    "id": "currents_of_trade:cinnamon_quills",
+    "count": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "CAC",
+    " N "
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "C": "minecraft:copper_ingot",
+    "A": "minecraft:amethyst_shard",
+    "N": "minecraft:gold_nugget"
+  },
+  "result": {
+    "id": "currents_of_trade:storm_glass",
+    "count": 1
+  }
+}

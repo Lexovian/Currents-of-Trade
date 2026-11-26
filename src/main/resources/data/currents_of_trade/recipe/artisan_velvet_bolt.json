@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "RGR",
+    "STS",
+    "RGR"
+  ],
+  "key": {
+    "R": "minecraft:red_wool",
+    "G": "minecraft:gold_ingot",
+    "S": "minecraft:string",
+    "T": "minecraft:stick"
+  },
+  "result": {
+    "id": "currents_of_trade:velvet_bolt",
+    "count": 1
+  }
+}

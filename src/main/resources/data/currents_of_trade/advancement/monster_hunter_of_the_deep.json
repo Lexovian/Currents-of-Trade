@@ -1,0 +1,23 @@
+{
+  "parent": "currents_of_trade:fair_winds",
+  "display": {
+    "icon": {
+      "id": "currents_of_trade:swivel_harpoon"
+    },
+    "title": {
+      "translate": "advancement.currents_of_trade.monster_hunter_of_the_deep.title"
+    },
+    "description": {
+      "translate": "advancement.currents_of_trade.monster_hunter_of_the_deep.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "triggered": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " L ",
+    "RPR",
+    " I "
+  ],
+  "key": {
+    "L": "minecraft:lantern",
+    "R": "minecraft:red_dye",
+    "P": "#minecraft:planks",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "currents_of_trade:navigation_buoy",
+    "count": 2
+  }
+}

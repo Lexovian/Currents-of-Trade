@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SPS",
+    "TTT",
+    "NTN"
+  ],
+  "key": {
+    "S": "minecraft:stick",
+    "P": "#minecraft:planks",
+    "T": "minecraft:string",
+    "N": "minecraft:iron_nugget"
+  },
+  "result": {
+    "id": "currents_of_trade:trawl_net",
+    "count": 1
+  }
+}

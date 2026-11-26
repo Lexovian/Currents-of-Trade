@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PPP",
+    "CGC",
+    " R "
+  ],
+  "key": {
+    "P": "#minecraft:planks",
+    "C": "minecraft:copper_ingot",
+    "G": "minecraft:gold_ingot",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "currents_of_trade:harbor_bell",
+    "count": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "LKL",
+    "PHP",
+    "LKL"
+  ],
+  "key": {
+    "L": "#minecraft:leaves",
+    "K": "minecraft:dried_kelp",
+    "P": "minecraft:paper",
+    "H": "minecraft:honey_bottle"
+  },
+  "result": {
+    "id": "currents_of_trade:tea_brick",
+    "count": 1
+  }
+}

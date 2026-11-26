@@ -39,7 +39,7 @@ import java.util.Set;
 
 public class WanderingSailorSpawner {
 
-    public static final int CHECK_INTERVAL_TICKS = 12000;
+    public static final int CHECK_INTERVAL_TICKS = 8400;
     public static final double SPAWN_CHANCE = 0.35D;
     private static final int MIN_MOORING_SURFACE_WATER = 85;
 

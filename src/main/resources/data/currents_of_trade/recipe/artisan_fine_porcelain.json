@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BQB",
+    "LGD",
+    "BQB"
+  ],
+  "key": {
+    "B": "minecraft:brick",
+    "Q": "minecraft:quartz",
+    "L": "minecraft:lapis_lazuli",
+    "G": "minecraft:gold_ingot",
+    "D": "minecraft:bone_meal"
+  },
+  "result": {
+    "id": "currents_of_trade:fine_porcelain",
+    "count": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SWS",
+    "GHG",
+    "SWS"
+  ],
+  "key": {
+    "S": "minecraft:string",
+    "W": "minecraft:white_wool",
+    "G": "minecraft:gold_ingot",
+    "H": "minecraft:honeycomb"
+  },
+  "result": {
+    "id": "currents_of_trade:silk_bale",
+    "count": 1
+  }
+}

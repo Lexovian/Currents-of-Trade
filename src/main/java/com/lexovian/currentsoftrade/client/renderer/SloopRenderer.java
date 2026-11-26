@@ -34,10 +34,13 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
     private static final Identifier SLOOP_TEXTURE = Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/sloop.png");
     private static final Identifier CARGO_TEXTURE = Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/cargo_boat.png");
     private static final Identifier TRADE_TEXTURE = Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/trade_boat.png");
+    private static final Identifier TRAWL_NET_TEXTURE = Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "textures/entity/ship/trawl_net.png");
 
     private final SloopModel model;
     private final BannerFlagModel bannerFlagModel;
     private final SpriteGetter sprites;
+    private final ModelPart trawlNetRoot;
+    private final ModelPart trawlNetBag;
 
     public SloopRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -46,6 +49,35 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
         // Bake ONLY the pure cloth "flag" child of the Banner model (excluding "pole" and "bar" so no stick ever shows)
         this.bannerFlagModel = new BannerFlagModel(context.bakeLayer(ModelLayers.STANDING_BANNER_FLAG));
         this.sprites = context.getSprites();
+        this.trawlNetRoot = createTrawlNetLayer().bakeRoot();
+        this.trawlNetBag = this.trawlNetRoot.getChild("net_bag");
+    }
+
+    private static net.minecraft.client.model.geom.builders.LayerDefinition createTrawlNetLayer() {
+        var mesh = new net.minecraft.client.model.geom.builders.MeshDefinition();
+        var root = mesh.getRoot();
+        root.addOrReplaceChild("davits",
+                net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-4.6F, -0.5F, -0.4F, 0.55F, 0.55F, 5.2F)
+                        .texOffs(0, 0).addBox( 4.05F, -0.5F, -0.4F, 0.55F, 0.55F, 5.2F)
+                        .texOffs(0, 0).addBox(-5.1F, -0.6F, 4.3F, 10.2F, 0.65F, 0.65F),
+                net.minecraft.client.model.geom.PartPose.offset(0.0F, -3.8F, 21.6F));
+        root.addOrReplaceChild("net_bag",
+                net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+                        .texOffs(0, 16).addBox(-4.2F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox(-2.2F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox(-0.45F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox( 1.3F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(0, 16).addBox( 3.3F, -0.2F, -0.35F, 0.9F, 0.6F, 0.65F)
+                        .texOffs(32, 16).addBox(-4.35F, 0.0F, -0.15F, 0.35F, 9.6F, 0.35F)
+                        .texOffs(32, 16).addBox( 4.00F, 0.0F, -0.15F, 0.35F, 9.6F, 0.35F)
+                        .texOffs(0, 24).addBox(-4.2F, 0.2F,  0.1F, 8.4F, 9.4F, 0.25F)
+                        .texOffs(0, 24).addBox(-3.6F, 0.8F, -1.8F, 7.2F, 8.8F, 0.25F)
+                        .texOffs(0, 24).addBox(-4.2F, 0.4F, -1.7F, 0.25F, 9.0F, 1.8F)
+                        .texOffs(0, 24).addBox( 3.95F, 0.4F, -1.7F, 0.25F, 9.0F, 1.8F)
+                        .texOffs(0, 24).addBox(-2.5F, 9.4F, -1.5F, 5.0F, 3.0F, 1.5F),
+                net.minecraft.client.model.geom.PartPose.offsetAndRotation(0.0F, -3.7F, 26.2F, 1.12F, 0.0F, 0.0F));
+        return net.minecraft.client.model.geom.builders.LayerDefinition.create(mesh, 64, 64);
     }
 
     @Override
@@ -97,6 +129,9 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
                 || (entity instanceof CargoBoatEntity c && !c.getBannerStack().isEmpty());
         boolean hasHarpoon = (entity instanceof SloopEntity s && s.hasSwivelHarpoon())
                 || (entity instanceof TradeBoatEntity t && t.hasSwivelHarpoon());
+        boolean hasTrawlNet = (entity instanceof SloopEntity s && s.hasTrawlNet())
+                || (entity instanceof CargoBoatEntity c && c.hasTrawlNet());
+        int figureheadType = (entity instanceof SloopEntity s) ? s.getFigureheadType() : 0;
 
         state.isCargo = isCargo;
         state.isTrade = isTrade;
@@ -105,6 +140,9 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
         state.hasBanner = hasBanner;
         state.hasSwivelHarpoon = hasHarpoon;
         state.swivelHarpoonYRot = -0.08F + Mth.sin(ageInTicks * 0.06F) * 0.10F;
+        state.hasTrawlNet = hasTrawlNet;
+        state.trawlNetXRot = 1.12F + Mth.sin(ageInTicks * 0.12F) * 0.06F;
+        state.figureheadType = figureheadType;
 
         int sailColorId = -1;
         int bowLanternType = 0;
@@ -169,6 +207,15 @@ public class SloopRenderer<T extends AbstractBoat> extends EntityRenderer<T, Slo
             this.model.setupAnim(state);
             this.model.renderCustomShip(state, renderPose, buffer, state.lightCoords, OverlayTexture.NO_OVERLAY);
         });
+
+        if (state.hasTrawlNet) {
+            submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(TRAWL_NET_TEXTURE), (pose, buffer) -> {
+                PoseStack renderPose = new PoseStack();
+                renderPose.last().set(pose);
+                this.trawlNetBag.xRot = state.trawlNetXRot;
+                this.trawlNetRoot.render(renderPose, buffer, state.lightCoords, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
+            });
+        }
 
         // Render pure cloth Heraldic Banner on the back of the ship (stern crest & transom) with ZERO wooden pole/stick
         if (!state.bannerStack.isEmpty() && state.bannerStack.getItem() instanceof BannerItem bannerItem) {

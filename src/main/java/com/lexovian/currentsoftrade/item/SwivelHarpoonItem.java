@@ -1,17 +1,20 @@
 package com.lexovian.currentsoftrade.item;
 
+import com.lexovian.currentsoftrade.CurrentsofTrade;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.fish.WaterAnimal;
-import net.minecraft.world.entity.monster.ElderGuardian;
-import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 import net.minecraft.world.item.Item;
@@ -35,9 +38,14 @@ import java.util.function.Consumer;
  */
 public class SwivelHarpoonItem extends Item {
 
-    public static final double HARPOON_RANGE = 13.0D;
+    public static final double HARPOON_RANGE = 14.0D;
     public static final float HARPOON_DAMAGE = 10.0F;
-    public static final int FIRE_INTERVAL_TICKS = 25;
+    public static final int FIRE_INTERVAL_TICKS = 45;
+
+    public static final TagKey<EntityType<?>> HARPOON_TARGETS =
+            TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "harpoon_targets"));
+    public static final TagKey<EntityType<?>> HARPOON_IGNORED =
+            TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "harpoon_ignored"));
 
     public SwivelHarpoonItem(Properties properties) {
         super(properties);
@@ -50,13 +58,14 @@ public class SwivelHarpoonItem extends Item {
         if (ship == null || ship.level().isClientSide() || !ship.isAlive()) return;
         if (!(ship.level() instanceof ServerLevel serverLevel)) return;
 
-        // 1. Every 10 ticks: gently clear squids/water animals directly blocking the bow path (non-lethal)
+        // 1. Every 10 ticks: gently clear peaceful squids/water animals directly blocking the bow path (non-lethal)
         if (ship.tickCount % 10 == 0) {
             float yawRad = ship.getYRot() * Mth.DEG_TO_RAD;
             double bowX = ship.getX() - Mth.sin(yawRad) * 2.8D;
             double bowZ = ship.getZ() + Mth.cos(yawRad) * 2.8D;
             AABB bowClearBox = new AABB(bowX - 2.6, ship.getY() - 1.5, bowZ - 2.6, bowX + 2.6, ship.getY() + 1.5, bowZ + 2.6);
-            List<WaterAnimal> squids = serverLevel.getEntitiesOfClass(WaterAnimal.class, bowClearBox, LivingEntity::isAlive);
+            List<WaterAnimal> squids = serverLevel.getEntitiesOfClass(WaterAnimal.class, bowClearBox,
+                    a -> a.isAlive() && !a.is(HARPOON_TARGETS));
             for (WaterAnimal animal : squids) {
                 Vec3 away = animal.position().subtract(ship.position());
                 Vec3 horiz = new Vec3(away.x, 0.0, away.z);
@@ -69,12 +78,17 @@ public class SwivelHarpoonItem extends Item {
             }
         }
 
-        // 2. Every FIRE_INTERVAL_TICKS: target nearest hostile sea threat within HARPOON_RANGE
+        // 2. Every FIRE_INTERVAL_TICKS: target nearest tagged sea monster or aquatic hostile within HARPOON_RANGE
         if (ship.tickCount % FIRE_INTERVAL_TICKS != 0) return;
 
-        AABB searchBox = ship.getBoundingBox().inflate(HARPOON_RANGE, 6.0D, HARPOON_RANGE);
-        List<Monster> threats = serverLevel.getEntitiesOfClass(Monster.class, searchBox, m ->
-                m.isAlive() && (m instanceof Drowned || m instanceof Guardian || m instanceof ElderGuardian || m.isInWater())
+        AABB searchBox = ship.getBoundingBox().inflate(HARPOON_RANGE, 7.0D, HARPOON_RANGE);
+        List<LivingEntity> threats = serverLevel.getEntitiesOfClass(LivingEntity.class, searchBox, e ->
+                e.isAlive()
+                        && !e.isSpectator()
+                        && !(e instanceof Player)
+                        && !ship.hasPassenger(e)
+                        && !e.is(HARPOON_IGNORED)
+                        && (e.is(HARPOON_TARGETS) || (e instanceof Monster && e.isInWater()))
         );
         if (threats.isEmpty()) return;
 
@@ -85,9 +99,9 @@ public class SwivelHarpoonItem extends Item {
         double muzzleZ = ship.getZ() + Mth.cos(yawRad) * 3.1D;
         Vec3 muzzlePos = new Vec3(muzzleX, muzzleY, muzzleZ);
 
-        Monster nearest = null;
+        LivingEntity nearest = null;
         double nearestDistSq = Double.MAX_VALUE;
-        for (Monster m : threats) {
+        for (LivingEntity m : threats) {
             double d = m.distanceToSqr(ship);
             if (d < nearestDistSq && serverLevel.clip(new ClipContext(
                     muzzlePos, m.getEyePosition(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, ship
@@ -109,12 +123,21 @@ public class SwivelHarpoonItem extends Item {
                 : serverLevel.damageSources().trident(ship, ship);
 
         nearest.hurtServer(serverLevel, dmgSource, HARPOON_DAMAGE);
+        if (captain instanceof ServerPlayer sp && serverLevel.getServer() != null) {
+            var adv = serverLevel.getServer().getAdvancements().get(
+                    Identifier.fromNamespaceAndPath(CurrentsofTrade.MODID, "monster_hunter_of_the_deep"));
+            if (adv != null) {
+                for (String c : adv.value().criteria().keySet()) {
+                    sp.getAdvancements().award(adv, c);
+                }
+            }
+        }
         Vec3 knockDir = new Vec3(targetX - ship.getX(), 0.2D, targetZ - ship.getZ()).normalize().scale(1.15D);
         nearest.setDeltaMovement(nearest.getDeltaMovement().add(knockDir));
         nearest.needsSync = true;
 
         // Crisp harpoon bolt particle trail & audio feedback
-        serverLevel.playSound(null, muzzleX, muzzleY, muzzleZ, SoundEvents.CROSSBOW_SHOOT, SoundSource.PLAYERS, 0.9F, 1.15F);
+        serverLevel.playSound(null, muzzleX, muzzleY, muzzleZ, CurrentsofTrade.HARPOON_FIRE_SOUND.get(), SoundSource.PLAYERS, 0.95F, 0.80F);
         serverLevel.playSound(null, targetX, targetY, targetZ, SoundEvents.TRIDENT_HIT, SoundSource.PLAYERS, 0.85F, 1.1F);
 
         int steps = 10;

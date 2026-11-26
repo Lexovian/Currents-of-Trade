@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "currents_of_trade:salt_crate"
+  ],
+  "result": {
+    "id": "currents_of_trade:salt_pouch",
+    "count": 9
+  }
+}
